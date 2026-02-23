@@ -79,6 +79,49 @@ This returns all past review comments, inline code comments, and discussion comm
 
 If there are no prior comments (first review), skip this step and omit the prior comments section from the subagent prompt.
 
+### Step 1.6: Acknowledge Addressed Comments (Thumbs-Up)
+
+When prior comments exist (re-review), check if the developer addressed previous bot review comments and acknowledge their replies with a 👍 reaction. This is a lightweight courtesy step that runs before launching subagents.
+
+**When to run:** Only when Step 1.5 found prior bot comments (from "brave-core-bot" or containing "Review via brave-core-bot") AND the developer has pushed new commits since the bot's last review.
+
+**How to detect and react:**
+
+1. Fetch the bot's previous inline review comment IDs:
+   ```bash
+   gh api "repos/brave/brave-core/pulls/{number}/comments" --paginate \
+     --jq '[.[] | select(.user.login == "brave-core-bot") | {id, body, created_at, path}]'
+   ```
+
+2. Fetch all review comments to find developer replies to those bot comments:
+   ```bash
+   gh api "repos/brave/brave-core/pulls/{number}/comments" --paginate \
+     --jq '[.[] | select(.in_reply_to_id != null) | {id, user: .user.login, body, created_at, in_reply_to_id}]'
+   ```
+
+3. For each reply where:
+   - `in_reply_to_id` matches a bot comment ID
+   - The reply author is a Brave org member (typically the PR author)
+   - New commits were pushed after the bot's review (the developer acted on the feedback)
+
+   Add a 👍 reaction to the developer's reply:
+   ```bash
+   gh api "repos/brave/brave-core/pulls/comments/{reply_comment_id}/reactions" \
+     --method POST -f content="+1"
+   ```
+
+4. Also check general issue comments — if the PR author posted a comment after the bot's review acknowledging the feedback (e.g., "Fixed", "Done", "Addressed", or describing what they changed), and new commits were pushed, thumbs-up that comment too:
+   ```bash
+   gh api "repos/brave/brave-core/issues/comments/{comment_id}/reactions" \
+     --method POST -f content="+1"
+   ```
+
+**Important rules:**
+- The reaction API is idempotent — if the bot already reacted, the API returns the existing reaction. No need to check for duplicates first.
+- This step does NOT affect the review itself — it's purely an acknowledgment gesture before launching subagents.
+- In auto mode, log each acknowledgment: `ACK: PR #<number> - 👍 comment by @<user> (addressed bot feedback)`
+- Skip this step entirely if there are no prior bot comments or no new commits since the last review.
+
 ### Step 2: Launch Category Subagents in Parallel
 
 Launch one **Task subagent** (subagent_type: "general-purpose") per applicable category. **Use multiple Task tool calls in a single message** so they run in parallel.
