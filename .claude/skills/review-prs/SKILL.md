@@ -31,13 +31,14 @@ When invoked with `/review-prs [days|page<N>|#<PR>] [open|closed|all] [auto]`:
      "summary": {"total_fetched": 50, "to_review": 5, "skipped_filtered": 30, "skipped_cached": 15}
    }
    ```
-2. **Print progress summary** from the summary stats:
+2. **Print progress summary** from the summary stats (this goes to stdout and will appear in cron logs):
    ```
    Found N PRs to review (M skipped: X drafts/filtered, Y cached)
+   PRs to review: #12345 (title), #12346 (title), ...
    ```
 3. **Review each PR** one at a time using per-category parallel subagents (see Per-Category Review Workflow below)
 4. **Aggregate and present findings** from all category subagents
-5. **If AUTO_MODE**: post all violations immediately (see Auto Posting below). **Otherwise**: draft each comment and ask user to approve before posting
+5. **If AUTO_MODE**: post all violations immediately and log each result (see Auto Posting below — the per-PR logging and final summary are MANDATORY). **Otherwise**: draft each comment and ask user to approve before posting
 
 ---
 
@@ -106,6 +107,7 @@ Each subagent prompt MUST include:
    - Also flag bugs introduced by the change (e.g., missing string separators, duplicate DEPS entries, code inside wrong `#if` guard)
    - **Check surrounding context before making claims.** When a violation involves dependencies, includes, or patterns, read the full file context (e.g., the BUILD.gn deps list, existing includes in the file) to verify your claim is accurate. Do NOT claim a PR "adds a dependency" or "introduces a pattern" if it already existed before the PR.
    - **Only comment on things the PR author introduced.** If a dependency, pattern, or architectural issue already existed before this PR, do not flag it — even if it violates a best practice. The PR author is not responsible for pre-existing issues. Focus exclusively on what this PR changes or adds.
+   - **Respect the intent of the PR.** If a PR is moving, renaming, or refactoring files, do not suggest restructuring dependencies, changing `public_deps` vs `deps`, or reorganizing code that was simply carried over from the old location. The author's goal is to preserve existing behavior, not to optimize the code they're moving. Only flag issues that are actual bugs introduced by the move (e.g., broken paths, missing deps that cause build failures), not "while you're here, you should also fix X" improvements.
    - Security-sensitive areas (wallet, crypto, sync, credentials) deserve extra scrutiny — type mismatches, truncation, and correctness issues should use stronger language
    - Do NOT flag: existing code the PR isn't changing, template functions defined in headers, simple inline getters in headers, style preferences not in the documented best practices
    - Comment style: short (1-3 sentences), targeted, acknowledge context. Use "nit:" only for genuinely minor/stylistic issues. Substantive issues (test reliability, correctness, banned APIs) should be direct without "nit:" prefix
@@ -258,21 +260,72 @@ EOF
 
 ## Auto Posting
 
-When `AUTO_MODE=true`, skip all interactive approval and post violations directly:
+When `AUTO_MODE=true`, skip all interactive approval and post violations directly.
+
+**Auto mode does NOT ask any questions** — no `AskUserQuestion` calls, no confirmation prompts. This is critical for headless/cron operation.
+
+### Per-PR Logging (MANDATORY)
+
+After processing each PR, you MUST print a structured log line to stdout. This is the **only** record of what the cron job did — if you skip this, the cron log will be empty and useless.
+
+**If violations were posted**, capture the review URL from the `gh api` response (the `html_url` field) and log:
+```
+AUTO: PR #<number> (<title>) - posted <N> comments - <review_url>
+  - <file>:<line> (<rule name>)
+  - <file>:<line> (<rule name>)
+```
+
+**If no violations found:**
+```
+AUTO: PR #<number> (<title>) - no violations
+```
+
+**If the PR was skipped (error fetching diff, etc.):**
+```
+AUTO: PR #<number> (<title>) - SKIPPED: <reason>
+```
+
+### Capturing the Review URL
+
+When posting violations via `gh api repos/brave/brave-core/pulls/{number}/reviews`, the response JSON contains `html_url` — the direct link to the review on GitHub. You MUST capture this and include it in the log line. Example:
+```bash
+REVIEW_RESPONSE=$(gh api repos/brave/brave-core/pulls/{number}/reviews \
+  --method POST --input - <<'EOF'
+{ ... }
+EOF
+)
+REVIEW_URL=$(echo "$REVIEW_RESPONSE" | python3 -c "import sys,json; print(json.load(sys.stdin)['html_url'])")
+```
+
+### Posting Flow
 
 1. Collect all violations from all category subagents for the PR
 2. If violations exist, post them as a **single inline review** using the same `gh api` call as interactive mode (see "Posting as Inline Code Comments" above)
-3. Log what was posted to stdout (for cron log capture):
-   ```
-   AUTO: Posted N comments on PR #12345: file1.cc:42 (rule name), file2.h:15 (rule name)
-   ```
-4. If the inline review API call fails, fall back to general review comments (same fallback as interactive mode)
-5. If no violations, log:
-   ```
-   AUTO: PR #12345 - no violations found
-   ```
+3. Capture the `html_url` from the API response
+4. Print the per-PR log line (see format above)
+5. If the inline review API call fails, fall back to general review comments (same fallback as interactive mode)
+6. If no violations, print the per-PR log line and move on
 
-**Auto mode does NOT ask any questions** — no `AskUserQuestion` calls, no confirmation prompts. This is critical for headless/cron operation.
+### Final Summary (MANDATORY)
+
+After ALL PRs have been processed, you MUST print a final summary block. This is the last thing you output:
+
+```
+========================================
+AUTO REVIEW SUMMARY
+Date: <current date/time>
+PRs reviewed: <N>
+PRs with violations: <N>
+Total comments posted: <N>
+
+RESULTS:
+  ✅ PR #<number> (<title>) - no violations
+  ❌ PR #<number> (<title>) - <N> comments - <review_url>
+  ⏭️ PR #<number> (<title>) - SKIPPED: <reason>
+========================================
+```
+
+**This summary block is CRITICAL for cron log readability.** Do not skip it. Do not summarize with vague language like "All done" — list every PR explicitly.
 
 ---
 
