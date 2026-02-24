@@ -271,9 +271,22 @@ Use "nit:" prefix for genuinely minor/stylistic issues (missing comments/documen
 
 **The "Review via brave-core-bot" attribution MUST appear exactly once per review** — on the top-level review body, NOT on each inline comment. Individual inline comments should contain only the comment text itself.
 
+### Deduplication Before Posting (applies to BOTH interactive and auto mode)
+
+Before presenting violations to the user (interactive) or posting them (auto), you MUST programmatically deduplicate against existing bot comments. This prevents the bot from re-posting the same comment when a PR is reviewed multiple times.
+
+```bash
+gh api "repos/brave/brave-core/pulls/{number}/comments" --paginate \
+  --jq '[.[] | select(.user.login == "brave-core-bot") | {path, line, body}]'
+```
+
+For each violation, if an existing bot comment exists on the **same file path AND same line number**, drop the violation. Do not re-post it even if the wording differs slightly — a comment on the same file+line means the issue was already raised. Log each: `DEDUP: skipped <file>:<line> — bot already commented`.
+
+This is a **hard programmatic check** — it overrides subagent output. Even if a subagent reports a violation, if the bot already commented on that file+line, it must be dropped.
+
 ### Posting as Inline Code Comments
 
-After presenting all violations for a PR, collect the approved ones and post them as a **single review with inline comments** using the GitHub API. This places comments directly on the relevant code lines instead of as a general review comment.
+After deduplication, collect the remaining approved violations (interactive) or all remaining violations (auto) and post them as a **single review with inline comments** using the GitHub API. This places comments directly on the relevant code lines instead of as a general review comment.
 
 ```bash
 gh api repos/brave/brave-core/pulls/{number}/reviews \
@@ -357,11 +370,18 @@ REVIEW_URL=$(echo "$REVIEW_RESPONSE" | python3 -c "import sys,json; print(json.l
 **Before any posting logic**, update the cache for this PR (see Step 6 in Per-Category Review Workflow). The cache must be updated even if there are no violations or all violations were skipped.
 
 1. Collect all violations from all document subagents for the PR
-2. If violations exist, post them as a **single inline review** using the same `gh api` call as interactive mode (see "Posting as Inline Code Comments" above)
-3. Capture the `html_url` from the API response
-4. Print the per-PR log line (see format above)
-5. If the inline review API call fails, fall back to general review comments (same fallback as interactive mode)
-6. If no violations, print the per-PR log line and move on
+2. **Deduplicate against existing bot comments (MANDATORY)** — before posting, fetch all existing bot comments on the PR and drop any violation that the bot already commented on:
+   ```bash
+   gh api "repos/brave/brave-core/pulls/{number}/comments" --paginate \
+     --jq '[.[] | select(.user.login == "brave-core-bot") | {path, line, body}]'
+   ```
+   For each violation, check if an existing bot comment matches the **same file path AND same line number**. If a match exists, **drop the violation** — do not re-post it regardless of whether the wording differs. This is a hard programmatic check that cannot be overridden by subagent output.
+   Log each dropped duplicate: `DEDUP: skipped <file>:<line> — bot already commented`
+3. If violations remain after dedup, post them as a **single inline review** using the same `gh api` call as interactive mode (see "Posting as Inline Code Comments" above)
+4. Capture the `html_url` from the API response
+5. Print the per-PR log line (see format above)
+6. If the inline review API call fails, fall back to general review comments (same fallback as interactive mode)
+7. If no violations (or all were deduped), print the per-PR log line and move on
 
 ### Final Summary (MANDATORY)
 
