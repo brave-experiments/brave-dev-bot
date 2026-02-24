@@ -8,9 +8,10 @@ argument-hint: <pr-numbers... | --username <github-user>>
 
 Analyze review comments from brave-core PRs to discover learnable patterns. Extracts coding conventions, best practices, common review feedback themes, and architectural insights that can improve bot documentation.
 
-Supports two modes:
+Supports three modes:
 - **PR list mode:** Provide specific PR numbers to analyze
 - **Username mode:** Provide a GitHub username to find and analyze all PRs they reviewed
+- **Self-review mode:** When the username is the bot's own account (`brave-core-bot` or `netzenbot`), analyze pushback against the bot's own review comments to identify best practices that may be wrong or incomplete
 
 ---
 
@@ -60,6 +61,72 @@ gh api 'search/issues?q=repo:brave/brave-core+type:pr+is:merged+reviewed-by:<use
 - Process PRs in batches of 10 to avoid rate limiting. After each batch, check `gh api rate_limit` and pause if needed.
 - Skip PRs where the user left no substantive review comments (only approvals with no body text).
 - When analyzing, **focus on comments from the specified user** rather than all reviewers.
+
+---
+
+## Self-Review Mode (Bot Pushback Analysis)
+
+When the `--username` is `brave-core-bot` or `netzenbot`, the analysis focus is **inverted**: instead of learning from the reviewer's comments, analyze **pushback against the bot's own comments** to identify best practices that may be wrong, too aggressive, or incomplete.
+
+### How It Works
+
+1. **Fetch PRs the bot reviewed** using the same search as username mode
+2. **For each PR**, fetch the bot's review comments and any replies from developers
+3. **Identify pushback** — developer replies that disagree with, explain away, or decline a bot suggestion. Signs of pushback:
+   - Developer explains why the existing code is correct or intentional
+   - Developer declines a suggestion with a valid technical reason
+   - Developer points to prior discussion or upstream precedent
+   - Multiple developers independently push back on the same type of comment across different PRs
+4. **Evaluate whether a best practice needs adjustment** — be conservative:
+   - **Adjust** if the pushback reveals the rule is factually wrong, too strict, or doesn't account for valid exceptions
+   - **Adjust** if multiple PRs show the same pushback pattern (the rule is consistently causing friction)
+   - **Do NOT adjust** for one-off disagreements, subjective preferences, or cases where the developer is simply wrong
+   - **Do NOT make rules overly specific** — if a rule needs a carve-out, phrase it as a general exception (e.g., "this is a preference, not a requirement — do not insist if the developer declines") rather than adding narrow conditions
+5. **If an adjustment is warranted**, create a branch and PR (see "Creating Best Practice PRs" below)
+
+### Creating Best Practice PRs
+
+When a best practice needs adjustment based on pushback analysis:
+
+```bash
+cd ./brave-core-bot
+git fetch origin
+git checkout -b docs/adjust-<brief-description> origin/master
+
+# Make the documentation change
+# ... edit the appropriate best-practices file ...
+
+git add <file>
+git commit -m "Adjust best practice: <brief description>
+
+Based on developer pushback across PRs: #<pr1>, #<pr2>, ..."
+
+git push -u origin docs/adjust-<brief-description>
+gh pr create --repo brave-experiments/brave-core-bot \
+  --title "Adjust best practice: <brief description>" \
+  --body "$(cat <<'EOF'
+## Summary
+- Adjusting a best practice rule based on developer pushback
+
+## What changed
+<describe the specific rule change>
+
+## Evidence
+<list the PRs and pushback comments that motivated this change>
+
+## Rationale
+<explain why the adjustment is warranted — what was wrong or too strict>
+EOF
+)"
+```
+
+### What NOT to Do in Self-Review Mode
+
+- Do NOT re-post or re-raise any of the bot's original comments
+- Do NOT comment on the PRs being analyzed
+- Do NOT make best practices overly specific or narrow — keep rules general
+- Do NOT adjust a rule based on a single disagreement unless the developer is clearly correct
+- Do NOT remove rules entirely unless they are factually wrong — prefer softening (e.g., "WRONG" → "AVOID", "must" → "prefer")
 
 ---
 
@@ -180,14 +247,32 @@ PRs analyzed: <list>
 - Documents updated: <list>
 ```
 
+For self-review mode, use this additional section in the report:
+
+```markdown
+## Pushback Analysis
+
+### Pushback 1: <best practice rule that received pushback>
+- **PRs:** #<number>, #<number>
+- **Bot's comment:** <summary of what the bot said>
+- **Developer's pushback:** <summary of the developer's response>
+- **Assessment:** <"Adjust needed" | "No change needed" — with brief reasoning>
+- **Action taken:** <"Created PR #<number> to adjust rule" | "No action — developer preference, rule is correct">
+```
+
 ### Documentation Updates
 
-For high-confidence, clearly generalizable patterns:
+For high-confidence, clearly generalizable patterns (username mode / PR list mode):
 - Update the appropriate documentation file directly
 - Commit the change with a concise message describing what was added
 - **Do NOT include Co-Authored-By attribution in commits**
 - **Do NOT include meta information like "X/Y PRs processed" in commits**
 - **Do NOT include source attribution lines in documentation** (e.g., no `*Source: username review on PR #1234*` lines). These patterns are crowdsourced and attribution wastes tokens.
+
+For self-review mode adjustments:
+- **Always create a branch and PR** (see "Creating Best Practice PRs" in the Self-Review section above) — do NOT commit directly to master
+- The branch must be based on `origin/master`
+- Keep changes minimal and focused — one PR per rule adjustment
 
 For patterns that need human review before adding:
 - Include them in the report file only
