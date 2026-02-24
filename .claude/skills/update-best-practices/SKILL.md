@@ -32,11 +32,11 @@ These are authoritative Chromium documentation pages relevant to our best practi
 
 | URL | Maps To |
 |-----|---------|
-| https://www.chromium.org/developers/smart-pointer-guidelines/ | `coding-standards.md`, `architecture.md` |
-| https://www.chromium.org/developers/design-documents/cookbook/ | `architecture.md` |
+| https://www.chromium.org/developers/smart-pointer-guidelines/ | `coding-standards-memory-lifetime.md`, `architecture-layering.md` |
+| https://www.chromium.org/developers/design-documents/cookbook/ | `architecture-layering.md`, `architecture-services-api.md` |
 | https://www.chromium.org/chromium-os/developer-library/guides/testing/cpp-writing-tests/ | `testing-async.md`, `testing-isolation.md` |
-| https://chromium.googlesource.com/chromium/src/+/HEAD/styleguide/c++/c++.md | `coding-standards.md` |
-| https://chromium.googlesource.com/chromium/src/+/HEAD/base/containers/README.md | `coding-standards.md` |
+| https://chromium.googlesource.com/chromium/src/+/HEAD/styleguide/c++/c++.md | `coding-standards-style.md`, `coding-standards-patterns.md` |
+| https://chromium.googlesource.com/chromium/src/+/HEAD/base/containers/README.md | `coding-standards-patterns.md` |
 
 The user may also provide any other Chromium documentation URL.
 
@@ -47,8 +47,11 @@ The user may also provide any other Chromium documentation URL.
 Read every file in `docs/best-practices/` to build a complete picture of current rules:
 
 ```
-docs/best-practices/architecture.md
-docs/best-practices/coding-standards.md
+docs/best-practices/architecture-layering.md
+docs/best-practices/architecture-services-api.md
+docs/best-practices/coding-standards-style.md
+docs/best-practices/coding-standards-memory-lifetime.md
+docs/best-practices/coding-standards-patterns.md
 docs/best-practices/testing-async.md
 docs/best-practices/testing-isolation.md
 docs/best-practices/testing-javascript.md
@@ -103,7 +106,7 @@ The rule is about Chromium-internal processes that don't apply to Brave's workfl
 Scan ALL best practices files for internal contradictions. Common conflict patterns:
 
 - One file says "always do X", another says "never do X"
-- A rule in `architecture.md` contradicts a rule in `coding-standards.md`
+- A rule in `architecture-layering.md` contradicts a rule in `coding-standards-memory-lifetime.md`
 - A "banned" item in one file is described as "use carefully" in another
 - Testing guidance that contradicts coding standards
 
@@ -130,8 +133,11 @@ Scan ALL best practices files for internal contradictions. Common conflict patte
 
 ### For New Rules (Category D)
 - Add to the most appropriate best practices file based on topic:
-  - Architecture/layering/services/factories -> `architecture.md`
-  - C++ style/naming/memory/APIs -> `coding-standards.md`
+  - Architecture/layering/iOS/circular deps -> `architecture-layering.md`
+  - Services/factories/KeyedService/Mojo/API design -> `architecture-services-api.md`
+  - C++ style/naming/organization/comments -> `coding-standards-style.md`
+  - C++ memory/ownership/lifetime/threading -> `coding-standards-memory-lifetime.md`
+  - C++ patterns/utilities/base APIs/callbacks -> `coding-standards-patterns.md`
   - Async testing/synchronization -> `testing-async.md`
   - Test isolation/mocking/patterns -> `testing-isolation.md`
   - JavaScript in tests -> `testing-javascript.md`

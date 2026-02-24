@@ -179,8 +179,11 @@ Classify each discovered pattern into one of these categories:
 | Security | `SECURITY.md` |
 | Front-end (TS/React) | `docs/best-practices/frontend.md` |
 | Chromium conventions / chromium_src | `docs/best-practices/chromium-src-overrides.md` |
-| Code style/naming | `docs/best-practices/coding-standards.md` |
-| Architecture / dependencies | `docs/best-practices/architecture.md` |
+| Code style/naming/organization | `docs/best-practices/coding-standards-style.md` |
+| Memory/ownership/lifetime | `docs/best-practices/coding-standards-memory-lifetime.md` |
+| C++ patterns/utilities/APIs | `docs/best-practices/coding-standards-patterns.md` |
+| Architecture / layering / dependencies | `docs/best-practices/architecture-layering.md` |
+| Services / factories / API design | `docs/best-practices/architecture-services-api.md` |
 | Build system (BUILD.gn, DEPS) | `docs/best-practices/build-system.md` |
 | Documentation | `docs/best-practices/documentation.md` |
 

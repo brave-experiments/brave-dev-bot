@@ -4,9 +4,9 @@
 
 **📖 FIRST STEP**: Read `./brave-core-bot/BEST-PRACTICES.md` which indexes all best practices docs. Then read the specific docs relevant to your task:
 - **Test fixes**: Read the async testing, JS evaluation, navigation, and test isolation docs
-- **C++ code changes**: Read `docs/best-practices/coding-standards.md` (naming, ownership, Chromium APIs, banned patterns)
+- **C++ code changes**: Read `docs/best-practices/coding-standards-style.md`, `coding-standards-memory-lifetime.md`, and `coding-standards-patterns.md` (naming, ownership, Chromium APIs, banned patterns)
 - **Front-end (TypeScript/React) changes**: Read `docs/best-practices/frontend.md` (component props, XSS prevention)
-- **Architecture/service changes**: Read `docs/best-practices/architecture.md` (layering, factories, dependency injection)
+- **Architecture/service changes**: Read `docs/best-practices/architecture-layering.md` and `architecture-services-api.md` (layering, factories, dependency injection)
 - **Build file changes**: Read `docs/best-practices/build-system.md` (GN organization, deps, buildflags)
 - **chromium_src changes**: Read `docs/best-practices/chromium-src-overrides.md` (override patterns, patch style)
 
@@ -231,8 +231,8 @@ Only read the docs relevant to your story — don't load all of them every time.
    1. Read the diff of all changed files (`git diff` or `git diff HEAD` depending on staging)
    2. Read the relevant best practices docs based on what changed:
       - **Test changes**: `docs/best-practices/testing-async.md`, `testing-isolation.md`, `testing-javascript.md`
-      - **C++ changes**: `docs/best-practices/coding-standards.md`
-      - **Architecture changes**: `docs/best-practices/architecture.md`
+      - **C++ changes**: `docs/best-practices/coding-standards-style.md`, `coding-standards-memory-lifetime.md`, `coding-standards-patterns.md`
+      - **Architecture changes**: `docs/best-practices/architecture-layering.md`, `architecture-services-api.md`
       - **Build file changes**: `docs/best-practices/build-system.md`
       - **chromium_src changes**: `docs/best-practices/chromium-src-overrides.md`
    3. For every new symbol (function, struct, class, constant, variable) introduced in the diff, check it against each relevant rule in the best practices docs — don't skim, check each symbol individually

@@ -4,8 +4,13 @@ This document is an index of best practices for the Brave Browser codebase, disc
 
 ## Code & Architecture
 
-- **[Architecture and Code Organization](./docs/best-practices/architecture.md)** - Layering violations, dependency injection, factory patterns, pref management
-- **[C++ Coding Standards](./docs/best-practices/coding-standards.md)** - IWYU, naming conventions, ownership, CHECK vs DCHECK, style
+- **Architecture and Code Organization:**
+  - [Layering and Dependencies](./docs/best-practices/architecture-layering.md) - Chromium layer hierarchy, layering violations, iOS compatibility, circular deps
+  - [Services, Factories, and API Design](./docs/best-practices/architecture-services-api.md) - Factory patterns, KeyedService, dependency injection, pref management, Mojo
+- **C++ Coding Standards:**
+  - [Style, Naming, and Organization](./docs/best-practices/coding-standards-style.md) - IWYU, naming conventions, headers, comments, documentation
+  - [Memory, Ownership, and Lifetime](./docs/best-practices/coding-standards-memory-lifetime.md) - Ownership, CHECK vs DCHECK, WeakPtr, raw_ptr, threading
+  - [Patterns, Utilities, and API Usage](./docs/best-practices/coding-standards-patterns.md) - Base utilities, types, callbacks, Mojo patterns, Chromium APIs
 - **[Documentation](./docs/best-practices/documentation.md)** - Inline comments, method docs, READMEs, keeping docs fresh, avoiding duplication
 - **[Front-End (TypeScript/React)](./docs/best-practices/frontend.md)** - Component props, spread args, XSS prevention
 - **[chromium_src Overrides](./docs/best-practices/chromium-src-overrides.md)** - Overrides vs patches, minimizing duplication, ChromiumImpl fallback

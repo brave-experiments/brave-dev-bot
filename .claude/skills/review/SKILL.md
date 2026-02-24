@@ -323,9 +323,9 @@ Without this explanation, the analysis is incomplete even if the general mechani
 **Read and apply `./brave-core-bot/BEST-PRACTICES.md` criteria.**
 
 For test fixes, focus on the async testing and test isolation docs. For code changes, read the relevant best practices docs based on what the PR modifies:
-- **C++ code changes**: Read `docs/best-practices/coding-standards.md` (naming, ownership, Chromium APIs, banned patterns)
+- **C++ code changes**: Read `docs/best-practices/coding-standards-style.md`, `coding-standards-memory-lifetime.md`, and `coding-standards-patterns.md` (naming, ownership, Chromium APIs, banned patterns)
 - **Front-end (TypeScript/React) changes**: Read `docs/best-practices/frontend.md` (component props, XSS prevention)
-- **Architecture/service changes**: Read `docs/best-practices/architecture.md` (layering, factories, dependency injection)
+- **Architecture/service changes**: Read `docs/best-practices/architecture-layering.md` and `architecture-services-api.md` (layering, factories, dependency injection)
 - **Build file changes**: Read `docs/best-practices/build-system.md` (GN organization, deps, buildflags)
 - **chromium_src changes**: Read `docs/best-practices/chromium-src-overrides.md` (override patterns, patch style)
 

@@ -45,8 +45,8 @@ Launch one **Task subagent** (subagent_type: "general-purpose") per applicable c
 
 | Category | Doc(s) to read | Condition |
 |----------|---------------|-----------|
-| **coding-standards** | `coding-standards.md` | has_cpp_files |
-| **architecture** | `architecture.md`, `documentation.md` | Always |
+| **coding-standards** | `coding-standards-style.md`, `coding-standards-memory-lifetime.md`, `coding-standards-patterns.md` | has_cpp_files |
+| **architecture** | `architecture-layering.md`, `architecture-services-api.md`, `documentation.md` | Always |
 | **build-system** | `build-system.md` | has_build_files |
 | **testing** | `testing-async.md`, `testing-javascript.md`, `testing-navigation.md`, `testing-isolation.md` | has_test_files |
 | **chromium-src** | `chromium-src-overrides.md` | has_chromium_src |

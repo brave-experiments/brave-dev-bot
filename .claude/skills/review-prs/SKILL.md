@@ -128,8 +128,8 @@ Launch one **Task subagent** (subagent_type: "general-purpose") per applicable c
 
 | Category | Doc(s) to read | Condition |
 |----------|---------------|-----------|
-| **coding-standards** | `coding-standards.md` | has_cpp_files |
-| **architecture** | `architecture.md`, `documentation.md` | Always |
+| **coding-standards** | `coding-standards-style.md`, `coding-standards-memory-lifetime.md`, `coding-standards-patterns.md` | has_cpp_files |
+| **architecture** | `architecture-layering.md`, `architecture-services-api.md`, `documentation.md` | Always |
 | **build-system** | `build-system.md` | has_build_files |
 | **testing** | `testing-async.md`, `testing-javascript.md`, `testing-navigation.md`, `testing-isolation.md` | has_test_files |
 | **chromium-src** | `chromium-src-overrides.md` | has_chromium_src |
@@ -248,7 +248,7 @@ Process PRs **one at a time** (sequentially). After ALL category subagents retur
 - **Targeted** - reference specific files and code
 - **Acknowledge context** - if upstream does the same thing, say so
 - **No lecturing** - state the issue briefly
-- **Link to the rule** - when the violation is an explicit best practice rule, append a link to the specific rule at the end of the comment. Example: `[best practice](https://github.com/brave-experiments/brave-core-bot/tree/master/docs/best-practices/coding-standards.md#dont-use-rapidjson)`. Only include the link for explicit documented rule violations, not for general bug/correctness observations.
+- **Link to the rule** - when the violation is an explicit best practice rule, append a link to the specific rule at the end of the comment. Example: `[best practice](https://github.com/brave-experiments/brave-core-bot/tree/master/docs/best-practices/coding-standards-style.md#dont-use-rapidjson)`. Only include the link for explicit documented rule violations, not for general bug/correctness observations.
 - **Match tone to severity:**
   - **Genuine nits** (style, naming, minor cleanup, missing comments/documentation, alphabetical ordering): use "nit:" prefix, "worth considering", "not blocking either way"
   - **Substantive issues** (test reliability, correctness, banned APIs, potential bugs): be direct and clear about why it needs to change. Do NOT use "nit:" for these — a `RunUntilIdle()` violation or a banned API usage is not a nit, it's a real problem.
@@ -283,7 +283,7 @@ gh api repos/brave/brave-core/pulls/{number}/reviews \
       "path": "path/to/file.cc",
       "line": 42,
       "side": "RIGHT",
-      "body": "comment text. [best practice](https://github.com/brave-experiments/brave-core-bot/tree/master/docs/best-practices/coding-standards.md#rule-anchor)"
+      "body": "comment text. [best practice](https://github.com/brave-experiments/brave-core-bot/tree/master/docs/best-practices/coding-standards-style.md#rule-anchor)"
     },
     {
       "path": "path/to/other_file.cc",
