@@ -1,163 +1,4 @@
-# C++ Coding Standards
-
-## ✅ Always Include What You Use (IWYU)
-
-**Always include the headers for types you directly use.** Don't rely on transitive includes from other headers - they can change at any time and break your code.
-
-```cpp
-// ❌ WRONG - relying on transitive includes
-#include "base/memory/ref_counted.h"
-// Uses std::string but doesn't include <string>
-
-// ✅ CORRECT - include what you use
-#include <string>
-#include "base/memory/ref_counted.h"
-```
-
-Also remove includes you don't actually use. Double-check all includes in new files.
-
-**For type aliases:** include the header that declares the type alias, not the headers for the underlying types. Same principle as class inheritance — if class B inherits from A, include B's header, not A's.
-
----
-
-## Naming Conventions
-
-### ✅ Use Positive Form for Booleans and Methods
-
-**Always use the positive form ("Enabled" not "Disabled") for readability and consistency.**
-
-```cpp
-// ❌ WRONG - negative form is confusing
-bool IsTorDisabled();
-pref: kTorDisabled
-
-// ✅ CORRECT - positive form
-bool IsTorEnabled();
-pref: kTorEnabled
-```
-
-### ✅ Consistent Naming Across Layers
-
-**Use the same name for a concept everywhere - C++, JS, prefs, and UI.** Don't arbitrarily use different names in different places for the same thing.
-
-```cpp
-// ❌ WRONG - different names for same concept
-C++: IsTorDisabledManaged()
-JS:  getTorManaged()
-
-// ✅ CORRECT - consistent naming
-C++: IsTorManaged()
-JS:  isTorManaged()
-```
-
-### ✅ Use Conventional Method Prefixes
-
-- `Should*` methods for queries (not `Get*` for bool queries)
-- `Record*` for histogram/P3A recording
-- `Load*`/`Save*` pairs for persistence
-
-```cpp
-// ❌ WRONG
-bool GetShouldShowBrandedWallpaper();
-void SendSavingsDaily();
-
-// ✅ CORRECT
-bool ShouldShowBrandedWallpaper();
-void RecordSavingsDaily();
-void LoadSavingsDaily();
-void SaveSavingsDaily();
-```
-
-### ✅ Grammatical Correctness
-
-```cpp
-// ❌ WRONG
-bool IsBraveCommandIds(int id);  // "Ids" is not grammatically correct
-
-// ✅ CORRECT
-bool IsBraveCommandId(int id);
-```
-
----
-
-## Ownership and Memory Management
-
-### ✅ Comment Non-Owned Raw Pointers
-
-**Raw pointers to non-owned objects should be commented with `// not owned`.** This is a Chromium convention.
-
-```cpp
-// ✅ CORRECT
-ThirdPartyExtractor* third_party_extractor_ = nullptr;  // not owned
-```
-
-### ✅ Prefer unique_ptr Over new/delete
-
-**Avoid manual new/delete. Use unique_ptr, stack variables, or member initializer lists.**
-
-```cpp
-// ❌ WRONG - manual new/delete
-void Init() {
-  predictor_ = new BandwidthSavingsPredictor(extractor);
-  // ...
-  delete predictor_;
-}
-
-// ✅ CORRECT - use unique_ptr or member initializer list
-: predictor_(std::make_unique<BandwidthSavingsPredictor>(extractor))
-```
-
-### ❌ Don't Take Ownership of Unowned Resources
-
-If a class doesn't own a resource, don't create ownership wrappers for it. This is a common source of crashes (see also architecture.md on shared_ptr misuse).
-
----
-
-## ✅ Use CHECK for Impossible Conditions
-
-**Use `CHECK` (not `DCHECK`) for conditions that should never happen in any build.**
-
-```cpp
-// ❌ WRONG - DCHECK for something that should never happen
-DCHECK(browser_context);
-
-// ✅ CORRECT - CHECK for impossible conditions
-CHECK(browser_context);  // should never be null
-```
-
-Also: don't add unnecessary DCHECKs. For example, `DCHECK(g_browser_process)` is unnecessary because the browser wouldn't even be running without it.
-
----
-
-## ✅ Use Anonymous Namespaces for Internal Code
-
-**If a function or class is strictly internal to a .cc file, put it in an anonymous namespace.**
-
-```cpp
-// ❌ WRONG - internal helper visible outside file
-static void InternalHelper() { ... }
-
-// ✅ CORRECT - anonymous namespace
-namespace {
-void InternalHelper() { ... }
-}  // namespace
-```
-
-**No `static` on `constexpr` inside anonymous namespaces** — the namespace already provides internal linkage, so `static` is redundant.
-
-```cpp
-// ❌ WRONG - redundant static
-namespace {
-static constexpr int kMaxRetries = 3;
-}
-
-// ✅ CORRECT
-namespace {
-constexpr int kMaxRetries = 3;
-}
-```
-
----
+# C++ Patterns, Utilities, and API Usage
 
 ## ❌ Don't Use rapidjson
 
@@ -196,30 +37,6 @@ void OnSomethingHappened() override {}
 
 ---
 
-## Lint and Style
-
-- **Opening brace** goes at the end of the previous line (K&R style)
-- **Continuation lines** should be indented 4 spaces
-- **No `{}` when not required** in C++ (e.g., single-line if/for bodies)
-
----
-
-## ✅ C++ Variable Naming - Underscores, Not camelCase
-
-**C++ variables use underscores (snake_case), not camelCase.** camelCase is only for class names and method names.
-
-```cpp
-// ❌ WRONG
-bool isTorDisabled = false;
-std::string userName;
-
-// ✅ CORRECT
-bool is_tor_disabled = false;
-std::string user_name;
-```
-
----
-
 ## ✅ Use Pref Dict/List Values Directly
 
 **Don't serialize to JSON strings when storing structured data in prefs.** Use `SetDict`/`SetList` directly instead of `JSONWriter::Write` + `SetString`.
@@ -234,12 +51,6 @@ prefs->SetString(prefs::kMyPref, result);
 prefs->SetDict(prefs::kMyPref, std::move(dict_value));
 prefs->SetList(prefs::kMyPref, std::move(list_value));
 ```
-
----
-
-## ✅ Platform-Specific Code Splitting
-
-**When a method's implementation is completely different on a platform, split it into a separate file** like `my_class_android.cc` rather than filling the main file with `#if defined(OS_ANDROID)` blocks.
 
 ---
 
@@ -258,31 +69,6 @@ if (IsDoNotDisturbEnabled()) {
   // Don't show notifications
 }
 ```
-
----
-
-## ✅ Copyright Rules
-
-**Never copy a Chromium file and use Brave's copyright.** If you copy or derive from Chromium code, you must include their copyright notice. The original year should remain unchanged - don't bump existing copyright years.
-
----
-
-## ✅ Naming: Only Use `Brave*` Prefix When Overriding Chromium
-
-**Only add the `Brave*` prefix to class names when overriding or subclassing Chromium classes.** For purely Brave-originated code, use the feature name directly.
-
-```cpp
-// ❌ WRONG - Brave prefix on a new Brave-only class
-class BraveWebcompatReporterService { ... };
-
-// ✅ CORRECT - no prefix needed for Brave-only code
-class WebcompatReporterService { ... };
-
-// ✅ CORRECT - Brave prefix when overriding Chromium
-class BraveOmniboxController : public OmniboxController { ... };
-```
-
-Also: **filename should match the class name.** `WebcompatReporterService` -> `webcompat_reporter_service.h`.
 
 ---
 
@@ -329,32 +115,6 @@ std::string api_url = std::getenv("BRAVE_API_URL");
 ## ✅ Use the Right Target Type: source_set vs static_library
 
 **Use `source_set` only for internal component dependencies. Public targets for a component should use `static_library` or `component`.** Only internal deps that are not meant to be used outside the component should be `source_set` (with restricted visibility).
-
----
-
-## ❌ Don't Define Methods in Headers
-
-**Move method definitions to .cc files.** Headers should only contain declarations. Keep headers minimal - only include what's strictly required for the declarations.
-
-```cpp
-// ❌ WRONG - method body in header
-class RewardsProtocolHandler {
-  static bool HandleURL(const GURL& url) {
-    return url.scheme() == "rewards";
-  }
-};
-
-// ✅ CORRECT - declaration in header, definition in .cc
-// rewards_protocol_handler.h
-bool HandleRewardsProtocol(const GURL& url);
-
-// rewards_protocol_handler.cc
-bool HandleRewardsProtocol(const GURL& url) {
-  return url.scheme() == "rewards";
-}
-```
-
-Also: `static` has no meaning for free functions in C++ (it's a C holdover). Use anonymous namespaces instead.
 
 ---
 
@@ -417,21 +177,6 @@ std::vector<MonthlyStatement> GetMonthlyStatements();
 
 ---
 
-## ✅ Naming: `Maybe*` for Conditional Actions
-
-**Use `Maybe*` prefix for functions that conditionally perform an action.**
-
-```cpp
-// ❌ WRONG
-void ShowFirstLaunchNotification();  // always sounds like it shows
-
-// ✅ CORRECT
-void MaybeShowFirstLaunchNotification();  // clear that it may not show
-void MaybeHideReferrer();
-```
-
----
-
 ## ✅ Use Observer Pattern for UI Updates
 
 **Don't make service-layer queries to update UI directly.** Instead, trigger observer notifications and let the UI respond.
@@ -460,60 +205,6 @@ void RewardsService::SavePendingContribution(...) {
 
 ---
 
-## ✅ Struct Members: No Trailing Underscores
-
-**Plain struct members should not have trailing underscores.** The trailing underscore convention is for class member variables, not struct fields.
-
-```cpp
-// ❌ WRONG
-struct ContentSite {
-  std::string name_;
-  int percentage_;
-};
-
-// ✅ CORRECT
-struct ContentSite {
-  std::string name;
-  int percentage;
-};
-```
-
----
-
-## ✅ Use `extern const char[]` Over `#define` for Strings
-
-**Use `extern const char[]` instead of `#define` for string constants to keep them namespaced.**
-
-```cpp
-// ❌ WRONG - pollutes preprocessor namespace
-#define MY_URL "https://example.com"
-
-// ✅ CORRECT - properly namespaced
-extern const char kMyUrl[];
-// In .cc:
-const char kMyUrl[] = "https://example.com";
-```
-
-Exception: use `#define` when you need to pass the value in from GN.
-
----
-
-## ✅ Break Up Bloated Files
-
-**Don't keep dumping code into already-large files.** Encapsulate related functionality into smaller, focused helper files and targets. This improves readability, reduces rebase conflicts, and makes dependency tracking easier.
-
-```cpp
-// ❌ WRONG - adding more P3A code to 5000-line RewardsServiceImpl
-void RewardsServiceImpl::RecordP3AMetric1() { ... }
-void RewardsServiceImpl::RecordP3AMetric2() { ... }
-
-// ✅ CORRECT - separate helper file
-// brave/browser/p3a/brave_p3a_utils.h
-void RecordRewardsP3A(RewardsService* service);
-```
-
----
-
 ## ✅ Use `JSONValueConverter` for JSON/Type Conversion
 
 **When parsing JSON into C++ types, prefer `base::JSONValueConverter` over manual key-by-key parsing.** Manual parsing is verbose, error-prone, and results in duplicated boilerplate.
@@ -532,58 +223,6 @@ static void RegisterJSONConverter(
   converter->RegisterIntField("age", &MyType::age);
 }
 ```
-
----
-
-## ✅ Use `SEQUENCE_CHECKER` Consistently - All Methods or None
-
-**If a class is single-threaded, either apply `DCHECK_CALLED_ON_VALID_SEQUENCE` to all methods or remove the sequence checker entirely.** Partial checking is misleading and makes correct code look unsafe.
-
----
-
-## ✅ Invalidate WeakPtrs During Teardown
-
-**Call `weak_factory_.InvalidateWeakPtrs()` at the start of shutdown/cleanup.** Without this, pending callbacks can fire on partially-destroyed objects.
-
-```cpp
-// ❌ WRONG - teardown without invalidating
-void MyClass::Shutdown() {
-  CleanupResources();
-}
-
-// ✅ CORRECT - invalidate first
-void MyClass::Shutdown() {
-  weak_factory_.InvalidateWeakPtrs();
-  CleanupResources();
-}
-```
-
----
-
-## ✅ Always Check WeakPtr Validity Before Use
-
-**Always check a `base::WeakPtr` is valid before dereferencing, especially after async operations.** Add thread checkers to methods using WeakPtrs.
-
-```cpp
-// ❌ WRONG
-void OnCallback() {
-  request_->Complete(result);  // request_ could be invalid!
-}
-
-// ✅ CORRECT
-void OnCallback() {
-  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
-  if (!request_)
-    return;
-  request_->Complete(result);
-}
-```
-
----
-
-## ✅ Clean Up Resources in `KeyedService::Shutdown`
-
-**For `KeyedService` implementations, clean up owned resources in `Shutdown()`, not just the destructor.** The service graph has dependencies requiring orderly teardown.
 
 ---
 
@@ -635,12 +274,6 @@ void SetWalletType(WalletType type);
 
 ---
 
-## ❌ `shared_ptr` Is Banned in Chromium Code
-
-**Do not use `std::shared_ptr` - it is on the Chromium banned features list.** Use `base::RefCounted` / `scoped_refptr` when shared ownership is truly needed, or restructure to use unique ownership.
-
----
-
 ## ✅ Short-Circuit on Non-HTTP(S) URLs
 
 **In URL processing code (shields, debouncing, content settings), add an early return for non-HTTP/HTTPS URLs.** This prevents wasting time on irrelevant schemes and avoids edge cases.
@@ -653,12 +286,6 @@ bool ShouldDebounce(const GURL& url) {
   // ...
 }
 ```
-
----
-
-## ✅ Add Thread Checks to `base::Bind` Callback Targets
-
-**Methods used as targets of `base::BindOnce` / `base::BindRepeating` should include `DCHECK_CALLED_ON_VALID_SEQUENCE` to ensure correct thread.**
 
 ---
 
@@ -754,47 +381,6 @@ TEST(MyExtractorTest, ExtractsCorrectly) { ... }
 
 ---
 
-## ✅ Use Forward Declarations in Headers, Include in `.cc`
-
-**Headers should use forward declarations instead of `#include` for types only used as pointers or references.** Move the full `#include` to the `.cc` file.
-
-```cpp
-// ❌ WRONG - full include in header for pointer-only usage
-// my_class.h
-#include "components/foo/bar.h"
-
-// ✅ CORRECT - forward declare in header, include in .cc
-// my_class.h
-namespace foo { class Bar; }
-// my_class.cc
-#include "components/foo/bar.h"
-```
-
----
-
-## ✅ `friend` Declarations Go Right After `private:`
-
-**In class declarations, `friend` statements should be placed immediately after the `private:` access specifier,** before any member variables or methods.
-
-```cpp
-// ❌ WRONG
-class MyClass {
- private:
-  int value_ = 0;
-  friend class MyClassTest;  // buried among members
-};
-
-// ✅ CORRECT
-class MyClass {
- private:
-  friend class MyClassTest;
-
-  int value_ = 0;
-};
-```
-
----
-
 ## ✅ Return `std::optional` Instead of `bool` + Out Parameter
 
 **When a function needs to return a value that may or may not exist, use `std::optional<T>` instead of returning `bool` with an out parameter.**
@@ -864,27 +450,6 @@ void ProcessItem(int id, bool enabled);
 
 ---
 
-## ❌ Don't Add `DISALLOW_COPY_AND_ASSIGN` in New Code
-
-**The `DISALLOW_COPY_AND_ASSIGN` macro is deprecated.** Explicitly delete the copy constructor and copy assignment operator instead.
-
-```cpp
-// ❌ WRONG
-class MyClass {
- private:
-  DISALLOW_COPY_AND_ASSIGN(MyClass);
-};
-
-// ✅ CORRECT
-class MyClass {
- public:
-  MyClass(const MyClass&) = delete;
-  MyClass& operator=(const MyClass&) = delete;
-};
-```
-
----
-
 ## ✅ Validate and Sanitize Data Before Injecting as JavaScript
 
 **When constructing JavaScript from C++ data for injection, use JSON serialization (`base::JSONWriter`) for safe encoding.** String concatenation can lead to injection vulnerabilities.
@@ -947,36 +512,6 @@ Profile* profile = static_cast<Profile*>(browser_context);
 
 // ✅ CORRECT
 Profile* profile = Profile::FromBrowserContext(browser_context);
-```
-
----
-
-## ❌ Don't Log Sensitive Information
-
-**Never log sensitive data such as sync seeds, private keys, tokens, or credentials.** Even VLOG-level logging can expose data in debug builds.
-
-```cpp
-// ❌ WRONG
-VLOG(1) << "Sync seed: " << sync_seed;
-
-// ✅ CORRECT
-VLOG(1) << "Sync seed set successfully";
-```
-
----
-
-## ✅ Prefer `base::WeakPtrFactory` Over `SupportsWeakPtr`
-
-**Use `base::WeakPtrFactory<T>` as a member rather than inheriting from `base::SupportsWeakPtr<T>`.** WeakPtrFactory performs more safety checks and is the recommended pattern.
-
-```cpp
-// ❌ WRONG
-class MyClass : public base::SupportsWeakPtr<MyClass> {};
-
-// ✅ CORRECT
-class MyClass {
-  base::WeakPtrFactory<MyClass> weak_factory_{this};  // must be last member
-};
 ```
 
 ---
@@ -1053,21 +588,6 @@ struct TopicArticle {
   int id = 0;
   double score = 0.0;
 };
-```
-
----
-
-## ✅ Declare Move Operations as `noexcept`
-
-**When defining custom move constructors/assignment operators for structs used in `std::vector`, declare them `noexcept`.** Without `noexcept`, `std::vector` falls back to copying during reallocations.
-
-```cpp
-// ❌ WRONG
-Topic(Topic&&) = default;
-
-// ✅ CORRECT
-Topic(Topic&&) noexcept = default;
-Topic& operator=(Topic&&) noexcept = default;
 ```
 
 ---
@@ -1182,23 +702,6 @@ std::erase_if(items, [](const auto& item) { return item.IsExpired(); });
 
 ---
 
-## ❌ Never Use `base::Unretained` with Thread Pool
-
-**Never use `base::Unretained` when posting work to thread pools.** Instead, run OS-specific or blocking functions on the thread pool and handle results on the main thread via `PostTaskAndReplyWithResult` with a WeakPtr. Using `Unretained` across threads leads to use-after-free.
-
-```cpp
-// ❌ WRONG - Unretained across threads causes UaF
-base::ThreadPool::PostTask(
-    FROM_HERE, base::BindOnce(&MyClass::DoWork, base::Unretained(this)));
-
-// ✅ CORRECT - static function on pool, weak reply on main thread
-base::ThreadPool::PostTaskAndReplyWithResult(
-    FROM_HERE, base::BindOnce(&DoBlockingWork),
-    base::BindOnce(&MyClass::OnWorkDone, weak_factory_.GetWeakPtr()));
-```
-
----
-
 ## ❌ Don't Use Synchronous OSCrypt in New Code
 
 **New code must use the async OSCrypt interface, not the legacy synchronous one.** The sync interface is deprecated. See `components/os_crypt/sync/README.md`.
@@ -1242,120 +745,6 @@ std::vector<content::WebContents*> tabs_to_close_;
 // ✅ CORRECT - integer IDs, safe from pointer reuse
 std::vector<tabs::TabHandle> tabs_to_close_;
 // Use TabInterface::GetFromWebContents to map WC to Handle
-```
-
----
-
-## ✅ `NOTREACHED`/`CHECK(false)` Only for Security-Critical Invariants
-
-**`NOTREACHED`/`CHECK(false)` should only crash the browser for security-critical invariants.** For non-security cases (like invalid enum values from data processing), prefer returning `std::optional`/`std::nullopt` or a default value.
-
-```cpp
-// ❌ WRONG - crashes browser for non-security enum mismatch
-mojom::AdType ToMojomAdType(const std::string& type) {
-  // ...
-  NOTREACHED();  // This isn't a security issue!
-}
-
-// ✅ CORRECT - return optional for non-security case
-std::optional<mojom::AdType> ToMojomAdType(const std::string& type) {
-  // ...
-  return std::nullopt;  // Caller handles gracefully
-}
-```
-
----
-
-## ✅ Feature Flag Comments Go in `.cc` Files
-
-**Comments explaining what a `base::Feature` does should be placed in the `.cc` file where the feature is defined, not in the `.h` file.**
-
-```cpp
-// ❌ WRONG - feature comment in .h
-// my_features.h
-// Enables the new tab workaround for flash prevention.
-BASE_DECLARE_FEATURE(kBraveWorkaroundNewWindowFlash);
-
-// ✅ CORRECT - feature comment in .cc
-// my_features.cc
-// Enables the new tab workaround for flash prevention.
-BASE_FEATURE(kBraveWorkaroundNewWindowFlash, ...);
-```
-
----
-
-## ✅ Unsubscribe Observers in `::Shutdown()` Even with `ScopedObservation`
-
-**`ScopedObservation` can still lead to use-after-free.** Always explicitly unsubscribe observers and pref registrars in `KeyedService::Shutdown()`. Event-triggered callbacks (like pref observers) can fire after your service's `Shutdown()` if another service triggers them during its own shutdown sequence.
-
-```cpp
-// ❌ WRONG - relying solely on ScopedObservation destructor
-class MyService : public KeyedService {
-  base::ScopedObservation<PrefService, PrefObserver> observation_{this};
-};
-
-// ✅ CORRECT - explicit unsubscribe in Shutdown
-void MyService::Shutdown() {
-  pref_change_registrar_.RemoveAll();
-  observation_.Reset();
-}
-```
-
----
-
-## ✅ Use `base::Unretained(this)` for Self-Owned Timer Callbacks
-
-**When a class owns a `base::RepeatingTimer` or `base::OneShotTimer`, use `base::Unretained(this)`.** The timer is destroyed with the class, so it can only fire while `this` is valid. Using `WeakPtr` is unnecessary overhead.
-
-```cpp
-// ❌ WRONG - unnecessary overhead
-timer_.Start(FROM_HERE, delay,
-    base::BindRepeating(&MyClass::OnTimer, weak_factory_.GetWeakPtr()));
-
-// ✅ CORRECT - timer is owned, so this is always valid when it fires
-timer_.Start(FROM_HERE, delay,
-    base::BindRepeating(&MyClass::OnTimer, base::Unretained(this)));
-```
-
-**Key distinction:** This is the opposite of the "never use Unretained with thread pool" rule. The difference is ownership: you own the timer, so it cannot outlive you.
-
----
-
-## ✅ WeakPtr - Bind to Member Function, Not Lambda Capture
-
-**When using WeakPtr with async callbacks, bind directly to a member function.** Don't capture a WeakPtr in a lambda — the weak_ptr could be invalidated before the lambda runs, and there's no automatic cancellation.
-
-```cpp
-// ❌ WRONG - weak_ptr captured in lambda, no automatic cancellation
-auto weak_this = weak_ptr_factory_.GetWeakPtr();
-rpc_->GetNetworkName(base::BindOnce(
-    [](base::WeakPtr<MyService> self, Callback cb, const std::string& name) {
-      if (!self) return;
-      std::move(cb).Run(name);
-    }, weak_this, std::move(callback)));
-
-// ✅ CORRECT - weak_ptr bound to member function, auto-cancelled if invalid
-rpc_->GetNetworkName(base::BindOnce(
-    &MyService::OnGetNetworkName,
-    weak_ptr_factory_.GetWeakPtr(),
-    std::move(callback)));
-```
-
----
-
-## ✅ Use References for Non-Nullable Parameters; `raw_ref` for Stored References
-
-**When a function parameter cannot be null, use a reference (`T&`) instead of a pointer (`T*`).** For stored member references that cannot be null, use `raw_ref<T>`.
-
-```cpp
-// ❌ WRONG - pointer suggests nullability
-NetworkClient(PrefService* pref_service);
-
-// ✅ CORRECT - reference communicates non-null requirement
-NetworkClient(PrefService& pref_service);
-
-// For stored references:
-raw_ref<PrefService> pref_service_;  // not raw_ptr
 ```
 
 ---
@@ -1465,12 +854,6 @@ elapsed_timer_.emplace();
 
 ---
 
-## ✅ Function Ordering in `.cc` Should Match `.h`
-
-**Function definitions in `.cc` files should appear in the same order as their declarations in the corresponding `.h` file.**
-
----
-
 ## ✅ Prefer Free Functions Over Complex Inline Lambdas
 
 **When a lambda is complex enough to make surrounding code harder to parse, extract it into a named free function in the anonymous namespace.**
@@ -1514,40 +897,6 @@ void OnTabContextMenuAction(int action) {
 
 ---
 
-## ❌ Don't Use `auto` Where Style Guide Wants Explicit Types
-
-**Don't use `auto` merely to avoid writing a type name.** Spell out types like `base::TimeDelta`, `base::Time`, etc. Per Google style guide: "Do not use [auto] merely to avoid the inconvenience of writing an explicit type."
-
-```cpp
-// ❌ WRONG - auto hides the type
-auto elapsed = timer.Elapsed();
-
-// ✅ CORRECT - explicit type
-base::TimeDelta elapsed = timer.Elapsed();
-```
-
----
-
-## ✅ Member Initialization - Don't Add Default When Constructor Always Sets
-
-Per Chromium C++ dos and donts: "Initialize class members in their declarations, **except where a member's value is explicitly set by every constructor**."
-
-```cpp
-// ❌ WRONG - misleading, constructor always sets this
-class TreeTabNode {
-  raw_ptr<TabInterface> current_tab_ = nullptr;  // never actually nullptr
-  explicit TreeTabNode(TabInterface* tab);  // always sets current_tab_
-};
-
-// ✅ CORRECT - constructor handles initialization
-class TreeTabNode {
-  raw_ptr<TabInterface> current_tab_;
-  explicit TreeTabNode(TabInterface* tab) : current_tab_(tab) {}
-};
-```
-
----
-
 ## ✅ Prefer Overloads Over Silently-Ignored Optional Parameters
 
 **Don't force callers to provide parameters that are silently ignored.** Use function overloads. Similarly, prefer overloads over `std::variant` for distinct call patterns.
@@ -1574,58 +923,6 @@ base::expected<ChainMetadata, std::string> chain_metadata_;
 
 // ✅ CORRECT - handle error at failure point, store only success
 std::optional<ChainMetadata> chain_metadata_;
-```
-
----
-
-## ✅ Comments Must Make Sense to Future Readers of the Codebase
-
-**Every comment should be meaningful to someone reading the code for the first time, with no knowledge of the PR or change history.** Do not add comments that reference removed code, prior behavior, or the change itself. Comments are part of the codebase, not a changelog.
-
-```cpp
-// ❌ WRONG - references removed code / change history
-// Removed the old caching logic that was causing race conditions.
-// Previously this used a raw pointer, now using unique_ptr.
-// Changed from std::map to base::flat_map per review feedback.
-
-// ❌ WRONG - describes what was removed rather than what exists
-// The timeout parameter was removed since it's no longer needed.
-int ProcessRequest(const GURL& url);
-
-// ✅ CORRECT - describes the code as it is now
-// Processes the request synchronously. Returns the HTTP status code.
-int ProcessRequest(const GURL& url);
-
-// ✅ CORRECT - explains current behavior, not history
-// Uses base::flat_map for better cache locality with small key sets.
-base::flat_map<std::string, int> lookup_;
-```
-
----
-
-## ✅ Document All New Classes, Public Methods, and Fields
-
-**All new classes, public methods, and non-obvious fields must have documentation comments.** For IDL types, document dictionaries and fields.
-
----
-
-## ✅ Document Non-Obvious Failure Branches
-
-**When a function has multiple early-return failure branches, add a brief comment before each summarizing what it handles.**
-
-```cpp
-// ❌ WRONG - unclear what each branch handles
-if (!parent_hash) return std::nullopt;
-if (!state_root) return std::nullopt;
-if (!number) return std::nullopt;
-
-// ✅ CORRECT
-// Parent block hash is required for chain continuity.
-if (!parent_hash) return std::nullopt;
-// State root validates the block's state trie.
-if (!state_root) return std::nullopt;
-// Block number must be present and valid.
-if (!number) return std::nullopt;
 ```
 
 ---
@@ -1766,25 +1063,6 @@ const std::string& truncated = (content.size() > max_length)
 
 ---
 
-## ✅ Use `CHECK` Only for Invariants Within Code's Control
-
-**Use `CHECK` only for conditions fully within the code's control.** For data from databases, user input, or external sources, use graceful error handling instead. `CHECK` failures crash the user's browser.
-
-```cpp
-// ❌ WRONG - crashes on external data
-CHECK(db_value.has_value());  // Data from database!
-
-// ✅ CORRECT - graceful handling of external data
-if (!db_value.has_value()) {
-  DLOG(ERROR) << "Missing expected database value";
-  return std::nullopt;
-}
-```
-
-See also: [Chromium CHECK style guide](https://chromium.googlesource.com/chromium/src/+/refs/heads/main/styleguide/c++/checks.md)
-
----
-
 ## ✅ Use `absl::StrFormat` Over `base::StringPrintf`
 
 **Prefer `absl::StrFormat` for formatted string construction.** `base::StringPrintf` is being deprecated in favor of `absl::StrFormat`.
@@ -1809,46 +1087,6 @@ std::optional<Result> Parse(const std::string& input, std::string* error);
 
 // ✅ CORRECT - base::expected bundles both
 base::expected<Result, std::string> Parse(const std::string& input);
-```
-
----
-
-## ❌ Never Bind `std::vector<raw_ptr<T>>` in Callbacks
-
-**Never capture `std::vector<raw_ptr<T>>` in async callbacks.** The raw pointers may dangle by the time the callback runs. Use `std::vector<base::WeakPtr<T>>` instead.
-
-```cpp
-// ❌ WRONG - raw_ptrs may dangle
-base::BindOnce(&OnComplete, std::move(raw_ptr_vector));
-
-// ✅ CORRECT - weak ptrs are safe
-std::vector<base::WeakPtr<Tab>> weak_tabs;
-for (auto* tab : tabs) {
-  weak_tabs.push_back(tab->GetWeakPtr());
-}
-base::BindOnce(&OnComplete, std::move(weak_tabs));
-```
-
----
-
-## ✅ Place `raw_ptr<>` Members Last in Class Declarations
-
-**In class declarations, place unowned `raw_ptr<>` members after owning members** (like `std::unique_ptr<>`). This follows Chromium convention and makes ownership semantics visually clear.
-
-```cpp
-// ❌ WRONG - mixed ownership order
-class MyService {
-  raw_ptr<PrefService> prefs_;
-  std::unique_ptr<Fetcher> fetcher_;
-  raw_ptr<ProfileManager> profile_manager_;
-};
-
-// ✅ CORRECT - owning members first, then unowned
-class MyService {
-  std::unique_ptr<Fetcher> fetcher_;
-  raw_ptr<PrefService> prefs_;
-  raw_ptr<ProfileManager> profile_manager_;
-};
 ```
 
 ---
@@ -1948,12 +1186,6 @@ service->ForEach([](Item&) {});
 
 ---
 
-## ✅ Copyright Year in New Files Must Be Current Year
-
-**New files must use the current year in the copyright header.** Always determine the current year from the system date (e.g., `date +%Y`), never from training data or memory — the training cutoff year is often outdated. Don't copy-paste old copyright years from other files.
-
----
-
 ## ✅ Use `base::FindOrNull()` for Map Lookups
 
 **Use `base::FindOrNull()` instead of the manual find-and-check-end pattern for map lookups.** It's more concise and less error-prone.
@@ -1997,42 +1229,6 @@ accelerator_list.insert(accelerator_list.end(),
 
 // ✅ CORRECT
 base::Extend(accelerator_list, base::span(kBraveAcceleratorMap));
-```
-
----
-
-## ✅ Consider `base::SequenceBound` for Thread-Isolated Operations
-
-**When a class performs blocking or IO operations and needs to be accessed asynchronously from the UI thread, use `base::SequenceBound<T>`.** This binds the object to a specific task runner and automatically posts all calls to that sequence.
-
-```cpp
-// ❌ WRONG - manual thread management
-class ContentScraper {
-  void Process(const std::string& html);  // blocking
-};
-// Caller must manually post to thread pool and bind weak ptr
-
-// ✅ CORRECT - SequenceBound handles threading
-base::SequenceBound<ContentScraper> scraper_;
-scraper_.AsyncCall(&ContentScraper::Process).WithArgs(html);
-```
-
----
-
-## ✅ Explicitly Specify `base::TaskPriority` in Thread Pool Tasks
-
-**When posting tasks to the thread pool, explicitly specify `base::TaskPriority` and shutdown behavior** rather than relying on defaults. Use `BEST_EFFORT` for non-urgent work and `SKIP_ON_SHUTDOWN` when work can be safely abandoned.
-
-```cpp
-// ❌ WRONG - implicit priority
-base::ThreadPool::PostTask(FROM_HERE, {base::MayBlock()}, task);
-
-// ✅ CORRECT - explicit priority and shutdown behavior
-base::ThreadPool::PostTask(
-    FROM_HERE,
-    {base::MayBlock(), base::TaskPriority::BEST_EFFORT,
-     base::TaskShutdownBehavior::SKIP_ON_SHUTDOWN},
-    task);
 ```
 
 ---
@@ -2153,22 +1349,6 @@ std::string GetProfileId(const base::FilePath& profile_path);
 
 ---
 
-## ❌ Don't Use Positional Terms in Code Comments
-
-**Do not use "above" or "below" in comments to reference other code.** Other developers may insert code between the comment and referenced item, breaking the meaning. Reference items explicitly by name or identifier instead.
-
-```cpp
-// ❌ WRONG - fragile positional reference
-// Same root cause as the test above
--BrowserTest.SomeOtherTest
-
-// ✅ CORRECT - explicit reference by name
-// Same root cause as BrowserTest.FirstTest (kPromptForDownload override)
--BrowserTest.SomeOtherTest
-```
-
----
-
 ## ✅ Explicitly Assign Enum Values When Conditionally Compiling Out Members
 
 **When conditionally compiling out enum values behind a build flag, explicitly assign numeric values to remaining members.** This prevents value shifts that break serialization, persistence, or IPC.
@@ -2191,22 +1371,6 @@ enum class SidebarItem {
 #endif
   kHistory = 2,
 };
-```
-
----
-
-## ✅ Name All Function Parameters in Header Declarations
-
-**Always name function parameters in header declarations, especially when types alone are ambiguous.** Match the parameter names used in the `.cc` file.
-
-```cpp
-// ❌ WRONG - ambiguous parameters
-void OnSubmitSignedExtrinsic(std::optional<std::string>,
-                             std::optional<std::string>);
-
-// ✅ CORRECT - named parameters
-void OnSubmitSignedExtrinsic(std::optional<std::string> transaction_hash,
-                             std::optional<std::string> error_str);
 ```
 
 ---
@@ -2240,45 +1404,3 @@ int pct = (used * 100) / total;
 ```
 
 ---
-
-## ✅ VLOG Component Name Should Match Directory
-
-**The component name used in VLOG messages should match the component directory name** (e.g., `policy` or `brave/components/brave_policy`).
-
----
-
-## ❌ Don't Use `public:` in Structs
-
-**Do not use `public:` labels in struct declarations since struct members are public by default.** Either remove the label or change `struct` to `class` if access control is intended.
-
-```cpp
-// ❌ WRONG - redundant public label
-struct TestData {
- public:
-  std::string name;
-  int value;
-};
-
-// ✅ CORRECT - struct is public by default
-struct TestData {
-  std::string name;
-  int value;
-};
-```
-
----
-
-## ✅ Prefer `GlobalFeatures` Over `NoDestructor` for Global Services
-
-**For global/singleton services, prefer registering in `GlobalFeatures` (the Chromium replacement for `BrowserProcessImpl`) over `base::NoDestructor`.** `NoDestructor` makes testing difficult since you can't reset the instance between tests.
-
-```cpp
-// ❌ WRONG - hard to test
-BraveOriginState* BraveOriginState::GetInstance() {
-  static base::NoDestructor<BraveOriginState> instance;
-  return instance.get();
-}
-
-// ✅ CORRECT - register in GlobalFeatures for testability
-// Access via g_browser_process or dependency injection
-```
