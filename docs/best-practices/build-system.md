@@ -215,6 +215,38 @@ if (brave_wallet_enabled) {
 
 ---
 
+## ✅ Use `use_blink` for Content-Layer Dependencies, Not `!is_ios`
+
+**Code that depends on the content layer (`//content/...`) must be guarded with `use_blink`, not `!is_ios`.** The `use_blink` flag is the correct way to detect content/Blink availability. Using `!is_ios` as a proxy is incorrect because `use_blink` is the actual flag that controls whether the content layer is built, and `!is_ios` may not always be equivalent.
+
+```gn
+# ❌ WRONG - using !is_ios as proxy for content availability
+if (!is_ios) {
+  sources += [ "content_helper.cc" ]
+  deps += [ "//content/public/browser" ]
+}
+
+# ✅ CORRECT - use_blink indicates content layer availability
+if (use_blink) {
+  sources += [ "content_helper.cc" ]
+  deps += [ "//content/public/browser" ]
+}
+```
+
+```cpp
+// ❌ WRONG
+#if !BUILDFLAG(IS_IOS)
+#include "content/public/browser/web_contents.h"
+#endif
+
+// ✅ CORRECT
+#if BUILDFLAG(USE_BLINK)
+#include "content/public/browser/web_contents.h"
+#endif
+```
+
+---
+
 ## ❌ Don't Have Both `BUILD.gn` and `sources.gni` in the Same Directory
 
 **A directory should contain either a `BUILD.gn` file (preferred) or a `sources.gni` file, but not both.** Having both creates confusion about which is authoritative and makes dependency tracking harder.
@@ -564,6 +596,30 @@ if (is_mac) {
 # ✅ CORRECT - feature flag only
 if (enable_tor) {
   deps += [ "//brave/components/tor" ]
+}
+```
+
+---
+
+## ❌ Don't Guard Deps with Unrelated Guards
+
+**A dep should only be placed inside a guard if the dep itself is specific to that guard condition.** If a dep is needed regardless of the guard condition, include it unconditionally. Putting unrelated deps inside guards (e.g., placing a general utility dep inside `if (use_blink)` or `if (!is_ios)` when it has nothing to do with blink/iOS) creates incorrect build configurations and can cause missing symbol errors on platforms where the guard evaluates to false.
+
+```gn
+# ❌ WRONG - "//brave/components/constants" has nothing to do with blink
+if (use_blink) {
+  deps += [
+    "//brave/components/constants",
+    "//content/public/browser",
+  ]
+}
+
+# ✅ CORRECT - only guard deps that actually relate to the guard
+deps += [
+  "//brave/components/constants",
+]
+if (use_blink) {
+  deps += [ "//content/public/browser" ]
 }
 ```
 
