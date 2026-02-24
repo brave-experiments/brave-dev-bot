@@ -1305,19 +1305,19 @@ void MyService::Shutdown() {
 
 ## ✅ Use `base::Unretained(this)` for Self-Owned Timer Callbacks
 
-**When a class owns a `base::RepeatingTimer` or `base::OneShotTimer`, use `base::Unretained(this)`.** The timer is destroyed with the class, so it can only fire while `this` is valid. Using `WeakPtr` is unnecessary overhead.
+**When a class owns a `base::RepeatingTimer` or `base::OneShotTimer`, prefer `base::Unretained(this)`.** The timer is destroyed with the class, so it can only fire while `this` is valid. Using `WeakPtr` adds unnecessary overhead but is not functionally wrong — it's a style preference, not a correctness issue.
 
 ```cpp
-// ❌ WRONG - unnecessary overhead
+// ⚠️ AVOID - unnecessary overhead (but not a bug)
 timer_.Start(FROM_HERE, delay,
     base::BindRepeating(&MyClass::OnTimer, weak_factory_.GetWeakPtr()));
 
-// ✅ CORRECT - timer is owned, so this is always valid when it fires
+// ✅ PREFERRED - timer is owned, so this is always valid when it fires
 timer_.Start(FROM_HERE, delay,
     base::BindRepeating(&MyClass::OnTimer, base::Unretained(this)));
 ```
 
-**Key distinction:** This is the opposite of the "never use Unretained with thread pool" rule. The difference is ownership: you own the timer, so it cannot outlive you.
+**Key distinction:** This is the opposite of the "never use Unretained with thread pool" rule. The difference is ownership: you own the timer, so it cannot outlive you. If a developer prefers `WeakPtr` for defensive coding, that's a valid choice — do not insist on changing it.
 
 ---
 
