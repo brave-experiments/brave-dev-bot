@@ -1,5 +1,5 @@
 #!/bin/bash
-# Sync best practices from brave-core-bot to src/brave/.claude/rules via symlinks
+# Sync best practices from brave-core-bot to src/brave/.claude/rules via symlink
 
 set -e
 
@@ -12,32 +12,21 @@ if [ ! -d "$BP_SRC" ]; then
   exit 1
 fi
 
-# Create destination directory if needed
-mkdir -p "$BP_DEST"
+# If it's already a valid symlink, nothing to do
+if [ -L "$BP_DEST" ] && [ -e "$BP_DEST" ]; then
+  echo "Already symlinked: $BP_DEST -> $(readlink "$BP_DEST")"
+  exit 0
+fi
 
-for bp_file in "$BP_SRC"/*.md; do
-  file_name=$(basename "$bp_file")
-  dest="$BP_DEST/$file_name"
+# Clean up broken symlink or directory of old per-file symlinks
+if [ -L "$BP_DEST" ]; then
+  echo "Removing broken symlink: $BP_DEST"
+  rm "$BP_DEST"
+elif [ -d "$BP_DEST" ]; then
+  echo "Removing old per-file symlinks directory: $BP_DEST"
+  rm -rf "$BP_DEST"
+fi
 
-  if [ -L "$dest" ]; then
-    if [ -e "$dest" ]; then
-      echo "✓ $file_name (already symlinked)"
-      continue
-    else
-      echo "⚠ $file_name (broken symlink, recreating)"
-      rm "$dest"
-    fi
-  fi
-
-  if [ -f "$dest" ]; then
-    echo "⚠ $file_name (exists as regular file, skipping)"
-    continue
-  fi
-
-  ln -s "../../../../../brave-core-bot/docs/best-practices/$file_name" "$dest"
-  echo "✓ $file_name (linked)"
-done
-
-echo ""
-echo "Done. Current symlinks in $BP_DEST:"
-ls -la "$BP_DEST" | grep "^l" || echo "  (none)"
+mkdir -p "$(dirname "$BP_DEST")"
+ln -s "../../../../brave-core-bot/docs/best-practices" "$BP_DEST"
+echo "Linked: $BP_DEST -> ../../../../brave-core-bot/docs/best-practices"
