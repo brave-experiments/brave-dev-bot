@@ -61,8 +61,18 @@ def parse_args():
     return mode, days, page, pr_number, state
 
 
+def has_any_approval(pr):
+    """Check if a PR has any approval, even if reviewDecision isn't APPROVED."""
+    if pr.get("reviewDecision") == "APPROVED":
+        return True
+    for review in pr.get("latestReviews", []):
+        if review.get("state") == "APPROVED":
+            return True
+    return False
+
+
 def fetch_single_pr(pr_number):
-    fields = "number,title,updatedAt,author,isDraft,headRefOid"
+    fields = "number,title,updatedAt,author,isDraft,headRefOid,reviewDecision,latestReviews"
     result = subprocess.run(
         [
             "gh", "pr", "view", str(pr_number),
@@ -78,7 +88,7 @@ def fetch_prs(mode, days, page, pr_number, state):
     if mode == "single":
         return fetch_single_pr(pr_number)
 
-    fields = "number,title,updatedAt,author,isDraft,headRefOid"
+    fields = "number,title,updatedAt,author,isDraft,headRefOid,reviewDecision,latestReviews"
     base_cmd = [
         "gh", "pr", "list", "--repo", "brave/brave-core",
         "--state", state, "--json", fields,
@@ -197,6 +207,7 @@ def main():
                 "title": pr["title"],
                 "headRefOid": pr["headRefOid"],
                 "author": pr.get("author", {}).get("login", "unknown"),
+                "hasApproval": has_any_approval(pr),
             }
             for pr in to_review
         ],

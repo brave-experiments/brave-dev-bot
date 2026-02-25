@@ -295,6 +295,7 @@ Process PRs **one at a time** (sequentially). After ALL document subagents retur
    - **Only include low-severity (nits) if there are fewer than 3 higher-severity comments.** If there are already 3+ substantive comments, drop all nits — the developer has enough to focus on.
    - If there are more than 5 high+medium violations, cap at the 5 most impactful ones and note in the log how many were dropped.
    - **When in doubt, don't comment.** A review with 2 important comments is far more useful than one with 10 mixed-importance comments.
+   - **Approved PRs — high-severity only.** If the PR's `hasApproval` field is `true` (meaning at least one reviewer has approved), drop ALL medium and low severity violations. Only post high-severity issues (correctness bugs, security vulnerabilities, banned APIs). A human reviewer already approved the PR, so the bot should only intervene for serious problems.
 3. **If AUTO_MODE**: post the prioritized violations using the inline review API (see Auto Posting below), then move to the next PR
 4. **If interactive mode**: present the prioritized violations to the user for approval before moving to the next PR
 5. If no violations across all categories, briefly note that and move on
