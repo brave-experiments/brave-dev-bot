@@ -203,7 +203,9 @@ Each subagent prompt MUST include:
    ```
    https://github.com/brave-experiments/brave-core-bot/tree/master/docs/best-practices/<doc>.md#<heading-anchor>
    ```
-   Where `<heading-anchor>` is the `##` heading converted to a GitHub anchor (lowercase, spaces to hyphens, special characters removed). For example, `## Don't Use rapidjson` becomes `#dont-use-rapidjson`.
+   Where `<heading-anchor>` is the `##` heading converted to a GitHub anchor (lowercase, spaces to hyphens, special characters/emojis removed). For example, `## ❌ Don't Use rapidjson` becomes `#dont-use-rapidjson`.
+
+   **CRITICAL: The `rule` field MUST be the EXACT text of a `##` heading that exists in the best practices document you read. Do NOT paraphrase, summarize, or invent heading names.** If your observation is a general bug or correctness issue that doesn't map to any specific `##` heading in the document, omit the `rule_link` field entirely — do not fabricate a link to a non-existent anchor. Only include `rule_link` when pointing to an actual documented rule.
 6. **Prior comments context (re-review awareness)** — if prior comments exist from Step 1.5, include them in the subagent prompt with these rules:
    - **Do NOT re-raise issues that the author or a reviewer has already explained or justified.** If a prior comment thread shows the author explaining why a design choice was made (e.g., "only two subclasses will ever use this, both pass constants"), accept that explanation and do not flag the same issue again.
    - **Do NOT repeat your own previous comments.** If a comment from "brave-core-bot" already raised the same point, skip it — even if the code hasn't changed. The author has already seen it.
