@@ -2,6 +2,10 @@
 
 This document is an index of best practices for the Brave Browser codebase, discovered from code reviews, test fixes, and development experience. Each section links to a detailed document.
 
+## Nala / Leo Design System
+
+- **[Nala / Leo Design System](./docs/best-practices/nala.md)** - Android icons, Android color tokens, WebUI SVG icons, C++ vector icons
+
 ## Code & Architecture
 
 - **[Architecture and Code Organization](./docs/best-practices/architecture.md)** - Layering violations, dependency injection, factory patterns, pref management
