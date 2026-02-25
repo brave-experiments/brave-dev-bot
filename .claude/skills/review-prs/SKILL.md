@@ -12,6 +12,8 @@ Scan recent open PRs in `brave/brave-core` for violations of documented best pra
 - **Interactive mode** (default): drafts comments and asks for user approval before posting.
 - **Auto mode** (`auto` argument): posts all violations automatically without approval. Designed for cron/headless use.
 
+**IMPORTANT:** This skill only reviews PRs against existing best practices. It must NEVER create, modify, or add new best practice rules or documentation during a review run. Pattern extraction belongs to the `/learnable-pattern-search` skill, which has its own quality gates.
+
 ---
 
 ## The Job
