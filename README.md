@@ -1,6 +1,6 @@
 # Brave Core Bot
 
-An autonomous coding agent for working on software projects. This bot reads Product Requirements Documents (PRDs), executes user stories, runs tests, and commits changes automatically.
+An autonomous coding agent for the Brave browser project. Built on Claude Code, it reads Product Requirements Documents (PRDs), implements user stories, runs tests, creates PRs, handles review feedback, and manages CI — all autonomously in iterative loops.
 
 ## Overview
 
@@ -16,11 +16,12 @@ The bot operates in an iterative loop with a state machine workflow:
    - **pending**: Implement, test, and commit → `committed`
    - **committed**: Push branch and create PR → `pushed` (lastActivityBy: "bot")
    - **pushed**: Check merge readiness FIRST, then:
-     - If mergeable: Merge → `merged` ✅
+     - If mergeable: Merge → `merged`
      - If reviewer commented: Implement feedback, push → (lastActivityBy: "bot")
      - If waiting: Skip to next story (will check again next iteration)
+   - **merged**: Post-merge monitoring (CI breakage, flakes)
 4. Updates progress in `progress.txt`
-5. Repeats until all stories have `status: "merged"`
+5. Repeats until all stories have terminal status (`merged`, `skipped`, or `invalid`)
 
 **Story Lifecycle:**
 ```
@@ -43,30 +44,33 @@ merge  wait  review   │
   │     │     └───────┘
   ↓     │
 merged  └─► (check again next iteration)
+  ↓
+(post-merge monitoring)
 ```
 
 **Key Points:**
 - Initial development: pending → (implement+test) → committed
 - Review response: pushed → (implement+test) → (commit+push) → pushed
-- **Same quality gates apply** - ALL tests must pass whether initial development or responding to reviews
+- **Same quality gates apply** — ALL tests must pass whether initial development or responding to reviews
 
-**Anti-Stuck Guarantee:** Every `pushed` PR is checked for merge readiness on EVERY iteration, even when `lastActivityBy: "bot"`. This ensures approved PRs never get stuck.
+**Anti-Stuck Guarantee:** Every `pushed` PR is checked for merge readiness on EVERY iteration, even when `lastActivityBy: "bot"`. Approved PRs never get stuck.
 
-**Smart Waiting:** The bot tracks `lastActivityBy` to avoid spamming PRs while ensuring progress. See [STATE-MACHINE.md](STATE-MACHINE.md) for detailed flow.
+**Smart Waiting:** The bot tracks `lastActivityBy` to avoid spamming PRs while ensuring progress. See [docs/workflow-state-machine.md](docs/workflow-state-machine.md) for detailed flow.
 
 ## Prerequisites
 
 - **Claude Code CLI** installed and configured
-- **jq** for JSON parsing: `sudo apt install jq` (Ubuntu/Debian) or `brew install jq` (macOS)
+- **GitHub CLI** (`gh`) authenticated with your account
+- **jq** for JSON parsing: `brew install jq` (macOS) or `sudo apt install jq` (Debian/Ubuntu)
 - **Git** configured with your credentials
-- **Claude API key** configured for Claude Code CLI
-- Access to brave/brave-browser repository
+- **Python 3** (for utility scripts)
+- Access to the `brave/brave-browser` repository
 
 ## Setup
 
 ### 1. Clone This Repository
 
-Clone this repository at the root of your brave-browser checkout, alongside the `src` directory (2 levels above `src/brave`):
+Clone at the root of your brave-browser checkout, alongside the `src` directory:
 
 ```
 brave-browser/
@@ -78,48 +82,40 @@ brave-browser/
     └── ...
 ```
 
-**Clone command:**
 ```bash
 cd /path/to/brave-browser
-git clone https://github.com/your-org/brave-core-bot.git
+git clone https://github.com/brave-experiments/brave-core-bot.git
 ```
 
 ### 2. Configure Git
 
-The bot needs git credentials to commit changes. Configure git in `src/brave`:
+Configure git identity in the target repository (`src/brave`):
 
 ```bash
 cd brave-browser/src/brave
-
-# Set your bot's git identity
 git config user.name "netzenbot"
 git config user.email "netzenbot@brave.com"
 ```
 
-**Important:** These settings are repository-specific (stored in `.git/config`), not global.
+These settings are repository-specific (stored in `.git/config`), not global.
 
 ### 3. Create Configuration Files
 
-The repository includes example templates that you need to copy and customize:
+Copy the example templates and customize:
 
 ```bash
 cd brave-core-bot
 
-# Copy example files to create your configuration
 cp prd.example.json prd.json
 cp run-state.example.json run-state.json
 cp progress.example.txt progress.txt
-
-# Edit prd.json to set your working directory
-# Replace "/absolute/path/to/your/working/directory" with your actual path
-# Example: "/home/username/projects/brave-browser/src/brave"
 ```
 
-**Important:** These files contain user-specific paths and runtime state, so they're gitignored. Never commit your actual `prd.json`, `progress.txt`, or `run-state.json` files.
+Edit `prd.json` to set your working directory path (e.g., `src/brave`).
+
+These files contain user-specific paths and runtime state, so they're gitignored.
 
 ### 4. Run Setup Script
-
-The setup script installs the pre-commit hook and Claude Code skills:
 
 ```bash
 cd brave-core-bot
@@ -127,42 +123,23 @@ cd brave-core-bot
 ```
 
 This will:
-- Install the pre-commit hook to your target repository
-- Install Claude Code skills for PRD generation and management
-- Verify git configuration
+- Install pre-commit hooks to the target repository and bot repository
+- Validate `prd.json` configuration
+- Verify git repo structure and user configuration
+- Create and populate the org-members cache (`.ignore/org-members.txt`)
 - Display next steps
-
-**Installed Skills:**
-- `/prd` - Generate Product Requirements Documents
-- `/prd-json` - Convert PRDs to prd.json format
-- `/add-backlog-to-prd` - Fetch intermittent test issues from brave/brave-browser and add missing ones to PRD
-- `/prd-clean` - Archive merged/invalid stories from prd.json to prd.archived.json
-- `/commit` - Commit changes without Co-Authored-By attribution
-- `/review` - Review a bot-generated PR for quality and root cause analysis
-- `/review-prs` - Review recent PRs for best practices violations
-- `/check-upstream-flake` - Check if a failing test is a known upstream flake
-- `/update-best-practices` - Fetch and merge upstream Chromium guidelines
-- `/learnable-pattern-search` - Analyze PR review comments for learnable patterns
-- `/preflight` - Run all preflight checks before review
 
 ### 5. Create Your PRD
 
-You can create a PRD in two ways:
-
-**Option A: Use the `/prd` skill** (recommended for new features)
+**Option A: Use the `/prd` skill** (recommended)
 ```bash
 claude
-> /prd
+> /prd [describe your feature]
 ```
-Follow the prompts to generate a structured PRD, then use `/prd-json` to convert it to `prd.json`.
+Follow the prompts, then use `/prd-json` to convert to `prd.json`.
 
 **Option B: Manually edit `prd.json`**
 
-Edit `prd.json` to define:
-- **config.workingDirectory**: Path to your git repository (absolute or relative to parent directory)
-- **userStories**: List of tasks with acceptance criteria
-
-Example:
 ```json
 {
   "config": {
@@ -186,76 +163,9 @@ Example:
 }
 ```
 
-**Status field values:**
-- `"pending"` - Ready for development
-- `"committed"` - Needs PR creation
-- `"pushed"` - PR created, in review
-- `"merged"` - Complete
+**Status values:** `"pending"` | `"committed"` | `"pushed"` | `"merged"` | `"skipped"` | `"invalid"`
 
-**lastActivityBy field values:**
-- `null` - Not yet public or fresh PR
-- `"bot"` - Bot responded last, waiting for reviewer
-- `"reviewer"` - Reviewer responded last, bot should act
-
-## Workflow
-
-### Creating a PRD
-
-Use the `/prd` skill in Claude Code to generate a structured PRD:
-
-```bash
-claude
-> /prd [describe your feature]
-```
-
-This will:
-1. Ask clarifying questions about your feature
-2. Generate a structured PRD with user stories
-3. Save it to the `tasks/` directory
-
-### Converting to prd.json
-
-Once you have a PRD, convert it to the bot's JSON format:
-
-```bash
-claude
-> convert this prd to prd.json format
-```
-
-Or manually create/edit `prd.json` following the structure shown in the Configuration section.
-
-### Updating PRD with Intermittent Test Issues
-
-To automatically fetch open test failure issues from brave/brave-browser and add missing ones to your PRD:
-
-```bash
-claude
-> /add-backlog-to-prd
-```
-
-This will:
-1. Fetch all open issues with the `bot/type/test` label from brave/brave-browser
-2. Compare with existing issues in your PRD
-3. Add any missing issues as new user stories with proper acceptance criteria
-4. Provide a detailed recap of what was added
-
-**Note:** The skill will be available after restarting your Claude Code session following the setup.
-
-### Cleaning Up the PRD
-
-When the PRD accumulates many completed stories, archive them to keep it focused:
-
-```bash
-claude
-> /prd-clean
-```
-
-This runs a Python script that moves merged and invalid stories to `prd.archived.json` and prints a recap of what was archived vs. what remains active.
-
-You can also run it directly:
-```bash
-python3 .claude/skills/prd-clean/clean_prd.py ./prd.json
-```
+**lastActivityBy values:** `null` (fresh) | `"bot"` (waiting for reviewer) | `"reviewer"` (bot should act)
 
 ## Usage
 
@@ -263,31 +173,99 @@ python3 .claude/skills/prd-clean/clean_prd.py ./prd.json
 
 ```bash
 cd brave-core-bot
-./run.sh
-```
-
-**Options:**
-- `[number]`: Maximum iterations (default: 10)
-
-**Examples:**
-```bash
-# Run with default settings (10 iterations)
-./run.sh
-
-# Run with 20 iterations
-./run.sh 20
+./run.sh           # Default: 10 iterations
+./run.sh 20        # Run 20 iterations
+./run.sh 10 tui    # TUI mode (interactive terminal UI)
 ```
 
 ### Monitor Progress
 
-The bot logs all progress to `progress.txt`:
 ```bash
 tail -f progress.txt
 ```
 
 ### Stop the Bot
 
-Press `Ctrl+C` to stop. The bot will attempt to switch back to the master branch before exiting.
+Press `Ctrl+C`. The bot will attempt to switch back to the master branch before exiting.
+
+### Reset Between Runs
+
+```bash
+./reset-run-state.sh
+```
+
+Resets `run-state.json` for a fresh run while preserving configuration flags.
+
+## Skills
+
+All skills are available as slash commands in Claude Code. 20 skills are included:
+
+### PRD & Project Management
+
+| Skill | Description |
+|-------|-------------|
+| `/prd` | Generate structured PRDs with clarifying questions |
+| `/prd-json` | Convert PRD markdown to `prd.json` format |
+| `/prd-clean` | Archive merged/invalid stories to `prd.archived.json` |
+| `/add-backlog-to-prd` | Fetch open issues from brave/brave-browser by label and add to PRD |
+
+### Code Review & Quality
+
+| Skill | Description |
+|-------|-------------|
+| `/review` | Review code for quality, root cause analysis, and fix confidence. Supports local mode (current branch) and PR mode (by URL or number) |
+| `/review-prs` | Batch review PRs for best practices violations. Supports auto mode for cron. Deduplicates against existing bot comments. Tracks prior comment context |
+| `/check-best-practices` | Audit local branch diff against all best practices documents using parallel subagents |
+| `/preflight` | Run all preflight checks (format, gn_check, presubmit, build, tests) |
+| `/learnable-pattern-search` | Analyze PR review comments to discover learnable patterns. Supports self-review mode to identify overly strict rules |
+
+### Implementation & Git
+
+| Skill | Description |
+|-------|-------------|
+| `/commit` | Create atomic commits without attribution. Supports `branch` and `push` keywords |
+| `/pr` | Create pull request for current branch with auto-generated description |
+| `/impl-review` | Implement review feedback on a PR: checkout, apply changes, preflight, commit, push. Supports auto mode |
+| `/rebase-downstream` | Rebase a tree of dependent branches after upstream changes |
+| `/clean-branches` | Delete local branches whose PRs have been merged |
+
+### CI & Testing
+
+| Skill | Description |
+|-------|-------------|
+| `/check-upstream-flake` | Query LUCI Analysis for upstream Chromium test flakiness (30-90 day lookback) |
+| `/make-ci-green` | Re-run failed Jenkins CI jobs. Analyzes test failures, checks upstream flakiness, correlates with PR changes. Supports dry-run mode |
+| `/top-crashers` | Analyze top crash data from Brave's Backtrace crash reporting |
+
+### Release & Maintenance
+
+| Skill | Description |
+|-------|-------------|
+| `/uplift` | Cherry-pick test/crash fixes to beta/release branches. Adds uplift labels to source PRs |
+| `/update-best-practices` | Fetch and merge upstream Chromium documentation guidelines |
+| `/check-milestones` | Check milestone status |
+
+### Sharing Skills with src/brave
+
+Skills can be symlinked to `src/brave/.claude/skills/` for use when working directly in the brave-core repo:
+
+```bash
+./sync-skills.sh        # Interactively symlink selected skills
+./sync-best-practices.sh  # Symlink best practices to .claude/rules/
+```
+
+## Run State Configuration
+
+`run-state.json` controls per-run behavior:
+
+| Field | Description |
+|-------|-------------|
+| `runId` | Timestamp when this run started (auto-set) |
+| `storiesCheckedThisRun` | Story IDs already processed in this run |
+| `skipPushedTasks` | Skip all "pushed" PRs, only work on new development |
+| `enableMergeBackoff` | Enable post-merge monitoring (default: true) |
+| `mergeBackoffStoryIds` | Array of specific merged story IDs to check, or null for all |
+| `lastIterationHadStateChange` | Tracks if work was done last iteration |
 
 ## Configuration Files
 
@@ -295,87 +273,123 @@ Press `Ctrl+C` to stop. The bot will attempt to switch back to the master branch
 
 Product Requirements Document defining user stories and acceptance criteria.
 
-**Key Fields:**
 - `config.workingDirectory`: Git repository path (typically `src/brave`)
 - `userStories[].id`: Unique story identifier
 - `userStories[].priority`: Execution order (1 = highest)
-- `userStories[].status`: Story state - "pending" | "committed" | "pushed" | "merged"
-- `userStories[].branchName`: Git branch name (set when work starts, reused across iterations)
+- `userStories[].status`: Story state
+- `userStories[].branchName`: Git branch name (set when work starts)
 - `userStories[].prNumber`: PR number (set when PR created)
 - `userStories[].prUrl`: PR URL (set when PR created)
-- `userStories[].lastActivityBy`: Who acted last - "bot" | "reviewer" | null
+- `userStories[].lastActivityBy`: Who acted last — `"bot"` | `"reviewer"` | `null`
 - `userStories[].acceptanceCriteria`: Test commands that must pass
-
-### CLAUDE.md
-
-Instructions for the Claude AI agent. Defines:
-- Task workflow and rules
-- Testing requirements (never skip tests)
-- Git workflow and branch management
-- Problem-solving approach
-- Security guidelines
-- Quality standards
 
 ### progress.txt
 
-Log of completed iterations, including:
-- What was implemented
-- Files changed
-- Test results
-- Learnings and patterns
+Log of completed iterations:
+- Codebase Patterns section (reusable patterns discovered during development)
+- Per-iteration entries with status transitions, files changed, test results
+- Learnings for future iterations
+
+### CLAUDE.md
+
+Agent instructions defining workflow, testing requirements, git operations, security guidelines, and quality standards.
+
+## Best Practices
+
+The bot enforces a comprehensive set of best practices organized by category:
+
+- **Architecture** — Layering, dependency injection, factory patterns
+- **Coding Standards** — Naming, CHECK vs DCHECK, IWYU, ownership, WeakPtr, base utilities
+- **Testing** — Async patterns, JavaScript tests, navigation, test isolation
+- **Frontend** — TypeScript/React, XSS prevention, component patterns
+- **Build System** — BUILD.gn, buildflags, DEPS, GRD resources
+- **Chromium src/ Overrides** — Override patterns, minimizing duplication
+- **Documentation** — Inline comments, method docs
+
+See [BEST-PRACTICES.md](BEST-PRACTICES.md) for the full index and quick checklist.
 
 ## Git Workflow
 
 ### Branch Management
 
-Each user story should have its own branch:
+Each user story gets its own branch, created automatically by the bot from `prd.json`.
 
-```bash
-cd /path/to/your/repo
-git checkout master
-git pull origin master
-git checkout -b fix-specific-issue
-```
+### Pre-commit Hooks
 
-The bot creates branches automatically based on `prd.json`.
+Two hooks are installed by `setup.sh`:
 
-### Pre-commit Hook
+**Target repo hook** (`hooks/pre-commit`):
+Blocks the `netzenbot` account from modifying dependency files (package.json, DEPS, Cargo.toml, go.mod, etc.). Prevents bots from introducing external dependencies without review.
 
-The included pre-commit hook blocks dependency file changes for the `netzenbot` account:
-
-**Blocked Files:**
-- package.json, package-lock.json, npm-shrinkwrap.json
-- yarn.lock, pnpm-lock.yaml
-- DEPS (Chromium)
-- Cargo.toml, Cargo.lock
-- go.mod, go.sum
-- Gemfile.lock, poetry.lock, Pipfile.lock, composer.lock
-
-**Purpose:** Prevents bots from introducing external dependencies without review.
+**Bot repo hook** (`hooks/pre-commit-bot-repo`):
+Blocks committing `prd.json`, `progress.txt`, and `run-state.json` to ensure user-specific files don't get committed.
 
 ### Commit Format
 
-The bot uses conventional commit messages:
 ```
 feat: [Story ID] - [Story Title]
 ```
 
-**Important:** Commits must NOT include `Co-Authored-By` lines.
+Commits must NOT include `Co-Authored-By` lines.
 
-## Testing Philosophy
+## Testing
 
-**Critical Rule:** All acceptance criteria tests MUST run and pass before marking a story as complete.
+### Acceptance Criteria
 
-The bot will:
+All acceptance criteria tests MUST run and pass before marking a story as complete. The bot will:
 - Run ALL tests specified in acceptance criteria
 - Use background execution for long-running tests
 - Never skip tests regardless of duration
-- Only mark `passes: true` when tests actually pass
-- Never use workarounds or arbitrary waits
+- Only mark a story complete when tests actually pass
+
+### Test Suite
+
+Run the automated test suite to verify setup:
+
+```bash
+./tests/test-suite.sh
+```
+
+Validates GitHub API integration, file structure, filtering scripts, pre-commit hooks, and configuration files.
+
+## Security
+
+### Prompt Injection Protection
+
+The bot filters all GitHub data (issues, PR reviews) through security scripts that check authors against Brave org membership:
+
+```bash
+./scripts/filter-issue-json.sh 12345 markdown   # Filtered issue content
+./scripts/filter-pr-reviews.sh 12345             # Filtered PR reviews
+```
+
+External user content is marked as `[filtered]` to prevent prompt injection attacks.
+
+### Org Member Cache
+
+Org membership is cached in `.ignore/org-members.txt` (survives reboots, unlike /tmp). The cache is required for `run.sh` to start — regenerate with `setup.sh` if missing.
+
+### Trusted Reviewers Allowlist
+
+When running with an external GitHub account that can't see private org membership:
+
+```bash
+cd scripts
+cp trusted-reviewers.txt.example trusted-reviewers.txt
+# Add one trusted username per line
+```
+
+### Other Security Measures
+
+- **Dependency restrictions**: Pre-commit hook prevents bot from updating dependencies
+- **Bot permissions**: Uses `--dangerously-skip-permissions` for autonomous operation
+- **Review differentiation**: Review skill rejects fixes that aren't materially different from previous failed attempts
+
+See [SECURITY.md](SECURITY.md) for complete guidelines.
 
 ## Archiving
 
-When the branch changes between runs, the bot automatically archives the previous run:
+When the branch changes between runs, previous state is automatically archived:
 
 ```
 brave-core-bot/archive/
@@ -384,31 +398,85 @@ brave-core-bot/archive/
       └── progress.txt
 ```
 
-## Testing
+## Project Structure
 
-Run the automated test suite to verify everything is set up correctly:
-
-```bash
-cd brave-core-bot
-./tests/test-suite.sh
 ```
-
-The test suite validates:
-- ✅ GitHub API integration and org membership checks
-- ✅ File structure and permissions
-- ✅ Filtering scripts and security measures
-- ✅ Pre-commit hook functionality
-- ✅ Configuration file validity
-
-**Exit codes:** `0` = all tests passed, `1` = failures detected
-
-See `tests/README.md` for detailed test documentation.
+brave-core-bot/
+├── README.md                  # This file
+├── CLAUDE.md                  # Claude agent instructions
+├── BEST-PRACTICES.md          # Index of all best practices
+├── SECURITY.md                # Security guidelines
+├── LICENSE                    # MPL-2.0 license
+├── setup.sh                   # Install hooks, validate config, create caches
+├── run.sh                     # Main entry point (iterations, TUI mode)
+├── check-should-continue.sh   # Check if bot should continue iterating
+├── reset-run-state.sh         # Reset run state between runs
+├── sync-skills.sh             # Symlink skills to src/brave
+├── sync-best-practices.sh     # Symlink best practices to src/brave
+├── prd.json                   # Product requirements (gitignored)
+├── prd.example.json           # Example PRD template
+├── run-state.json             # Run state tracking (gitignored)
+├── run-state.example.json     # Example run state template
+├── progress.txt               # Progress log (gitignored)
+├── progress.example.txt       # Example progress template
+├── .ignore/
+│   └── org-members.txt        # Cached org members (security, gitignored)
+├── .claude/
+│   └── skills/                # Claude Code skills (20 skills)
+│       ├── prd/               # PRD generation
+│       ├── prd-json/          # PRD to JSON converter
+│       ├── prd-clean/         # Archive merged/invalid stories
+│       ├── add-backlog-to-prd/  # Fetch issues from GitHub
+│       ├── commit/            # Commit without attribution
+│       ├── pr/                # Create pull requests
+│       ├── review/            # Code review (local + PR mode)
+│       ├── review-prs/        # Batch PR review with caching
+│       ├── check-best-practices/  # Audit diff against best practices
+│       ├── impl-review/       # Implement review feedback
+│       ├── rebase-downstream/ # Rebase dependent branches
+│       ├── clean-branches/    # Delete merged branches
+│       ├── preflight/         # Pre-review checks
+│       ├── check-upstream-flake/  # LUCI flakiness analysis
+│       ├── make-ci-green/     # Retry/analyze failed CI
+│       ├── top-crashers/      # Crash analysis
+│       ├── uplift/            # Cherry-pick to release branches
+│       ├── check-milestones/  # Milestone status
+│       ├── update-best-practices/ # Merge upstream Chromium guidelines
+│       └── learnable-pattern-search/  # Analyze PR reviews for patterns
+├── docs/                      # Detailed workflow and reference docs
+│   ├── best-practices/        # Best practices sub-documents (12 files)
+│   ├── workflow-state-machine.md
+│   ├── workflow-pending.md
+│   ├── workflow-committed.md
+│   ├── workflow-pushed.md
+│   ├── workflow-merged.md
+│   ├── workflow-skipped-invalid.md
+│   ├── testing-requirements.md
+│   ├── git-repository.md
+│   ├── progress-reporting.md
+│   ├── run-state-management.md
+│   └── learnable-patterns.md
+├── hooks/
+│   ├── pre-commit             # Target repo hook (blocks dependency updates)
+│   └── pre-commit-bot-repo    # Bot repo hook (blocks config file commits)
+├── scripts/
+│   ├── check-upstream-flake.py  # LUCI Analysis API client
+│   ├── top-crashers.py        # Crash data analysis
+│   ├── fetch-issue.sh         # Fetch filtered GitHub issues
+│   ├── filter-issue-json.sh   # Filter issues to org members
+│   ├── filter-pr-reviews.sh   # Filter PR reviews to org members
+│   └── trusted-reviewers.txt.example  # Allowlist template
+├── logs/                      # Bot run logs
+└── tests/
+    ├── test-suite.sh          # Automated test suite
+    └── README.md              # Test documentation
+```
 
 ## Troubleshooting
 
 ### "Git user not configured"
 
-Run setup again or manually configure git:
+Run `setup.sh` again or manually configure:
 ```bash
 cd brave-browser/src/brave
 git config user.name "netzenbot"
@@ -417,146 +485,31 @@ git config user.email "netzenbot@brave.com"
 
 ### "Pre-commit hook blocks my commit"
 
-If you're the `netzenbot` account and trying to modify dependencies:
-- This is intentional - bots should not update dependencies
-- Use existing libraries in the codebase
-- If truly necessary, use a different git account
+If the `netzenbot` account is trying to modify dependencies — this is intentional. Use existing libraries or a different git account.
+
+### "Org members cache missing"
+
+Run `setup.sh` to regenerate `.ignore/org-members.txt`, or manually:
+```bash
+gh api /orgs/brave/members --paginate --jq '.[].login' > .ignore/org-members.txt
+```
 
 ### "Tests are taking too long"
 
-This is expected. The bot uses:
-- `run_in_background: true` for long operations
-- High timeout values (1-2 hours)
-- The TaskOutput tool to monitor progress
+Expected. The bot uses `run_in_background: true` and high timeouts (1-2 hours) for long operations.
 
 ### "Build failures after sync"
 
-If `npm run build` fails, the bot will automatically run:
+The bot will automatically rebase and re-sync:
 ```bash
 git fetch
 git rebase origin/master
 npm run sync -- --no-history
 ```
 
-## Project Structure
-
-```
-brave-core-bot/
-├── README.md              # This file
-├── CLAUDE.md              # Claude agent instructions
-├── BEST-PRACTICES.md      # Index of all best practices
-├── STATE-MACHINE.md       # Detailed state machine documentation
-├── WORKFLOW.md            # Workflow documentation
-├── SECURITY.md            # Security guidelines and best practices
-├── LICENSE                # MPL-2.0 license
-├── setup.sh               # Setup script (installs hook, skills, checks config)
-├── run.sh                 # Main entry point
-├── check-should-continue.sh  # Check if bot should continue iterating
-├── reset-run-state.sh     # Reset run state between runs
-├── prd.json               # Product requirements (gitignored)
-├── prd.example.json       # Example PRD template
-├── progress.txt           # Progress log (gitignored)
-├── run-state.json         # Run state tracking (gitignored)
-├── .gitignore             # Git ignore rules
-├── .claude/
-│   └── skills/            # Claude Code skills (one directory per skill)
-│       ├── prd/           # PRD generation
-│       ├── prd-json/      # PRD to JSON converter
-│       ├── prd-clean/     # Archive merged/invalid stories (Python script)
-│       ├── add-backlog-to-prd/  # Fetch and add bot/type/test issues
-│       ├── commit/        # Commit without attribution
-│       ├── review/        # Review bot-generated PRs
-│       ├── review-prs/    # Review PRs for best practices
-│       ├── check-upstream-flake/  # Check upstream test flakiness
-│       ├── update-best-practices/ # Merge upstream Chromium guidelines
-│       ├── learnable-pattern-search/  # Analyze PR reviews for patterns
-│       ├── preflight/     # Run preflight checks
-│       └── ...
-├── docs/                  # Detailed workflow and reference docs
-│   ├── best-practices/    # Best practices sub-documents
-│   ├── workflow-state-machine.md
-│   ├── workflow-pending.md
-│   ├── workflow-committed.md
-│   ├── workflow-pushed.md
-│   ├── workflow-merged.md
-│   ├── testing-requirements.md
-│   ├── git-repository.md
-│   ├── progress-reporting.md
-│   ├── run-state-management.md
-│   └── learnable-patterns.md
-├── hooks/
-│   └── pre-commit         # Git pre-commit hook (blocks dependency updates)
-├── scripts/
-│   ├── check-upstream-flake.py  # Check LUCI Analysis for upstream flakes
-│   ├── fetch-issue.sh     # Fetch and display filtered GitHub issues
-│   ├── filter-issue-json.sh  # Filter GitHub issues to org members only
-│   └── filter-pr-reviews.sh  # Filter PR reviews to org members only
-├── logs/                  # Bot run logs
-└── tests/
-    ├── test-suite.sh      # Automated test suite
-    └── README.md          # Test documentation
-```
-
-## Security
-
-### Prompt Injection Protection
-
-The bot includes protection against prompt injection attacks from external GitHub users:
-
-**Filter GitHub Issues:**
-```bash
-# Fetch and filter issue content (only includes Brave org members)
-./scripts/filter-issue-json.sh 12345 markdown
-
-# JSON output for programmatic use
-./scripts/filter-issue-json.sh 12345 json
-```
-
-**How it works:**
-- Fetches issue data from GitHub
-- Checks comment authors against Brave org membership
-- Filters out content from external users
-- Caches org membership for performance (1-hour TTL)
-
-**Why:** External users can post comments on public issues attempting to manipulate bot behavior, bypass security policies, or introduce malicious code.
-
-### Trusted Reviewers Allowlist
-
-When running the bot with an **external GitHub account** (not a Brave org member), you cannot see private org members through the API. To handle this:
-
-1. **Create an allowlist** at `scripts/trusted-reviewers.txt` (already gitignored):
-   ```bash
-   cd brave-core-bot/scripts
-   cp trusted-reviewers.txt.example trusted-reviewers.txt
-   ```
-
-2. **Add trusted reviewers** (one username per line):
-   ```
-   bbondy
-   reviewer2
-   reviewer3
-   ```
-
-3. The filter scripts will check this allowlist first, treating these users as trusted Brave org members.
-
-**When to use:**
-- You're running the bot with an external GitHub account
-- Reviewers have private org membership (not visible to external accounts)
-- You trust specific reviewers and want their feedback processed
-
-See `SECURITY.md` for complete security guidelines.
-
-### Other Security Notes
-
-1. **Dependency Restrictions:** The pre-commit hook prevents netzenbot from updating dependencies
-2. **Bot Permissions:** Uses `--dangerously-skip-permissions` for autonomous operation
-3. **Review Commits:** Always review bot commits before pushing to remote
-4. **API Keys:** Ensure Claude API keys are properly configured
-5. **Dedicated Account:** Use the netzenbot account with restricted permissions
-
 ## Contributing
 
-When adding new patterns or learnings, see [docs/learnable-patterns.md](./docs/learnable-patterns.md) for guidance on where each type of pattern belongs.
+When adding new patterns or learnings, see [docs/learnable-patterns.md](docs/learnable-patterns.md) for guidance on where each type of pattern belongs.
 
 ## License
 
@@ -567,4 +520,5 @@ This project is licensed under the Mozilla Public License 2.0 (MPL-2.0). See the
 For issues or questions:
 - Check `progress.txt` for detailed logs
 - Review `CLAUDE.md` for agent behavior
-- Verify git configuration with `./setup.sh`
+- Verify configuration with `./setup.sh`
+- Run `./tests/test-suite.sh` to validate setup
