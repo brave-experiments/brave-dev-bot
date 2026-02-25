@@ -700,25 +700,3 @@ constexpr char kOllamaEndpoint[] = "http://localhost:11434";
 inline constexpr char kOllamaEndpoint[] = "http://localhost:11434";
 ```
 
----
-
-## ✅ Conditional Compilation
-
-**Ensure that GN conditional variable names exactly match their buildflag definitions.** A typo or partial name in an `if()` guard means the condition is always false and the guarded code is silently never compiled — no build error, no warning.
-
-```gn
-# Given this definition in buildflags.gni:
-#   enable_ai_chat_tab_management_tool = !is_android
-
-# ❌ WRONG - variable name doesn't match the definition
-if (enable_tab_management_tool) {
-  sources += [ "tab_management_tool.cc" ]  # never compiled!
-}
-
-# ✅ CORRECT - exact match
-if (enable_ai_chat_tab_management_tool) {
-  sources += [ "tab_management_tool.cc" ]
-}
-```
-
-When adding or modifying conditional compilation guards, always verify the variable name against its definition in the corresponding `.gni` file.
