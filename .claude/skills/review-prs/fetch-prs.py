@@ -82,7 +82,6 @@ def fetch_prs(mode, days, page, pr_number, state):
     base_cmd = [
         "gh", "pr", "list", "--repo", "brave/brave-core",
         "--state", state, "--json", fields,
-        "--sort", "updated",
     ]
 
     if mode == "page":
@@ -92,6 +91,7 @@ def fetch_prs(mode, days, page, pr_number, state):
             capture_output=True, text=True, check=True,
         )
         prs = json.loads(result.stdout)
+        prs.sort(key=lambda p: p.get("updatedAt", ""), reverse=True)
         start = (page - 1) * 20
         return prs[start:start + 20]
     else:
@@ -99,7 +99,11 @@ def fetch_prs(mode, days, page, pr_number, state):
             base_cmd + ["--limit", "200"],
             capture_output=True, text=True, check=True,
         )
-        return json.loads(result.stdout)
+        prs = json.loads(result.stdout)
+        # Sort by updatedAt descending (newest first) since --sort is
+        # not available in all gh versions
+        prs.sort(key=lambda p: p.get("updatedAt", ""), reverse=True)
+        return prs
 
 
 def load_cache():
