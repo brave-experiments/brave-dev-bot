@@ -326,6 +326,8 @@ Process PRs **one at a time** (sequentially). After ALL document subagents retur
    python3 ./brave-core-bot/scripts/manage-bp-ids.py --check-link <ID> --doc <doc>.md
    ```
    If the ID is invalid (exit code 1), strip the `[best practice](...)` link from the `draft_comment` text before posting. Log: `INVALID_LINK: stripped broken link #<ID> from <file>:<line>`. The comment text itself is still posted — only the broken link is removed.
+
+   **Violations missing `rule_link` must be dropped.** Every comment the bot posts must cite a specific best practice rule so developers can understand the basis and push back if needed. If a subagent returns a violation without a `rule_link`, do NOT post it — log: `DROPPED: no rule_link for <file>:<line> — "<draft_comment snippet>"`. General observations that don't map to a documented rule should not be posted as review comments.
 4. **If AUTO_MODE**: post the prioritized violations using the inline review API (see Auto Posting below), then move to the next PR
 5. **If interactive mode**: present the prioritized violations to the user for approval before moving to the next PR
 6. **If no violations across all categories AND all prior bot threads were resolved in Step 1.6**: submit an APPROVE review and mark as settled using `--approve` (see Step 1.7). This completes the bot's engagement with this PR — future runs will skip it entirely. Log: `APPROVE: [PR #<number>](...) - no violations, approved`
