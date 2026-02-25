@@ -198,35 +198,40 @@ test_filter_script_exists() {
   assert_file_exists "filter-issue-json.sh exists" "$ROOT_DIR/scripts/filter-issue-json.sh"
 }
 
-test_filter_script_creates_cache() {
-  # Run the filter script (it should create cache)
-  local cache_dir="/tmp/brave-core-bot-cache"
-  local cache_file="$cache_dir/org-members.txt"
+test_filter_script_requires_org_members() {
+  # The filter script should error if org-members.txt doesn't exist
+  local cache_file="$ROOT_DIR/.ignore/org-members.txt"
 
-  # Clear cache first
-  rm -f "$cache_file"
+  # Temporarily move cache file if it exists
+  local had_cache=false
+  if [ -f "$cache_file" ]; then
+    had_cache=true
+    mv "$cache_file" "$cache_file.bak"
+  fi
 
-  # Mock run that will create cache (using a real issue)
-  # This will fail if issue doesn't exist, but cache should still be created
-  "$ROOT_DIR/scripts/filter-issue-json.sh" 1 json > /dev/null 2>&1 || true
+  TESTS_RUN=$((TESTS_RUN + 1))
+  if "$ROOT_DIR/scripts/filter-issue-json.sh" 1 json > /dev/null 2>&1; then
+    echo -e "${RED}✗${NC} FAIL: Filter script should error when org-members.txt is missing"
+  else
+    echo -e "${GREEN}✓${NC} PASS: Filter script errors when org-members.txt is missing"
+    TESTS_PASSED=$((TESTS_PASSED + 1))
+  fi
 
-  assert_file_exists "Org member cache is created" "$cache_file"
+  # Restore cache file
+  if [ "$had_cache" = true ]; then
+    mv "$cache_file.bak" "$cache_file"
+  fi
 }
 
 test_filter_script_cache_contains_members() {
-  local cache_file="/tmp/brave-core-bot-cache/org-members.txt"
-
-  # Ensure cache exists
-  if [ ! -f "$cache_file" ]; then
-    "$ROOT_DIR/scripts/filter-issue-json.sh" 1 json > /dev/null 2>&1 || true
-  fi
+  local cache_file="$ROOT_DIR/.ignore/org-members.txt"
 
   if [ -f "$cache_file" ]; then
     local output=$(cat "$cache_file")
     assert_contains "Cache contains bbondy" "bbondy" "$output"
   else
     TESTS_RUN=$((TESTS_RUN + 1))
-    echo -e "${YELLOW}⊘${NC} SKIP: Cache file not created"
+    echo -e "${YELLOW}⊘${NC} SKIP: Org members file not found at $cache_file (run setup.sh first)"
     return 0
   fi
 }
@@ -411,7 +416,7 @@ run_all_tests() {
 
   echo "=== Filtering Script Tests ==="
   test_filter_script_exists
-  test_filter_script_creates_cache
+  test_filter_script_requires_org_members
   test_filter_script_cache_contains_members
   test_filter_script_json_output
   test_filter_script_markdown_output

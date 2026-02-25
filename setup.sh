@@ -113,6 +113,20 @@ else
   echo ""
 fi
 
+# Create org members cache for prompt injection protection
+ORG_MEMBERS_DIR="$SCRIPT_DIR/.ignore"
+ORG_MEMBERS_FILE="$ORG_MEMBERS_DIR/org-members.txt"
+mkdir -p "$ORG_MEMBERS_DIR"
+
+echo "Fetching Brave org members list..."
+if gh api "orgs/brave/members" --paginate 2>/dev/null | jq -r '.[].login' > "$ORG_MEMBERS_FILE"; then
+  echo "✓ Org members cached: $(wc -l < "$ORG_MEMBERS_FILE") members → $ORG_MEMBERS_FILE"
+else
+  echo "⚠️  Warning: Could not fetch org members. You may need to create it manually:"
+  echo "  gh api 'orgs/brave/members' --paginate | jq -r '.[].login' > $ORG_MEMBERS_FILE"
+fi
+echo ""
+
 echo "==================================="
 echo "  Setup Complete!"
 echo "==================================="

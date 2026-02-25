@@ -21,31 +21,20 @@ if ! gh auth status > /dev/null 2>&1; then
   exit 1
 fi
 
-# Cache file for org membership checks (valid for 1 hour)
-CACHE_DIR="/tmp/brave-core-bot-cache"
-CACHE_FILE="$CACHE_DIR/org-members.txt"
-CACHE_MAX_AGE=3600  # 1 hour in seconds
-
 # Allowlist for trusted reviewers (for when running with external account)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ALLOWLIST_FILE="$SCRIPT_DIR/trusted-reviewers.txt"
 
-mkdir -p "$CACHE_DIR"
+# Org members cache (stored in .ignore/ to survive reboots, unlike /tmp)
+BOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+CACHE_FILE="$BOT_DIR/.ignore/org-members.txt"
 
-# Refresh org member cache if needed
-if [ ! -f "$CACHE_FILE" ] || [ $(($(date +%s) - $(stat -c %Y "$CACHE_FILE" 2>/dev/null || echo 0))) -gt $CACHE_MAX_AGE ]; then
-  echo "Refreshing org member cache..." >&2
-  if ! gh api "orgs/$ORG/members" --paginate 2>&1 | jq -r '.[].login' > "$CACHE_FILE"; then
-    echo "Error: Failed to fetch organization members list" >&2
-    if [ -f "$CACHE_FILE" ]; then
-      echo "Warning: Using stale cache from $(stat -c %Y "$CACHE_FILE")" >&2
-    else
-      echo "Error: No cache available and cannot fetch members" >&2
-      exit 1
-    fi
-  else
-    echo "Cached $(wc -l < "$CACHE_FILE") org members" >&2
-  fi
+# Require org members file to exist
+if [ ! -f "$CACHE_FILE" ]; then
+  echo "Error: Org members file not found at $CACHE_FILE" >&2
+  echo "Run setup.sh or create it manually:" >&2
+  echo "  mkdir -p $BOT_DIR/.ignore && gh api 'orgs/brave/members' --paginate | jq -r '.[].login' > $CACHE_FILE" >&2
+  exit 1
 fi
 
 # Check if user is an org member (using cache and allowlist)
