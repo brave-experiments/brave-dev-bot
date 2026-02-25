@@ -101,6 +101,16 @@ fi
 # Create logs directory if it doesn't exist
 mkdir -p "$LOGS_DIR"
 
+# Verify org members file exists (required for prompt injection protection)
+ORG_MEMBERS_FILE="$SCRIPT_DIR/.ignore/org-members.txt"
+if [ ! -f "$ORG_MEMBERS_FILE" ]; then
+  echo "Error: Org members file not found at $ORG_MEMBERS_FILE"
+  echo "This file is required for prompt injection protection."
+  echo "Run setup.sh or create it manually:"
+  echo "  mkdir -p $SCRIPT_DIR/.ignore && gh api 'orgs/brave/members' --paginate | jq -r '.[].login' > $ORG_MEMBERS_FILE"
+  exit 1
+fi
+
 echo "Starting Claude Code agent - Max iterations: $MAX_ITERATIONS"
 echo "Logs will be saved to: $LOGS_DIR"
 

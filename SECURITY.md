@@ -154,29 +154,35 @@ The bot automatically uses `./scripts/filter-pr-reviews.sh <pr-number>` to:
 
 ### Org Membership Cache
 
-The filter scripts cache org membership to reduce API calls:
-- **Location:** `/tmp/brave-core-bot-cache/org-members.txt`
-- **TTL:** 1 hour
-- **Refresh:** Automatic when stale
-- **Manual refresh:** `rm /tmp/brave-core-bot-cache/org-members.txt`
+The filter scripts require a pre-populated org membership file:
+- **Location:** `.ignore/org-members.txt` (gitignored, survives reboots unlike `/tmp`)
+- **Created by:** `setup.sh` or manually
+- **Required:** `run.sh` and filter scripts will error if this file is missing
 
-**Cache Invalidation Risks:**
+**Setup:**
+```bash
+# Created automatically by setup.sh, or manually:
+mkdir -p .ignore && gh api 'orgs/brave/members' --paginate | jq -r '.[].login' > .ignore/org-members.txt
+```
 
-While the 1-hour cache improves performance, it introduces a time window where the cached data may be stale:
+**Manual refresh:**
+```bash
+gh api 'orgs/brave/members' --paginate | jq -r '.[].login' > .ignore/org-members.txt
+```
 
-1. **User Removed from Org**: If a user is removed from the Brave org, their comments will still be trusted for up to 1 hour until the cache refreshes. This could allow a recently removed user to inject malicious instructions during this window.
+**Staleness Risks:**
 
-2. **User Added to Org**: If a trusted user is added to the org, their comments will be filtered as "external" for up to 1 hour.
+The file is not auto-refreshed, so it can become stale:
 
-3. **Mitigation**: The 1-hour TTL balances performance with security. For critical PRs, you can manually invalidate the cache:
-   ```bash
-   rm /tmp/brave-core-bot-cache/org-members.txt
-   ```
+1. **User Removed from Org**: If a user is removed from the Brave org, their comments will still be trusted until the file is manually refreshed.
 
-4. **When to Invalidate**: Force cache refresh if:
+2. **User Added to Org**: If a trusted user is added to the org, their comments will be filtered as "external" until the file is refreshed.
+
+3. **When to Refresh**:
    - You recently changed org membership
    - Working on security-sensitive PRs
    - Suspicious external comments appear as "org members"
+   - Periodically (e.g., weekly) to stay current
 
 ### Additional Safeguards
 
@@ -230,7 +236,7 @@ Test the filtering script with a known issue:
 ./scripts/filter-issue-json.sh 12345 markdown | less
 
 # Verify org member cache
-cat /tmp/brave-core-bot-cache/org-members.txt | grep bbondy
+cat .ignore/org-members.txt | grep bbondy
 ```
 
 ## Tab Switch Attack Prevention
