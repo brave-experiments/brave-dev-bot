@@ -1,5 +1,7 @@
 # Architecture and Code Organization
 
+<a id="ARCH-001"></a>
+
 ## Chromium Dependency Layer Hierarchy
 
 All Chromium code is organized into layers with strict downward-only dependencies. **Code in a lower layer must never depend on a higher layer.**
@@ -26,6 +28,8 @@ All Chromium code is organized into layers with strict downward-only dependencie
 - In Brave: `brave/browser/` is the embedder layer, `brave/components/` is the components layer. The same downward-only rules apply.
 
 ---
+
+<a id="ARCH-002"></a>
 
 ## ❌ No Layering Violations - Components Cannot Depend on Browser
 
@@ -62,6 +66,8 @@ Similarly, code in `components/safe_browsing/` cannot have `brave/browser/` deps
 
 ---
 
+<a id="ARCH-003"></a>
+
 ## ✅ Pass the Most Specific Dependency, Not "Bag of Stuff" Objects
 
 **Always pass the most fundamental object a function actually needs, not a broader object it could extract it from.** This follows from the Chromium componentization cookbook: "Pass the most fundamental objects possible, rather than passing more complex 'everything' or 'bag of stuff' objects."
@@ -84,6 +90,8 @@ Common substitutions:
 - `BrowserContext*` → `scoped_refptr<URLLoaderFactory>` (when only network is needed)
 
 ---
+
+<a id="ARCH-004"></a>
 
 ## ✅ Prefer Internal Feature Guards Over External Ifdefs
 
@@ -111,6 +119,8 @@ if (rewards_service) {  // Returns null when disabled
 
 ---
 
+<a id="ARCH-005"></a>
+
 ## ❌ Don't Misuse shared_ptr for Unowned Memory
 
 **Don't use `shared_ptr` to take ownership of something you don't own.**
@@ -136,11 +146,15 @@ void Init(const network::ResourceRequest& request) {
 
 ---
 
+<a id="ARCH-006"></a>
+
 ## Thread Safety - Service Method Calls
 
 **Calling service methods from the wrong thread causes crashes.** Always verify which thread a method expects to be called on. This is especially important for ad-block and shields services.
 
 ---
+
+<a id="ARCH-007"></a>
 
 ## ❌ Never Access Internal/Vendor Headers Directly
 
@@ -155,6 +169,8 @@ void Init(const network::ResourceRequest& request) {
 ```
 
 ---
+
+<a id="ARCH-008"></a>
 
 ## ✅ Use Pref Change Registrar Instead of Custom Observers
 
@@ -176,6 +192,8 @@ Also: check if the superclass already has a `pref_change_registrar_` before addi
 
 ---
 
+<a id="ARCH-009"></a>
+
 ## ❌ Don't Duplicate Pref Storage
 
 **Don't cache pref values in member variables when you can just read the pref at call time.**
@@ -192,7 +210,11 @@ bool IsOptedIn() { return prefs_->GetBoolean(kOptedIn); }
 
 ---
 
+<a id="ARCH-010"></a>
+
 ## Factory Patterns
+
+<a id="ARCH-011"></a>
 
 ### ✅ Use DependsOn for Factory Dependencies
 
@@ -206,15 +228,21 @@ MyServiceFactory::MyServiceFactory()
 }
 ```
 
+<a id="ARCH-012"></a>
+
 ### ✅ Return Null for Incognito Profiles
 
 **If a service shouldn't be active in incognito, return null from `GetForProfile` rather than overriding `GetBrowserContextToUse`.**
+
+<a id="ARCH-013"></a>
 
 ### ❌ Components Don't Need Their Own Component Manager
 
 **Each component does not need its own component manager.** Use a component installer policy instead.
 
 ---
+
+<a id="ARCH-014"></a>
 
 ## ✅ Use Abstract Base Classes to Avoid Layering Violations
 
@@ -236,6 +264,8 @@ class BraveOmniboxClientImpl : public BraveOmniboxClient {
 Then cast to the abstract type in components without a layering violation.
 
 ---
+
+<a id="ARCH-015"></a>
 
 ## ❌ Don't Initialize Services for Wrong Profile Types
 
@@ -259,6 +289,8 @@ content::BrowserContext* GetBrowserContextToUse(
 
 ---
 
+<a id="ARCH-016"></a>
+
 ## ✅ Reuse Existing Services and Singletons
 
 **Check for existing services and singletons before creating new ones.** Don't create duplicate singletons for the same purpose (e.g., don't create a new locale helper when `brave_ads::LocaleHelper` already exists).
@@ -266,6 +298,8 @@ content::BrowserContext* GetBrowserContextToUse(
 **Use observers for decoupled notifications instead of adding direct cross-service calls.**
 
 ---
+
+<a id="ARCH-017"></a>
 
 ## ✅ Encapsulate Cleanup in the Owning Class
 
@@ -282,6 +316,8 @@ tor_client_updater()->Cleanup();
 
 ---
 
+<a id="ARCH-018"></a>
+
 ## ✅ File Organization by Component
 
 **Group files by component, not by platform.** For example, `brave_rewards/android/` is preferred over `android/rewards/`.
@@ -297,6 +333,8 @@ brave/components/brave_rewards/android/brave_rewards_native_worker.cc
 This keeps related code together and is consistent with Chromium patterns like `chrome/browser/history/android/`.
 
 ---
+
+<a id="ARCH-019"></a>
 
 ## ✅ Exclude Entire Feature API from GN When Disabled
 
@@ -318,6 +356,8 @@ if (brave_wallet_enabled) {
 
 ---
 
+<a id="ARCH-020"></a>
+
 ## ✅ Use Friend Class for Test/Private Access
 
 **When tests or subclasses need access to private members, use `friend` declarations instead of making methods public or protected.**
@@ -336,6 +376,8 @@ private:
 For patches, use a `BRAVE_CLASS_NAME_H` define at the end of `public:` that adds friend declarations.
 
 ---
+
+<a id="ARCH-021"></a>
 
 ## ✅ Callbacks for Queries, Observers for State Changes
 
@@ -365,6 +407,8 @@ void RewardsService::SetRecurringDonation(amount) {
 
 ---
 
+<a id="ARCH-022"></a>
+
 ## ❌ Don't Expose Internal Library Types in Public Headers
 
 **Never expose internal library types (e.g., `ledger::*`, `bat/ledger/*`) in public component headers.** Use wrapper types defined in the component's public API.
@@ -380,6 +424,8 @@ void DoSomething(ContentSite site);
 ```
 
 ---
+
+<a id="ARCH-023"></a>
 
 ## ✅ source_set Name Should Match Directory
 
@@ -398,6 +444,8 @@ source_set("browser") { ... }
 
 ---
 
+<a id="ARCH-024"></a>
+
 ## ✅ Use `CHECK_IS_TEST` for Null Checks That Should Only Occur in Tests
 
 **When a pointer should never be null in production but may be null in certain test configurations, use `CHECK_IS_TEST()` before the null check.** This documents that the null case is test-only and prevents confusion about whether null is a valid production state.
@@ -415,6 +463,8 @@ if (!service) {
 ```
 
 ---
+
+<a id="ARCH-025"></a>
 
 ## ✅ Pass Dependencies via Constructors, Not Setter Callbacks
 
@@ -435,6 +485,8 @@ BraveVPNOSConnectionAPI::BraveVPNOSConnectionAPI(
 
 ---
 
+<a id="ARCH-026"></a>
+
 ## ✅ Use `ServiceIsNULLWhileTesting` for Optional Keyed Services
 
 **When a `KeyedService` should not be created during unit tests that don't provide the required dependencies, override `ServiceIsNULLWhileTesting()` to return `true` in the factory.** This is cleaner than scattering null checks throughout the codebase.
@@ -453,6 +505,8 @@ bool MyServiceFactory::ServiceIsNULLWhileTesting() const {
 
 ---
 
+<a id="ARCH-027"></a>
+
 ## ❌ Never Call `GetOriginalProfile()` to Bypass Factory Checks
 
 **Never call `GetOriginalProfile()` or similar methods to circumvent factory profile checks.** If a factory returns null for a given profile type, that profile is not supposed to use the service. Respect the factory's decision.
@@ -470,6 +524,8 @@ if (!service)
 ```
 
 ---
+
+<a id="ARCH-028"></a>
 
 ## ✅ Use `MaybeCreateForWebContents` for Conditional Tab Helpers
 
@@ -493,11 +549,15 @@ static void MaybeCreateForWebContents(content::WebContents* web_contents) {
 
 ---
 
+<a id="ARCH-029"></a>
+
 ## ✅ Use `ProfileKeyedServiceFactory` for New Desktop Factories
 
 **New keyed service factories on desktop should inherit from `ProfileKeyedServiceFactory`** rather than the older `BrowserContextKeyedServiceFactory`. See the Brave keyed services documentation.
 
 ---
+
+<a id="ARCH-030"></a>
 
 ## ✅ Guard New Functionality Behind `base::Feature`
 
@@ -519,6 +579,8 @@ service->DoSomething();
 
 ---
 
+<a id="ARCH-031"></a>
+
 ## ✅ Unify Platform-Specific Delegates
 
 **When implementing functionality for both Android and desktop, unify the code in a single delegate** rather than duplicating it across platforms. Extract only the platform-specific parts (like tab handling) into the delegate interface.
@@ -536,6 +598,8 @@ class UnifiedDelegate {
 ```
 
 ---
+
+<a id="ARCH-032"></a>
 
 ## ❌ Don't Silently Fall Back on Unknown Types
 
@@ -558,6 +622,8 @@ std::optional<FileType> GetFileType(const std::string& mime) {
 
 ---
 
+<a id="ARCH-033"></a>
+
 ## ✅ Separate Lifecycle Events from Data Change Events in Mojo
 
 **A Mojo `Changed` event should only fire when actual data changes occur.** Don't conflate lifecycle events (model loading, listener registration) with data mutation events. Provide separate events.
@@ -576,6 +642,8 @@ interface BookmarksListener {
 ```
 
 ---
+
+<a id="ARCH-034"></a>
 
 ## ✅ Use `base::BarrierCallback` for Parallel Async Aggregation
 
@@ -599,6 +667,8 @@ service3->Fetch(barrier);
 ```
 
 ---
+
+<a id="ARCH-035"></a>
 
 ## ❌ Mojom Enums Must Be Top-Level When Targeting iOS
 
@@ -627,11 +697,15 @@ struct ModelConfig {
 
 ---
 
+<a id="ARCH-036"></a>
+
 ## ❌ No Content-Layer Dependencies for iOS-Targeted Components
 
 **Components that must build for iOS (like `brave_wallet`) cannot depend on content-layer types** (`content::WebContents`, `content::BrowserContext`). iOS uses WebKit, not Chromium's content layer. Pass specific dependencies (`PrefService*`, `URLLoaderFactory`) instead.
 
 ---
+
+<a id="ARCH-037"></a>
 
 ## ✅ Use Layered Component Structure (`core/` + `content/`) for iOS-Compatible Components
 
@@ -656,17 +730,23 @@ components/brave_shields/
 
 ---
 
+<a id="ARCH-038"></a>
+
 ## ❌ No Circular Dependencies Between Components
 
 **Component dependencies must form a strictly tree-shaped graph — no circular dependencies.** If component A depends on component B, then B must never depend on A (directly or transitively). Use delegate interfaces or observers to break cycles.
 
 ---
 
+<a id="ARCH-039"></a>
+
 ## ✅ Service/Decoder Code Belongs in `services/` Not `components/.../browser/`
 
 **Mojo service implementations and data decoders should live in a `services/` directory**, not inside `components/.../browser/`. This follows Chromium conventions and keeps service code at the correct architectural layer.
 
 ---
+
+<a id="ARCH-040"></a>
 
 ## ❌ Utility Process Code Must Not Depend on Browser Process Code
 
@@ -696,6 +776,8 @@ When code needs to be used by both processes, move it from `browser/` to `common
 
 ---
 
+<a id="ARCH-041"></a>
+
 ## ✅ Prefer Static Singleton Over KeyedService When No Profile Dependency
 
 **When a service has no per-profile state and doesn't depend on profile-specific data, use a static singleton with `base::NoDestructor` instead of a `KeyedService`.** KeyedService adds unnecessary complexity when there's no profile dependency.
@@ -716,11 +798,15 @@ class ModelListService {
 
 ---
 
+<a id="ARCH-042"></a>
+
 ## ✅ Flag Destructive Pref Operations for UX Review
 
 **Operations that delete user data (clearing preferences, wiping storage) must be flagged for UX review before implementation.** Silent data deletion is a poor user experience and may violate user expectations.
 
 ---
+
+<a id="ARCH-043"></a>
 
 ## ✅ Use Pre-Allocated Vectors for Ordered Async Results
 
@@ -737,6 +823,8 @@ results_[request_index] = std::move(result);
 ```
 
 ---
+
+<a id="ARCH-044"></a>
 
 ## ✅ Use Existing Mojom Types Instead of Duplicating in C++
 
@@ -756,6 +844,8 @@ void RegisterTool(mojom::ToolConfigPtr config);
 
 ---
 
+<a id="ARCH-045"></a>
+
 ## ❌ Don't Expose Cache Keys in API Interfaces
 
 **Internal cache keys should not leak into public API interfaces.** Auto-generate unique cache keys internally rather than requiring callers to provide or manage them.
@@ -772,11 +862,15 @@ void FetchData(const std::string& url, Callback cb);
 
 ---
 
+<a id="ARCH-046"></a>
+
 ## ✅ Reorder Data for UI Presentation on Client Side
 
 **Data reordering for UI presentation (sorting, grouping, prioritizing) belongs in the client/UI layer, not in the core data layer or API response.** The backend should return data in its canonical order; the frontend transforms it for display.
 
 ---
+
+<a id="ARCH-047"></a>
 
 ## ✅ Mojom Interface Naming Should Be UI-Framework Agnostic
 
@@ -792,11 +886,15 @@ interface HistoryUIHandler { ... };
 
 ---
 
+<a id="ARCH-048"></a>
+
 ## ✅ Use Mojo Interfaces for Trusted/Untrusted WebUI Communication
 
 **When communicating between trusted and untrusted WebUI frames, use a mojo interface rather than `postMessage`.** The Chromium documentation advises against `postMessage` across trust boundaries. Only avoid mojo when the frame intentionally executes untrusted code and reducing API surface is a deliberate security choice.
 
 ---
+
+<a id="ARCH-049"></a>
 
 ## ✅ Gate UI Restrictions at UI Layer, Not in Core Utility Functions
 
@@ -818,6 +916,8 @@ bool IsZCashShieldedTransactionsEnabled() {
 
 ---
 
+<a id="ARCH-050"></a>
+
 ## ✅ Policy-Disabled Features: Hide UI Entirely
 
 **When a feature is disabled by admin policy with ENFORCED enforcement, hide the UI entirely** rather than just disabling/greying out controls. For RECOMMENDED policies, the UI should still be visible since the user can override. On macOS, `defaults write` creates RECOMMENDED level policies, not MANDATORY.
@@ -837,6 +937,8 @@ if (IsFeatureManaged() &&
 
 ---
 
+<a id="ARCH-051"></a>
+
 ## ✅ Check Value Changed Before Firing State Notifications
 
 **Before calling observer notification methods, check if the value actually changed.** Store the old value, update, then compare. This avoids unnecessary observer notifications and potential re-renders.
@@ -855,6 +957,8 @@ if (old_value != visual_content_used_percentage_) {
 ```
 
 ---
+
+<a id="ARCH-052"></a>
 
 ## ✅ Set Default Values in Mojom Struct Fields
 

@@ -1,5 +1,7 @@
 # chromium_src Overrides
 
+<a id="CSRC-001"></a>
+
 ## ✅ Avoid Modifying Chromium Source When Possible
 
 **Changes to Chromium code in `src/` should be avoided whenever possible.** Implement features and fixes entirely within brave-core (`src/brave/`) using Brave's own code and APIs.
@@ -19,11 +21,15 @@ When Chromium changes are unavoidable, follow this preference order:
 
 ---
 
+<a id="CSRC-002"></a>
+
 ## ❌ Don't Use chromium_src Overrides to Disable Tests
 
 **Never use `#define TestName DISABLED_TestName` in chromium_src overrides to disable upstream tests.** Use filter files in `test/filters/` instead, and move any Brave-specific replacement tests into the appropriate Brave test target (`brave_unit_tests`, `brave_browser_tests`, `brave_components_unittests`). See [Disabled Test Investigations](../testing-requirements.md#disabled-test-investigations-fixing--re-enabling) for the full pattern and examples.
 
 ---
+
+<a id="CSRC-003"></a>
 
 ## ✅ Minimize Code Duplication in Overrides
 
@@ -53,6 +59,8 @@ SkColor ChromeTypographyProvider::GetColor(...) {
 
 ---
 
+<a id="CSRC-004"></a>
+
 ## ✅ Prefer chromium_src Overrides Over Patches
 
 **Always prefer a chromium_src override over adding a patch.** Patches are harder to maintain, more likely to conflict, and harder to review. Required header files should be added through chromium_src overrides, not patches.
@@ -70,6 +78,8 @@ SkColor ChromeTypographyProvider::GetColor(...) {
 When you need to add virtual to a method, add a class method, or intercept behavior, always use chromium_src overrides instead of patches.
 
 ---
+
+<a id="CSRC-005"></a>
 
 ## ❌ Never Copy Entire Files or Methods
 
@@ -93,11 +103,15 @@ void SomeClass::LargeMethod() {
 
 ---
 
+<a id="CSRC-006"></a>
+
 ## ❌ No Multiline Patches - Use Defines
 
 **Never create multiline patches. Use `#define` macros or chromium_src overrides instead.**
 
 ---
+
+<a id="CSRC-007"></a>
 
 ## ✅ Prefer Subclassing Over Patching
 
@@ -125,17 +139,23 @@ Subclassing is better for long-term maintenance and makes changes easier to unde
 
 ---
 
+<a id="CSRC-008"></a>
+
 ## ❌ Never Add Comments in Patches
 
 **Never add comments, empty lines, or any non-functional changes in patch files.** Patches should contain only the minimal functional changes needed.
 
 ---
 
+<a id="CSRC-009"></a>
+
 ## ✅ Use `include` for Extensible Patches
 
 **When a patch adds to a list or block, use an `include` directive to make the patch extensible.** This way additional items can be added in brave-core without modifying the patch.
 
 ---
+
+<a id="CSRC-010"></a>
 
 ## ✅ Patches Should Use `define` for Extensibility
 
@@ -153,6 +173,8 @@ Subclassing is better for long-term maintenance and makes changes easier to unde
 Convention for define names: `BRAVE_ALL_CAPS_ORIGINAL_METHOD_NAME`.
 
 ---
+
+<a id="CSRC-011"></a>
 
 ## Patch Style Guidelines
 
@@ -177,6 +199,8 @@ Convention for define names: `BRAVE_ALL_CAPS_ORIGINAL_METHOD_NAME`.
 
 ---
 
+<a id="CSRC-012"></a>
+
 ## ✅ Always Use Original Header Paths
 
 **In chromium_src overrides, always `#include` the original header path, not the chromium_src version.**
@@ -191,6 +215,8 @@ Convention for define names: `BRAVE_ALL_CAPS_ORIGINAL_METHOD_NAME`.
 
 ---
 
+<a id="CSRC-013"></a>
+
 ## ✅ Use `-=` for List Removal in Patches
 
 **When removing items from GN lists, use `-=` instead of modifying the original line.** This makes the patch an addition rather than a modification.
@@ -204,6 +230,8 @@ Convention for define names: `BRAVE_ALL_CAPS_ORIGINAL_METHOD_NAME`.
 ```
 
 ---
+
+<a id="CSRC-014"></a>
 
 ## ✅ Replace Entire Classes with Dummy chromium_src Files
 
@@ -225,6 +253,8 @@ class TranslateURLFetcher {
 
 ---
 
+<a id="CSRC-015"></a>
+
 ## ✅ Use `#define` to Add `virtual` Without Patches
 
 **When a Chromium method needs to be made virtual for override, use a `#define` in a chromium_src override of the header instead of a patch.**
@@ -244,6 +274,8 @@ Note: This technique does not work when the return type is a pointer or referenc
 
 ---
 
+<a id="CSRC-016"></a>
+
 ## ❌ Never Use `#define final` to Remove the `final` Keyword
 
 **Redefining `final` via `#define` is undefined behavior per the C++ standard and is highly viral.** It can cause build failures in unrelated code that uses `final` in different contexts. Use a patch to remove `final` when subclassing is required, or find alternative approaches.
@@ -259,6 +291,8 @@ Note: This technique does not work when the return type is a pointer or referenc
 ```
 
 ---
+
+<a id="CSRC-017"></a>
 
 ## ✅ Add Explanation Comments in chromium_src Override Files
 
@@ -278,6 +312,8 @@ void TabView::BuildContextMenu() {
 
 ---
 
+<a id="CSRC-018"></a>
+
 ## ✅ Verify chromium_src Header GN Dependencies
 
 **When adding new `#include` directives in chromium_src override files, verify they have required GN dependencies.** The override file is compiled as part of the upstream target, which may not have deps on your Brave headers.
@@ -291,6 +327,8 @@ gn check out/Default
 ```
 
 ---
+
+<a id="CSRC-019"></a>
 
 ## ❌ chromium_src Must Not Depend on Brave Component Targets
 
@@ -310,6 +348,8 @@ CreateBraveBrowserPolicyProvider();
 
 ---
 
+<a id="CSRC-020"></a>
+
 ## ✅ Add Comments for Non-Obvious nullptr Assignments in chromium_src
 
 **Add comments explaining non-obvious nullptr assignments in chromium_src overrides,** especially for dangling pointer prevention. Since chromium_src code is out of context from the original file, the intent is not always clear.
@@ -325,6 +365,8 @@ provider_ = nullptr;
 
 ---
 
+<a id="CSRC-021"></a>
+
 ## ✅ Use `static_assert` to Protect Against Upstream Enum Changes
 
 **When adding custom values after an upstream enum's last value, add a `static_assert`** to detect if upstream changes their enum count. This prevents value clashes when upstream adds new values.
@@ -337,6 +379,8 @@ static_assert(static_cast<int>(policy::POLICY_SOURCE_COUNT) <= kBravePolicySourc
 ```
 
 ---
+
+<a id="CSRC-022"></a>
 
 ## ✅ Use `runtime_enabled_features.override.json5` for Blink Features
 

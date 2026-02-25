@@ -1,5 +1,7 @@
 # Front-End Best Practices
 
+<a id="FE-001"></a>
+
 ## ❌ Don't Spread Args in Render Helpers or Components
 
 **Avoid spreading `...args` into `render()`, component props, or other React APIs.** Spreading arbitrary arguments can allow unexpected attributes to be injected, potentially leading to XSS. Pass explicit props instead.
@@ -31,6 +33,8 @@ async function renderMyComponent(
 
 ---
 
+<a id="FE-002"></a>
+
 ## ❌ Avoid Redundant React Keys
 
 **When a parent component already assigns a `key` prop to a child in a list, the child should not redundantly set its own key on inner elements for list-keying purposes.** Redundant keys suggest a misunderstanding of React's reconciliation boundary.
@@ -53,11 +57,15 @@ async function renderMyComponent(
 
 ---
 
+<a id="FE-003"></a>
+
 ## ✅ Move Utility Functions to Dedicated Modules
 
 **Pure utility functions should live in dedicated utility modules (e.g., `utils/conversation_history_utils.ts`), not in React context/state files.** Context files should focus on state management, not data transformation logic.
 
 ---
+
+<a id="FE-004"></a>
 
 ## ✅ Merge Similar UI Components
 
@@ -73,6 +81,8 @@ async function renderMyComponent(
 ```
 
 ---
+
+<a id="FE-005"></a>
 
 ## ❌ Don't Redefine Types from Generated Bindings
 
@@ -91,6 +101,8 @@ import { FileType } from 'gen/brave/components/ai_chat/core/common/mojom/ai_chat
 
 ---
 
+<a id="FE-006"></a>
+
 ## ❌ Avoid Unnecessary `useMemo` for Simple Property Access
 
 **Don't wrap simple property lookups in `useMemo`.** Accessing `array.length`, `obj.property`, or other trivial derivations is cheaper than React's memoization overhead.
@@ -104,6 +116,8 @@ const count = items.length
 ```
 
 ---
+
+<a id="FE-007"></a>
 
 ## ✅ Return Null from Components When No Data
 
@@ -124,11 +138,15 @@ function UserInfo({ user }: Props) {
 
 ---
 
+<a id="FE-008"></a>
+
 ## ✅ Use `generateReactContextForAPI` for Mojo API Contexts
 
 **Use the `generateReactContextForAPI` helper from `components/common/react_api.tsx`** for creating React context + provider pairs for Mojo API bindings. Don't write custom context boilerplate for each API.
 
 ---
+
+<a id="FE-009"></a>
 
 ## ✅ Use Partial Value Updates Instead of Spread-Then-Modify
 
@@ -144,6 +162,8 @@ setPartialState({ isLoading: true })
 
 ---
 
+<a id="FE-010"></a>
+
 ## ❌ Don't Provide Defaults for Leo CSS Variables
 
 **Never provide fallback/default values for Leo design system CSS custom properties.** Leo variables are guaranteed to be set by the design system; providing defaults can mask theming bugs and produce inconsistent styling.
@@ -158,17 +178,23 @@ color: var(--leo-color-text-primary);
 
 ---
 
+<a id="FE-011"></a>
+
 ## ✅ Use `I18nMixinLit` for Localization in Lit Components
 
 **In Lit-based WebUI components, use `I18nMixinLit` instead of calling `loadTimeData.getString()` directly.** The mixin provides consistent i18n patterns and is the standard approach.
 
 ---
 
+<a id="FE-012"></a>
+
 ## ✅ New UI Components Must Have Storybook Stories
 
 **All new UI components must have Storybook stories covering their primary states** (default, loading, error, empty, populated). Stories serve as both documentation and visual regression baselines.
 
 ---
+
+<a id="FE-013"></a>
 
 ## ❌ TS Mojom Bindings Generate Interfaces, Not Classes
 
@@ -184,11 +210,15 @@ if ('text' in value && 'role' in value) { ... }
 
 ---
 
+<a id="FE-014"></a>
+
 ## ✅ WebUI Resource Files Must Be in Correct Top-Level Directory
 
 **WebUI resource files must be placed in the correct top-level directory under `resources/` matching the WebUI host name.** Misplaced resources won't be found at runtime.
 
 ---
+
+<a id="FE-015"></a>
 
 ## ✅ Prefer Semantic HTML Links Over Button+JS Navigation
 
@@ -204,11 +234,15 @@ if ('text' in value && 'role' in value) { ... }
 
 ---
 
+<a id="FE-016"></a>
+
 ## ❌ Avoid Unnecessary `waitFor` in React Tests
 
 **In React component tests, if you are using `rerender` to trigger updates, `waitFor` should not be needed** since `rerender` is synchronous. Similarly, wrapping DOM mutations in `act()` applies pending React updates. Using `waitFor` unnecessarily makes tests slower and can mask timing-related bugs.
 
 ---
+
+<a id="FE-017"></a>
 
 ## ❌ Avoid Global State Assumptions for Component-Scoped Operations
 
@@ -216,11 +250,15 @@ if ('text' in value && 'role' in value) { ... }
 
 ---
 
+<a id="FE-018"></a>
+
 ## ✅ Document Exported TypeScript Types
 
 **Exported TypeScript types intended for use outside the component must have documentation comments** explaining their purpose. Complex union types and data shapes used as component APIs especially need explicit documentation for consumers.
 
 ---
+
+<a id="FE-019"></a>
 
 ## ❌ Don't Add `translateable="true"` on GRD Strings
 
@@ -228,17 +266,23 @@ if ('text' in value && 'role' in value) { ... }
 
 ---
 
+<a id="FE-020"></a>
+
 ## ✅ Use Proper Ellipsis Characters in UI Strings
 
 **In user-facing strings, use the proper Unicode ellipsis character (`…`) instead of three periods (`...`).** This is a standard typographic convention for UI text.
 
 ---
 
+<a id="FE-021"></a>
+
 ## ✅ Provide Sufficient Context in Localization String Descriptions
 
 **Localization string descriptions must contain enough context for translators who only see the description.** For example, "History" alone might be ambiguous across languages (browser history vs. event history). Add specifics like "Title for the browser visits history section of a URL picker".
 
 ---
+
+<a id="FE-022"></a>
 
 ## ✅ Documentation Code Examples Must Be Valid
 
@@ -257,6 +301,8 @@ if ('text' in value && 'role' in value) { ... }
 ```
 
 ---
+
+<a id="FE-023"></a>
 
 ## ✅ Use TypeScript Entry Points Instead of Inline Scripts
 

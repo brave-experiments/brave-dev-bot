@@ -2,6 +2,8 @@
 
 <!-- See also: coding-standards.md, coding-standards-memory.md, coding-standards-apis.md -->
 
+<a id="CS-001"></a>
+
 ## ✅ Always Include What You Use (IWYU)
 
 **Always include the headers for types you directly use.** Don't rely on transitive includes from other headers - they can change at any time and break your code.
@@ -22,7 +24,11 @@ Also remove includes you don't actually use. Double-check all includes in new fi
 
 ---
 
+<a id="CS-002"></a>
+
 ## Naming Conventions
+
+<a id="CS-003"></a>
 
 ### ✅ Use Positive Form for Booleans and Methods
 
@@ -38,6 +44,8 @@ bool IsTorEnabled();
 pref: kTorEnabled
 ```
 
+<a id="CS-004"></a>
+
 ### ✅ Consistent Naming Across Layers
 
 **Use the same name for a concept everywhere - C++, JS, prefs, and UI.** Don't arbitrarily use different names in different places for the same thing.
@@ -51,6 +59,8 @@ JS:  getTorManaged()
 C++: IsTorManaged()
 JS:  isTorManaged()
 ```
+
+<a id="CS-005"></a>
 
 ### ✅ Use Conventional Method Prefixes
 
@@ -70,6 +80,8 @@ void LoadSavingsDaily();
 void SaveSavingsDaily();
 ```
 
+<a id="CS-006"></a>
+
 ### ✅ Grammatical Correctness
 
 ```cpp
@@ -81,6 +93,8 @@ bool IsBraveCommandId(int id);
 ```
 
 ---
+
+<a id="CS-007"></a>
 
 ## ✅ Naming: Only Use `Brave*` Prefix When Overriding Chromium
 
@@ -101,6 +115,8 @@ Also: **filename should match the class name.** `WebcompatReporterService` -> `w
 
 ---
 
+<a id="CS-008"></a>
+
 ## ✅ Naming: `Maybe*` for Conditional Actions
 
 **Use `Maybe*` prefix for functions that conditionally perform an action.**
@@ -115,6 +131,8 @@ void MaybeHideReferrer();
 ```
 
 ---
+
+<a id="CS-009"></a>
 
 ## ✅ C++ Variable Naming - Underscores, Not camelCase
 
@@ -132,6 +150,8 @@ std::string user_name;
 
 ---
 
+<a id="CS-010"></a>
+
 ## Lint and Style
 
 - **Opening brace** goes at the end of the previous line (K&R style)
@@ -140,17 +160,23 @@ std::string user_name;
 
 ---
 
+<a id="CS-011"></a>
+
 ## ✅ Copyright Rules
 
 **Never copy a Chromium file and use Brave's copyright.** If you copy or derive from Chromium code, you must include their copyright notice. The original year should remain unchanged - don't bump existing copyright years.
 
 ---
 
+<a id="CS-012"></a>
+
 ## ✅ Copyright Year in New Files Must Be Current Year
 
 **New files must use the current year in the copyright header.** Always determine the current year from the system date (e.g., `date +%Y`), never from training data or memory — the training cutoff year is often outdated. Don't copy-paste old copyright years from other files.
 
 ---
+
+<a id="CS-013"></a>
 
 ## ❌ Don't Define Methods in Headers
 
@@ -177,6 +203,8 @@ bool HandleRewardsProtocol(const GURL& url) {
 Also: `static` has no meaning for free functions in C++ (it's a C holdover). Use anonymous namespaces instead.
 
 ---
+
+<a id="CS-014"></a>
 
 ## ✅ Use Forward Declarations in Headers, Include in `.cc`
 
@@ -208,6 +236,8 @@ namespace foo { class Bar; }
 
 ---
 
+<a id="CS-015"></a>
+
 ## ✅ `friend` Declarations Go Right After `private:`
 
 **In class declarations, `friend` statements should be placed immediately after the `private:` access specifier,** before any member variables or methods.
@@ -230,6 +260,8 @@ class MyClass {
 ```
 
 ---
+
+<a id="CS-016"></a>
 
 ## ✅ Use Anonymous Namespaces for Internal Code
 
@@ -261,11 +293,15 @@ constexpr int kMaxRetries = 3;
 
 ---
 
+<a id="CS-017"></a>
+
 ## ✅ Function Ordering in `.cc` Should Match `.h`
 
 **Function definitions in `.cc` files should appear in the same order as their declarations in the corresponding `.h` file.**
 
 ---
+
+<a id="CS-018"></a>
 
 ## ✅ Break Up Bloated Files
 
@@ -282,6 +318,8 @@ void RecordRewardsP3A(RewardsService* service);
 ```
 
 ---
+
+<a id="CS-019"></a>
 
 ## ✅ Comments Must Make Sense to Future Readers of the Codebase
 
@@ -308,11 +346,15 @@ base::flat_map<std::string, int> lookup_;
 
 ---
 
+<a id="CS-020"></a>
+
 ## ✅ Document All New Classes, Public Methods, and Fields
 
 **All new classes, public methods, and non-obvious fields must have documentation comments.** For IDL types, document dictionaries and fields.
 
 ---
+
+<a id="CS-021"></a>
 
 ## ✅ Document Non-Obvious Failure Branches
 
@@ -335,6 +377,8 @@ if (!number) return std::nullopt;
 
 ---
 
+<a id="CS-022"></a>
+
 ## ✅ Feature Flag Comments Go in `.cc` Files
 
 **Comments explaining what a `base::Feature` does should be placed in the `.cc` file where the feature is defined, not in the `.h` file.**
@@ -353,6 +397,8 @@ BASE_FEATURE(kBraveWorkaroundNewWindowFlash, ...);
 
 ---
 
+<a id="CS-023"></a>
+
 ## ✅ Document Upstream Workarounds with Issue Links
 
 **When adding a workaround for an upstream Chromium bug:**
@@ -370,6 +416,8 @@ if (!x) return;
 
 ---
 
+<a id="CS-024"></a>
+
 ## ❌ Don't Use Positional Terms in Code Comments
 
 **Do not use "above" or "below" in comments to reference other code.** Other developers may insert code between the comment and referenced item, breaking the meaning. Reference items explicitly by name or identifier instead.
@@ -386,6 +434,8 @@ if (!x) return;
 
 ---
 
+<a id="CS-025"></a>
+
 ## ✅ Use CHECK for Impossible Conditions
 
 **Use `CHECK` (not `DCHECK`) for conditions that should never happen in any build.**
@@ -401,6 +451,8 @@ CHECK(browser_context);  // should never be null
 Also: don't add unnecessary DCHECKs. For example, `DCHECK(g_browser_process)` is unnecessary because the browser wouldn't even be running without it.
 
 ---
+
+<a id="CS-026"></a>
 
 ## ✅ `NOTREACHED`/`CHECK(false)` Only for Security-Critical Invariants
 
@@ -422,6 +474,8 @@ std::optional<mojom::AdType> ToMojomAdType(const std::string& type) {
 
 ---
 
+<a id="CS-027"></a>
+
 ## ✅ Use `CHECK` Only for Invariants Within Code's Control
 
 **Use `CHECK` only for conditions fully within the code's control.** For data from databases, user input, or external sources, use graceful error handling instead. `CHECK` failures crash the user's browser.
@@ -441,11 +495,15 @@ See also: [Chromium CHECK style guide](https://chromium.googlesource.com/chromiu
 
 ---
 
+<a id="CS-028"></a>
+
 ## ✅ Use Result Codes, Not bool, for Error Reporting
 
 **Return result codes (enums) instead of `bool` for operations that can fail.** This allows providing additional error information and is more future-proof.
 
 ---
+
+<a id="CS-029"></a>
 
 ## ✅ Don't Store Error State - Handle/Log and Store Only Success
 
@@ -461,6 +519,8 @@ std::optional<ChainMetadata> chain_metadata_;
 
 ---
 
+<a id="CS-030"></a>
+
 ## ❌ Don't Override Empty/No-Op Methods
 
 **If you're overriding a virtual method but not implementing any behavior, don't define it at all.**
@@ -473,6 +533,8 @@ void OnSomethingHappened() override {}
 ```
 
 ---
+
+<a id="CS-031"></a>
 
 ## ✅ Combine Methods That Are Always Called Together
 
@@ -488,6 +550,8 @@ void OnSomethingHappened() override {}
 ```
 
 ---
+
+<a id="CS-032"></a>
 
 ## ✅ Use Observer Pattern for UI Updates
 
@@ -511,11 +575,15 @@ void RewardsService::SavePendingContribution(...) {
 
 ---
 
+<a id="CS-033"></a>
+
 ## ✅ Platform-Specific Code Splitting
 
 **When a method's implementation is completely different on a platform, split it into a separate file** like `my_class_android.cc` rather than filling the main file with `#if defined(OS_ANDROID)` blocks.
 
 ---
+
+<a id="CS-034"></a>
 
 ## ✅ Use Feature Checks Over Platform Checks
 
@@ -534,6 +602,8 @@ if (IsDoNotDisturbEnabled()) {
 ```
 
 ---
+
+<a id="CS-035"></a>
 
 ## ✅ Consolidate Feature Flag Checks to Entry Points
 
@@ -557,11 +627,15 @@ void OnTabContextMenuAction(int action) {
 
 ---
 
+<a id="CS-036"></a>
+
 ## ❌ Don't Use Static Variables for Per-Profile Settings
 
 **Never use static variables to store per-profile settings.** Static state is shared across all profiles and will cause incorrect behavior in multi-profile scenarios. Use `UserData` or profile-attached keyed services instead.
 
 ---
+
+<a id="CS-037"></a>
 
 ## ❌ Don't Use Environment Variables for Configuration
 
@@ -577,11 +651,15 @@ std::string api_url = std::getenv("BRAVE_API_URL");
 
 ---
 
+<a id="CS-038"></a>
+
 ## ✅ Use the Right Target Type: source_set vs static_library
 
 **Use `source_set` only for internal component dependencies. Public targets for a component should use `static_library` or `component`.** Only internal deps that are not meant to be used outside the component should be `source_set` (with restricted visibility).
 
 ---
+
+<a id="CS-039"></a>
 
 ## ✅ Use `sources.gni` Only for Circular Dependencies with Upstream
 
@@ -589,17 +667,23 @@ std::string api_url = std::getenv("BRAVE_API_URL");
 
 ---
 
+<a id="CS-040"></a>
+
 ## ❌ Don't Duplicate Enum/Constant Values Across Languages
 
 **When values are defined in Mojo, use the generated bindings in C++, Java, and JS.** Don't manually duplicate constants - they easily drift out of sync.
 
 ---
 
+<a id="CS-041"></a>
+
 ## ❌ Don't Use rapidjson
 
 **Use base::JSONReader/JSONWriter, not rapidjson.** The base libraries are the standard in Chromium.
 
 ---
+
+<a id="CS-042"></a>
 
 ## VLOG Macros Handle Their Own Checks
 
@@ -619,11 +703,15 @@ Also: be judicious with VLOG - make sure each log statement has a specific purpo
 
 ---
 
+<a id="CS-043"></a>
+
 ## ✅ VLOG Component Name Should Match Directory
 
 **The component name used in VLOG messages should match the component directory name** (e.g., `policy` or `brave/components/brave_policy`).
 
 ---
+
+<a id="CS-044"></a>
 
 ## ✅ Use `LOG(WARNING)` or `VLOG` Instead of `LOG(ERROR)` for Non-Critical Failures
 
@@ -639,6 +727,8 @@ VLOG(1) << "Failed to parse filter list";
 
 ---
 
+<a id="CS-045"></a>
+
 ## ✅ Use `DLOG(ERROR)` for Non-Critical Debug-Only Errors
 
 **Use `DLOG(ERROR)` instead of `LOG(ERROR)` for error conditions that are not critical in release builds.** This avoids polluting release build logs with non-actionable errors.
@@ -653,6 +743,8 @@ DLOG(ERROR) << "Failed to parse optional field";
 
 ---
 
+<a id="CS-046"></a>
+
 ## ✅ Add `SCOPED_UMA_HISTOGRAM_TIMER` for Performance-Sensitive Paths
 
 **When writing code that processes data on the UI thread or performs potentially slow operations, add `SCOPED_UMA_HISTOGRAM_TIMER` to measure performance.**
@@ -666,6 +758,8 @@ void GetUrlCosmeticResourcesOnUI(const GURL& url) {
 ```
 
 ---
+
+<a id="CS-047"></a>
 
 ## ✅ Emit Histograms from a Single Location
 
@@ -687,6 +781,8 @@ void RecordNTPCustomizeUsage(NTPCustomizeUsage usage) {
 
 ---
 
+<a id="CS-048"></a>
+
 ## ❌ Don't Log Sensitive Information
 
 **Never log sensitive data such as sync seeds, private keys, tokens, or credentials.** Even VLOG-level logging can expose data in debug builds.
@@ -700,6 +796,8 @@ VLOG(1) << "Sync seed set successfully";
 ```
 
 ---
+
+<a id="CS-049"></a>
 
 ## ❌ Don't Use `public:` in Structs
 
@@ -722,6 +820,8 @@ struct TestData {
 
 ---
 
+<a id="CS-050"></a>
+
 ## ✅ Prefer `GlobalFeatures` Over `NoDestructor` for Global Services
 
 **For global/singleton services, prefer registering in `GlobalFeatures` (the Chromium replacement for `BrowserProcessImpl`) over `base::NoDestructor`.** `NoDestructor` makes testing difficult since you can't reset the instance between tests.
@@ -739,6 +839,8 @@ BraveOriginState* BraveOriginState::GetInstance() {
 
 ---
 
+<a id="CS-051"></a>
+
 ## ✅ Multiply Before Dividing in Integer Percentage Calculations
 
 **When computing percentages with integer arithmetic, multiply by 100 before dividing.** `(used * 100) / total` preserves precision, while `(used / total) * 100` truncates to 0 when `used < total`.
@@ -752,6 +854,8 @@ int pct = (used * 100) / total;
 ```
 
 ---
+
+<a id="CS-052"></a>
 
 ## ✅ Prefer Free Functions Over Complex Inline Lambdas
 
@@ -774,6 +878,8 @@ DoSomething(base::BindOnce(&ProcessResult));
 
 ---
 
+<a id="CS-053"></a>
+
 ## ⚠️ Use `auto` Judiciously — Prefer Explicit Types When Short and Descriptive
 
 **Don't use `auto` merely to avoid writing a type name** when the explicit type is short and adds readability. Spell out types like `base::TimeDelta`, `base::Time`, etc. Per Google style guide: "Do not use [auto] merely to avoid the inconvenience of writing an explicit type."
@@ -793,6 +899,8 @@ auto weights_opt = base::ReadFileToBytes(weights_path);
 ```
 
 ---
+
+<a id="CS-054"></a>
 
 ## ✅ Member Initialization - Don't Add Default When Constructor Always Sets
 
@@ -814,6 +922,8 @@ class TreeTabNode {
 
 ---
 
+<a id="CS-055"></a>
+
 ## ✅ Prefer Overloads Over Silently-Ignored Optional Parameters
 
 **Don't force callers to provide parameters that are silently ignored.** Use function overloads. Similarly, prefer overloads over `std::variant` for distinct call patterns.
@@ -829,6 +939,8 @@ void ApiFetch(const std::string& url, const base::Value& body, Callback cb);  //
 ```
 
 ---
+
+<a id="CS-056"></a>
 
 ## ✅ Use `observers_.Notify()` Instead of Manual Iteration
 
@@ -846,6 +958,8 @@ observers_.Notify(&Observer::OnPoliciesChanged);
 
 ---
 
+<a id="CS-057"></a>
+
 ## ✅ Validate and Sanitize Data Before Injecting as JavaScript
 
 **When constructing JavaScript from C++ data for injection, use JSON serialization (`base::JSONWriter`) for safe encoding.** String concatenation can lead to injection vulnerabilities.
@@ -862,6 +976,8 @@ std::string script = "const selectors = " + json_selectors + ";";
 
 ---
 
+<a id="CS-058"></a>
+
 ## ✅ Use `EvalJs` Instead of Deprecated `ExecuteScriptAndExtract*`
 
 **In browser tests, use `EvalJs` and `ExecJs` instead of the deprecated `ExecuteScriptAndExtractBool/String/Int` functions.**
@@ -877,6 +993,8 @@ EXPECT_EQ(true, content::EvalJs(web_contents, "someCheck()"));
 ```
 
 ---
+
+<a id="CS-059"></a>
 
 ## ✅ Use `Profile::FromBrowserContext` for Conversion
 

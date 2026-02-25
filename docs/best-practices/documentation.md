@@ -1,5 +1,7 @@
 # Documentation Best Practices
 
+<a id="DOC-001"></a>
+
 ## ✅ Update Documentation Alongside Code Changes
 
 **Documentation changes must accompany code modifications in the same changelist.** Don't create separate CLs for documentation updates — they tend to get forgotten or lose context. Updating docs in the same CL ensures accuracy and provides reviewers with context about the changes being made.
@@ -14,6 +16,8 @@ CL 1: Refactor RewardsService API + update README and method docs
 ```
 
 ---
+
+<a id="DOC-002"></a>
 
 ## ✅ Delete Dead Documentation
 
@@ -36,6 +40,8 @@ void FetchData() { ... }
 ```
 
 ---
+
+<a id="DOC-003"></a>
 
 ## ✅ Inline Comments Should Explain "Why", Not "What"
 
@@ -63,6 +69,8 @@ constexpr base::TimeDelta kTimeout = base::Seconds(30);
 
 ---
 
+<a id="DOC-004"></a>
+
 ## ✅ Method Documentation Should Describe the Contract
 
 **Method API documentation should describe the contract: behavior, parameters, return values, gotchas, restrictions, and exceptions.** This is especially important for public methods in headers.
@@ -81,6 +89,8 @@ std::optional<PublisherInfo> GetPublisherInfo(const std::string& id);
 ```
 
 ---
+
+<a id="DOC-005"></a>
 
 ## ✅ README.md Files Should Orient New Readers
 
@@ -102,9 +112,13 @@ Start with the simplest use case and build up to advanced usage.
 
 This directory contains the browser-layer integration for Brave Rewards.
 
+<a id="DOC-006"></a>
+
 ## Key Files
 - `rewards_service_impl.cc` - Main service implementation
 - `rewards_service_factory.cc` - Profile-keyed factory
+
+<a id="DOC-007"></a>
 
 ## Usage
 Get the service via the factory:
@@ -113,24 +127,34 @@ RewardsServiceFactory::GetForProfile(profile)
 
 ---
 
+<a id="DOC-008"></a>
+
 ## ✅ Don't Duplicate Documentation — Link to Canonical Sources
 
 **Link to existing documentation rather than creating duplicates.** Duplicate docs inevitably drift out of sync. If you need project-specific context, add a brief note and link to the canonical source.
 
 ```markdown
 # ❌ WRONG - duplicating upstream docs
+
+<a id="DOC-009"></a>
+
 ## How to Add a Feature Flag
 1. Create a feature in features.h...
 2. Register in about_flags.cc...
 (copy of upstream instructions that will go stale)
 
 # ✅ CORRECT - link with context
+
+<a id="DOC-010"></a>
+
 ## How to Add a Feature Flag
 Follow the [Chromium feature flag guide](https://chromium.googlesource.com/chromium/src/+/main/docs/how_to_add_your_feature_flag.md).
 Brave-specific: also register in `brave/browser/about_flags.cc`.
 ```
 
 ---
+
+<a id="DOC-011"></a>
 
 ## ✅ Prefer Minimal, Fresh Documentation Over Comprehensive Stale Documentation
 

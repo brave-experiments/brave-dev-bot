@@ -1,5 +1,7 @@
 # JavaScript Evaluation in Tests
 
+<a id="TJ-001"></a>
+
 ## ✅ Prefer Event-Driven JavaScript Over C++ Polling
 
 **When waiting for DOM changes, prefer JavaScript event-driven patterns (like MutationObserver) over C++ polling loops.**
@@ -48,6 +50,8 @@ std::string updated_text =
 
 ---
 
+<a id="TJ-002"></a>
+
 ## ✅ Manual Polling Loop (Fallback)
 
 **Use C++ polling only when JavaScript event-driven patterns aren't applicable** (e.g., checking for element existence, waiting for JS API readiness):
@@ -70,6 +74,8 @@ for (;;) {
 
 ---
 
+<a id="TJ-003"></a>
+
 ## Use Isolated Worlds for Test Code
 
 When evaluating JavaScript in tests, use `ISOLATED_WORLD_ID_BRAVE_INTERNAL` to avoid interfering with page scripts:
@@ -81,6 +87,8 @@ content::EvalJs(web_contents, "document.getElementById('foo')",
 ```
 
 ---
+
+<a id="TJ-004"></a>
 
 ## Wait for Renderer-Side JS Setup
 

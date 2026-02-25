@@ -1,5 +1,7 @@
 # Navigation and Timing
 
+<a id="TN-001"></a>
+
 ## Same-Document Navigation
 
 **DO NOT use `base::test::RunUntil()` polling for same-document (hash/fragment) navigations.**
@@ -32,6 +34,8 @@ observer.Wait();
 
 ---
 
+<a id="TN-002"></a>
+
 ## Avoid Hardcoded JavaScript Timeouts
 
 **BAD:**
@@ -51,6 +55,8 @@ ASSERT_TRUE(base::test::RunUntil([&]() {
 ```
 
 ---
+
+<a id="TN-003"></a>
 
 ## Wait for Page Distillation
 

@@ -2,6 +2,8 @@
 
 <!-- See also: coding-standards.md, coding-standards-memory.md, coding-standards-apis.md -->
 
+<a id="CSA-001"></a>
+
 ## ✅ Use Existing Utilities Instead of Custom Code
 
 **Always check for existing well-tested utilities before writing custom code.** Chromium and base have extensive libraries for common operations.
@@ -22,17 +24,23 @@ while (!it.IsAtEnd()) {
 
 ---
 
+<a id="CSA-002"></a>
+
 ## ✅ Use base::OnceCallback and base::BindOnce
 
 **`base::Callback` and `base::Bind` are deprecated.** Use `base::OnceCallback`/`base::RepeatingCallback` and `base::BindOnce`/`base::BindRepeating`. Use `std::move` when passing or calling a `base::OnceCallback`.
 
 ---
 
+<a id="CSA-003"></a>
+
 ## ✅ Never Use std::time - Use base::Time
 
 **Always use `base::Time` and related classes instead of C-style `std::time`, `ctime`, or `time_t`.** The base library provides cross-platform, type-safe time utilities.
 
 ---
+
+<a id="CSA-004"></a>
 
 ## ✅ Use `JSONValueConverter` for JSON/Type Conversion
 
@@ -55,6 +63,8 @@ static void RegisterJSONConverter(
 
 ---
 
+<a id="CSA-005"></a>
+
 ## ✅ Use `base::flat_map` Over `std::map` and `std::unordered_map`
 
 **Chromium's container guidelines recommend avoiding `std::unordered_map` and `std::map`.** Use `base::flat_map` as the default choice for associative containers. It has better cache locality and lower overhead for small-to-medium sizes. See `base/containers/README.md` for guidance.
@@ -71,6 +81,8 @@ base::flat_map<std::string, int> lookup_;
 
 ---
 
+<a id="CSA-006"></a>
+
 ## ❌ Don't Use Deprecated `GetAs*` Methods on `base::Value`
 
 **The `GetAsString()`, `GetAsInteger()`, etc. methods on `base::Value` are deprecated.** Use the newer direct access methods like `GetString()`, `GetInt()`, `GetDouble()`.
@@ -86,6 +98,8 @@ const std::string& str = value->GetString();
 
 ---
 
+<a id="CSA-007"></a>
+
 ## ✅ Use `GetIfBool`/`GetIfInt`/`GetIfString` for Safe `base::Value` Access
 
 **When extracting values from a `base::Value` where the type may not match, use `GetIf*` accessors instead of `Get*` which CHECK-fails on type mismatch.**
@@ -99,6 +113,8 @@ if (value.GetIfBool().value_or(false)) { ... }
 ```
 
 ---
+
+<a id="CSA-008"></a>
 
 ## ❌ Don't Use `std::to_string` - Use `base::NumberToString`
 
@@ -114,6 +130,8 @@ std::string port_str = base::NumberToString(port);
 
 ---
 
+<a id="CSA-009"></a>
+
 ## ❌ Don't Use C-Style Casts
 
 **Chromium prohibits C-style casts.** Use C++ casts (`static_cast`, `reinterpret_cast`, etc.) which are safer and more explicit.
@@ -127,6 +145,8 @@ double result = static_cast<double>(integer_value) / total;
 ```
 
 ---
+
+<a id="CSA-010"></a>
 
 ## ✅ Prefer std::move Over Clone
 
@@ -144,6 +164,8 @@ std::move(cb).Run(std::move(buffer), other_arg);
 
 ---
 
+<a id="CSA-011"></a>
+
 ## ❌ Don't Create Unnecessary Wrapper Types
 
 **Don't create plural/container types when you can use arrays of the singular type.** Extra wrapper types add complexity without value.
@@ -159,6 +181,8 @@ std::vector<MonthlyStatement> GetMonthlyStatements();
 ```
 
 ---
+
+<a id="CSA-012"></a>
 
 ## ✅ Use Pref Dict/List Values Directly
 
@@ -176,6 +200,8 @@ prefs->SetList(prefs::kMyPref, std::move(list_value));
 ```
 
 ---
+
+<a id="CSA-013"></a>
 
 ## ✅ Use `extern const char[]` Over `#define` for Strings
 
@@ -195,6 +221,8 @@ Exception: use `#define` when you need to pass the value in from GN.
 
 ---
 
+<a id="CSA-014"></a>
+
 ## ✅ Prefer Enum Types Over String Constants for Typed Values
 
 **When a value has a fixed set of valid options, use an enum with string conversion rather than passing raw strings.** This enables compiler-checked switch statements and prevents invalid values.
@@ -210,11 +238,15 @@ void SetWalletType(WalletType type);
 
 ---
 
+<a id="CSA-015"></a>
+
 ## ❌ No C++ Exceptions in Third-Party Libraries
 
 **C++ exceptions are disallowed in Chromium.** When integrating third-party libraries, verify they build with exception support disabled.
 
 ---
+
+<a id="CSA-016"></a>
 
 ## ✅ Use `base::EraseIf` / `std::erase_if` Instead of Manual Erase Loops
 
@@ -238,6 +270,8 @@ std::erase_if(items, [](const auto& item) { return item.IsExpired(); });
 
 ---
 
+<a id="CSA-017"></a>
+
 ## ✅ Use `base::span` at API Boundaries Instead of `const std::vector&`
 
 **Prefer `base::span<const T>` over `const std::vector<T>&` for function parameters that only read data.** Spans are lightweight, non-owning views that accept any contiguous container (`std::vector`, `base::HeapArray`, C arrays, `base::FixedArray`), making APIs more flexible.
@@ -254,6 +288,8 @@ This is especially important for byte buffer APIs where the data source may be a
 
 ---
 
+<a id="CSA-018"></a>
+
 ## ✅ Use `base::FixedArray` Over `std::vector` for Known-Size Runtime Allocations
 
 **When the size is known at creation but not at compile time, use `base::FixedArray`.** It avoids heap allocation for small sizes and communicates immutable size.
@@ -267,6 +303,8 @@ base::FixedArray<uint8_t> out(size);
 ```
 
 ---
+
+<a id="CSA-019"></a>
 
 ## ✅ Use `base::HeapArray<uint8_t>` for Fixed-Size Byte Buffers
 
@@ -288,6 +326,8 @@ Use `HeapArray::Uninit(size)` for performance-sensitive paths where zero-initial
 
 ---
 
+<a id="CSA-020"></a>
+
 ## ✅ Use `base::ToVector` for Range-to-Vector Conversions
 
 **Use `base::ToVector(range)` instead of manual copy patterns when converting a range to a `std::vector`.** It handles `reserve()` and iteration automatically, and supports projections.
@@ -308,11 +348,15 @@ auto names = base::ToVector(items, &Item::name);
 
 ---
 
+<a id="CSA-021"></a>
+
 ## ✅ Prefer Contiguous Containers Over Linked Lists
 
 **Never use `std::list` for pure traversal — poor cache locality.** Use `std::list` only when stable iterators or frequent mid-container insert/remove is required. Prefer `std::vector` with `reserve()` for known sizes.
 
 ---
+
+<a id="CSA-022"></a>
 
 ## ✅ Use `std::optional` Instead of Sentinel Values
 
@@ -328,6 +372,8 @@ void SetCustomTitle(std::optional<std::string> title);  // nullopt means "unset"
 
 ---
 
+<a id="CSA-023"></a>
+
 ## ✅ Use `.emplace()` for `std::optional` Initialization Clarity
 
 **When engaging a `std::optional` member, prefer `.emplace()` for clarity about the intent.**
@@ -342,6 +388,8 @@ elapsed_timer_.emplace();
 
 ---
 
+<a id="CSA-024"></a>
+
 ## ✅ Return `std::optional` Instead of `bool` + Out Parameter
 
 **When a function needs to return a value that may or may not exist, use `std::optional<T>` instead of returning `bool` with an out parameter.**
@@ -355,6 +403,8 @@ std::optional<int> GetHistorySize();
 ```
 
 ---
+
+<a id="CSA-025"></a>
 
 ## ✅ Use `constexpr` for Compile-Time Constants
 
@@ -375,6 +425,8 @@ constexpr int kMaxRetries = 3;
 ```
 
 ---
+
+<a id="CSA-026"></a>
 
 ## ✅ Use Raw String Literals for Multiline Strings
 
@@ -397,6 +449,8 @@ const char kScript[] = R"(
 
 ---
 
+<a id="CSA-027"></a>
+
 ## ❌ Don't Pass Primitive Types by `const` Reference
 
 **Primitive types (`int`, `bool`, `float`, pointers) should be passed by value, not by `const` reference.** Passing by reference adds unnecessary indirection.
@@ -410,6 +464,8 @@ void ProcessItem(int id, bool enabled);
 ```
 
 ---
+
+<a id="CSA-028"></a>
 
 ## ❌ Don't Add `DISALLOW_COPY_AND_ASSIGN` in New Code
 
@@ -432,6 +488,8 @@ class MyClass {
 
 ---
 
+<a id="CSA-029"></a>
+
 ## ✅ Declare Move Operations as `noexcept`
 
 **When defining custom move constructors/assignment operators for structs used in `std::vector`, declare them `noexcept`.** Without `noexcept`, `std::vector` falls back to copying during reallocations.
@@ -446,6 +504,8 @@ Topic& operator=(Topic&&) noexcept = default;
 ```
 
 ---
+
+<a id="CSA-030"></a>
 
 ## ✅ Use References for Non-Nullable Parameters; `raw_ref` for Stored References
 
@@ -464,6 +524,8 @@ raw_ref<PrefService> pref_service_;  // not raw_ptr
 
 ---
 
+<a id="CSA-031"></a>
+
 ## ❌ Avoid `std::optional<T>&` References
 
 **Never pass `std::optional<T>&` as a function parameter.** It's confusing and can cause hidden copies. Take by value if storing, or use `base::optional_ref<T>` for non-owning optional references.
@@ -481,6 +543,8 @@ void Process(base::optional_ref<const std::string> value);
 
 ---
 
+<a id="CSA-032"></a>
+
 ## ✅ Short-Circuit on Non-HTTP(S) URLs
 
 **In URL processing code (shields, debouncing, content settings), add an early return for non-HTTP/HTTPS URLs.** This prevents wasting time on irrelevant schemes and avoids edge cases.
@@ -495,6 +559,8 @@ bool ShouldDebounce(const GURL& url) {
 ```
 
 ---
+
+<a id="CSA-033"></a>
 
 ## ❌ Don't Narrow Integer Types in Setters or Parameters
 
@@ -516,11 +582,15 @@ class Transaction {
 
 ---
 
+<a id="CSA-034"></a>
+
 ## ✅ Deprecate Prefs Before Removing Them
 
 **When removing a preference that was previously stored in user profiles, first deprecate the pref (register it for clearing) in one release before fully removing it.** This ensures the old value is cleared from existing profiles.
 
 ---
+
+<a id="CSA-035"></a>
 
 ## ❌ Don't Modify Production Code Solely to Accommodate Tests
 
@@ -531,6 +601,8 @@ class Transaction {
 **Exception:** Thin `ForTesting()` accessors that expose internalized features (e.g., `base::Feature`) are acceptable. These keep the feature internalized while providing a clean way for tests to reference it, and do not affect production behavior.
 
 ---
+
+<a id="CSA-036"></a>
 
 ## ✅ Use `url::kStandardSchemeSeparator` Instead of Hardcoded `"://"`
 
@@ -548,6 +620,8 @@ std::string url = base::StrCat({url::kHttpsScheme,
 
 ---
 
+<a id="CSA-037"></a>
+
 ## ✅ Use `base::DoNothing()` for No-Op Callbacks
 
 **Use `base::DoNothing()` instead of empty lambdas when a no-op callback is needed.** It is the Chromium-idiomatic way and is more readable.
@@ -562,6 +636,8 @@ service->DoAsync(base::DoNothing());
 
 ---
 
+<a id="CSA-038"></a>
+
 ## ✅ Use `base::StrAppend` Over `+= base::StrCat`
 
 **When appending to an existing string, use `base::StrAppend(&str, {...})` instead of `str += base::StrCat({...})`.** `StrCat` creates a temporary string that is then copied; `StrAppend` appends directly to the target, avoiding unnecessary allocation.
@@ -575,6 +651,8 @@ base::StrAppend(&result, {kOpenTag, "\n", "=== METADATA ===\n"});
 ```
 
 ---
+
+<a id="CSA-039"></a>
 
 ## ✅ Use `base::Reversed()` for Reverse Iteration
 
@@ -595,6 +673,8 @@ for (const auto& entry : base::Reversed(history)) {
 
 ---
 
+<a id="CSA-040"></a>
+
 ## ✅ Use `absl::StrFormat` Over `base::StringPrintf`
 
 **Prefer `absl::StrFormat` for formatted string construction.** `base::StringPrintf` is being deprecated in favor of `absl::StrFormat`.
@@ -608,6 +688,8 @@ std::string msg = absl::StrFormat("Error %d: %s", code, desc);
 ```
 
 ---
+
+<a id="CSA-041"></a>
 
 ## ✅ Use `base::saturated_cast` for Safe Numeric Conversions
 
@@ -624,6 +706,8 @@ result = base::saturated_cast<uint64_t>(value.value_or(0));
 ```
 
 ---
+
+<a id="CSA-042"></a>
 
 ## ✅ Use `std::ranges` Algorithms Over Manual Loops
 
@@ -646,6 +730,8 @@ bool found = std::ranges::any_of(items,
 
 ---
 
+<a id="CSA-043"></a>
+
 ## ✅ Guard `substr()` with Size Check
 
 **Only call `substr()` when the content actually exceeds the limit.** For content within the limit, use the original string to avoid unnecessary memory allocation and copying.
@@ -662,6 +748,8 @@ const std::string& truncated = (content.size() > max_length)
 
 ---
 
+<a id="CSA-044"></a>
+
 ## ✅ Use `base::expected<T, E>` Over Optional + Error Out-Parameter
 
 **When a function can fail and needs to communicate error details, use `base::expected<T, E>` instead of `std::optional<T>` with a separate error out-parameter.** This bundles success and error into a single return value.
@@ -675,6 +763,8 @@ base::expected<Result, std::string> Parse(const std::string& input);
 ```
 
 ---
+
+<a id="CSA-045"></a>
 
 ## ✅ Use `base::MakeFixedFlatMap` for Static Enum-to-String Mappings
 
@@ -696,6 +786,8 @@ constexpr auto kActionNames = base::MakeFixedFlatMap<ActionType, std::string_vie
 
 ---
 
+<a id="CSA-046"></a>
+
 ## ✅ Use `base::JSONReader::ReadDict` for JSON Dictionary Parsing
 
 **When parsing a JSON string expected to be a dictionary, use `base::JSONReader::ReadDict()`** which returns `std::optional<base::Value::Dict>` directly, instead of `base::JSONReader::Read()` followed by manual `GetIfDict()` extraction.
@@ -713,6 +805,8 @@ if (!dict) return;
 
 ---
 
+<a id="CSA-047"></a>
+
 ## ✅ Pass-by-Value for Sink Parameters (Google Style)
 
 **Per Google C++ Style Guide, use pass-by-value for parameters that will be moved into the callee** (sink parameters) instead of `T&&`. The caller uses `std::move()` either way, and pass-by-value is simpler.
@@ -727,6 +821,8 @@ void SetName(std::string name) { name_ = std::move(name); }
 
 ---
 
+<a id="CSA-048"></a>
+
 ## ✅ Annotate Obsolete Pref Migration Entries with Dates
 
 **When adding preference migration code that removes deprecated prefs, annotate the entry with the date it was added.** This makes it easy to identify and clean up old migration code later.
@@ -740,6 +836,8 @@ profile_prefs->ClearPref(kOldFeaturePref);  // Added 2025-01 (safe to remove aft
 ```
 
 ---
+
+<a id="CSA-049"></a>
 
 ## ✅ Use `base::FindOrNull()` for Map Lookups
 
@@ -759,6 +857,8 @@ return base::FindOrNull(metric_configs_, metric_name);
 
 ---
 
+<a id="CSA-050"></a>
+
 ## ✅ Use `base::Extend` for Appending Ranges to Vectors
 
 **Use `base::Extend(target, source)` instead of manual `insert(end, begin, end)` for appending one collection to another.**
@@ -773,6 +873,8 @@ base::Extend(accelerator_list, base::span(kBraveAcceleratorMap));
 ```
 
 ---
+
+<a id="CSA-051"></a>
 
 ## ✅ Use `base::test::ParseJson` and `base::ExpectDict*` in Tests
 
@@ -794,6 +896,8 @@ EXPECT_THAT(dict, base::test::DictHasValue("name", "test"));
 
 ---
 
+<a id="CSA-052"></a>
+
 ## ✅ Use `kOsAll` for Cross-Platform Feature Flags
 
 **When registering feature flags in `about_flags.cc` that should be available on all platforms, use `kOsAll`** instead of listing individual platform constants.
@@ -807,6 +911,8 @@ EXPECT_THAT(dict, base::test::DictHasValue("name", "test"));
 ```
 
 ---
+
+<a id="CSA-053"></a>
 
 ## ✅ Workaround Code Must Have Tracking Issues
 
@@ -825,6 +931,8 @@ if (ShouldSkipValidation()) return;
 
 ---
 
+<a id="CSA-054"></a>
+
 ## ✅ Use Named Constants for JSON Property Keys
 
 **When accessing JSON object properties in C++, define named constants for the key strings** rather than using inline string literals. This prevents typos and makes refactoring easier.
@@ -842,6 +950,8 @@ auto* url = dict.FindString(kEndpointUrl);
 ```
 
 ---
+
+<a id="CSA-055"></a>
 
 ## ❌ Never Return `std::string_view` from Functions That Build Strings
 
@@ -862,6 +972,8 @@ std::string BuildUrl(std::string_view host) {
 
 ---
 
+<a id="CSA-056"></a>
+
 ## ✅ Prefer `constexpr int` Over Single-Value Enums
 
 **When a constant is just a single numeric value, use `constexpr int` rather than creating a single-value enum.** Enums are for sets of related values.
@@ -876,6 +988,8 @@ constexpr int kBravePolicySource = 10;
 
 ---
 
+<a id="CSA-057"></a>
+
 ## ✅ Use `base::FilePath` for File Path Parameters
 
 **Parameters representing file system paths should use `base::FilePath` instead of `std::string`.** This provides type safety, simplifies call sites, and makes APIs self-documenting.
@@ -889,6 +1003,8 @@ std::string GetProfileId(const base::FilePath& profile_path);
 ```
 
 ---
+
+<a id="CSA-058"></a>
 
 ## ✅ Explicitly Assign Enum Values When Conditionally Compiling Out Members
 
@@ -916,6 +1032,8 @@ enum class SidebarItem {
 
 ---
 
+<a id="CSA-059"></a>
+
 ## ✅ Name All Function Parameters in Header Declarations
 
 **Always name function parameters in header declarations, especially when types alone are ambiguous.** Match the parameter names used in the `.cc` file.
@@ -931,6 +1049,8 @@ void OnSubmitSignedExtrinsic(std::optional<std::string> transaction_hash,
 ```
 
 ---
+
+<a id="CSA-060"></a>
 
 ## ✅ Struct Members: No Trailing Underscores
 
@@ -952,6 +1072,8 @@ struct ContentSite {
 
 ---
 
+<a id="CSA-061"></a>
+
 ## ✅ Use `TEST` Instead of `TEST_F` When No Fixture Is Needed
 
 **If your test doesn't set up shared state via a fixture class, use `TEST` instead of `TEST_F`.** Move helper functions to an anonymous namespace as free functions.
@@ -967,6 +1089,8 @@ TEST(MyExtractorTest, ExtractsCorrectly) { ... }
 
 ---
 
+<a id="CSA-062"></a>
+
 ## ❌ Don't Introduce New Uses of Deprecated APIs
 
 **When an API is marked deprecated, never introduce new uses.** Check headers for deprecation notices before using unfamiliar APIs.
@@ -980,6 +1104,8 @@ uint32_t hash = base::FastHash(base::as_byte_span(str));
 ```
 
 ---
+
+<a id="CSA-063"></a>
 
 ## ✅ Default-Initialize POD-Type Members in Headers
 
@@ -1000,6 +1126,8 @@ struct TopicArticle {
 ```
 
 ---
+
+<a id="CSA-064"></a>
 
 ## ✅ Prefer `std::string_view` Over `const char*` for Parameters
 

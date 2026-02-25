@@ -1,5 +1,7 @@
 # Test Isolation and Specific Patterns
 
+<a id="TI-001"></a>
+
 ## Test in Isolation with Fakes
 
 **Prefer fakes over real dependencies:**
@@ -23,6 +25,8 @@ std::move(tool_callback).Run(/* result */);
 
 ---
 
+<a id="TI-002"></a>
+
 ## Test the API, Not Implementation
 
 **Focus on public interfaces:**
@@ -44,6 +48,8 @@ EXPECT_EQ(object->GetValue(), 42);
 ```
 
 ---
+
+<a id="TI-003"></a>
 
 ## HTTP Request Testing - Per-Domain Expected Values
 
@@ -82,6 +88,8 @@ Subresource requests can arrive out-of-order, so per-resource expected values pr
 
 ---
 
+<a id="TI-004"></a>
+
 ## Throttle Testing - Use Large Throttle Windows
 
 **Problem:** Throttle timers start when a fetch happens, not when test timing checks begin.
@@ -106,7 +114,11 @@ Polling-based waits consume time from the throttle window, so use throttle times
 
 ---
 
+<a id="TI-005"></a>
+
 ## Chromium Pattern Research
+
+<a id="TI-006"></a>
 
 ### ✅ Search for Existing Chromium Patterns
 
@@ -122,6 +134,8 @@ When you encounter a testing problem (flakiness, timing issues, async operations
 2. Search Chromium codebase for similar test scenarios
 3. Compare your approach to existing Chromium patterns
 4. Prefer established Chromium patterns over novel solutions
+
+<a id="TI-007"></a>
 
 ### ✅ Include Chromium Code References
 
@@ -148,6 +162,8 @@ service_worker_internals_ui_browsertest.cc.
 
 ---
 
+<a id="TI-008"></a>
+
 ## ✅ Always Check `EvalJs` Results
 
 **When using `EvalJs` in tests, always check the result with `EXPECT_TRUE`/`EXPECT_EQ`.** An unchecked `EvalJs` call silently swallows errors - any gibberish expression would appear to "pass" the test.
@@ -162,6 +178,8 @@ EXPECT_EQ(true, content::EvalJs(web_contents,
 ```
 
 ---
+
+<a id="TI-009"></a>
 
 ## ❌ Don't Duplicate Test Constants - Expose via Header
 
@@ -181,6 +199,8 @@ inline constexpr base::TimeDelta kCleanupDelay = base::Seconds(30);
 
 ---
 
+<a id="TI-010"></a>
+
 ## ❌ Don't Depend on `//chrome` from Components Tests
 
 **Component-level unit tests must not depend on `//chrome`.** If you need objects typically created by Chrome infrastructure, create them manually in the test.
@@ -198,6 +218,8 @@ auto settings_map = base::MakeRefCounted<HostContentSettingsMap>(
 ```
 
 ---
+
+<a id="TI-011"></a>
 
 ## ✅ Prefer `*_for_testing()` Accessors Over `FRIEND_TEST`
 
@@ -221,6 +243,8 @@ class BraveTab {
 
 ---
 
+<a id="TI-012"></a>
+
 ## ✅ Verify Tests Actually Test What They Claim
 
 **When using test-only controls (globals, mocks, feature overrides), verify the test still exercises the code path it claims to test.** A test that disables the code under test proves nothing.
@@ -235,6 +259,8 @@ void SetUp() { g_disable_stats_for_testing = true; }
 ```
 
 ---
+
+<a id="TI-013"></a>
 
 ## ✅ Re-enable Test-Only Globals in `TearDown`
 
@@ -251,6 +277,8 @@ void TearDown() { g_disable_auto_start = false; }
 
 ---
 
+<a id="TI-014"></a>
+
 ## ✅ Include Diagnostic State in Test Assertions
 
 **Test assertions should include diagnostic context using the `<<` operator** so failures are debuggable without re-running under a debugger.
@@ -265,6 +293,8 @@ EXPECT_EQ(result.status, Status::kSuccess)
 ```
 
 ---
+
+<a id="TI-015"></a>
 
 ## ✅ Use `SCOPED_TRACE` with `base::Location` in Browser Test Helpers
 
@@ -286,17 +316,23 @@ void VerifyTabCount(Browser* browser, int expected,
 
 ---
 
+<a id="TI-016"></a>
+
 ## ✅ Unit Tests Required for Bad/Invalid Input
 
 **Tool and handler implementations must have unit tests covering bad/invalid input scenarios,** not just happy paths. Test with malformed data, empty inputs, null values, and out-of-range parameters.
 
 ---
 
+<a id="TI-017"></a>
+
 ## ✅ Relocate Test Checks When Refactoring
 
 **When refactoring removes a test check, that check must be relocated to the appropriate new location, not simply deleted.** Test coverage should never decrease during refactoring. If a check is no longer applicable, document why.
 
 ---
+
+<a id="TI-018"></a>
 
 ## ✅ Verify Ordering in Tests That Return Ordered Data
 
@@ -317,6 +353,8 @@ EXPECT_EQ(results[2].url, "https://a.com");  // oldest
 
 ---
 
+<a id="TI-019"></a>
+
 ## ✅ Use `EXPECT_MOJO_EQ` for Mojom Type Assertions
 
 **When writing tests that verify mojom struct values, use `EXPECT_MOJO_EQ` with expected mojom objects** rather than manually checking individual fields. Combined with `PrintTo` functions in test printer files, this produces readable failure messages.
@@ -335,6 +373,8 @@ EXPECT_MOJO_EQ(block, expected);
 When adding fields or variants to mojom types, update the corresponding `PrintTo` functions in `test_mojom_printers.cc` to keep test output readable.
 
 ---
+
+<a id="TI-020"></a>
 
 ## ✅ Use `base::test::ParseJsonDict` for Test Comparisons
 
@@ -357,6 +397,8 @@ EXPECT_EQ(actual, base::test::ParseJsonDict(
 
 ---
 
+<a id="TI-021"></a>
+
 ## ✅ Verify Negative Expectations in Tests
 
 **When testing error/failure paths, verify that side effects that should NOT occur are explicitly checked.** Don't only test the positive path.
@@ -371,6 +413,8 @@ EXPECT_FALSE(result.has_value());
 ```
 
 ---
+
+<a id="TI-022"></a>
 
 ## ✅ Test All Fields in Serialization Tests
 
@@ -393,6 +437,8 @@ EXPECT_FALSE(bad_result.has_value());
 ```
 
 ---
+
+<a id="TI-023"></a>
 
 ## ✅ Use Parameterized Tests for Similar Scenarios
 
@@ -428,6 +474,8 @@ TEST_F(MyTest, HandleAllTypes) {
 
 ---
 
+<a id="TI-024"></a>
+
 ## ✅ Extract Repetitive Test Assertions into Helpers
 
 **When tests repeat the same assertion blocks (e.g., checking content block types and fields), extract into reusable helper functions.**
@@ -451,6 +499,8 @@ VerifyImageBlock(*blocks[1], "img.png");
 
 ---
 
+<a id="TI-025"></a>
+
 ## ✅ Use `ASSERT_TRUE` Before Accessing Optional Values
 
 **In tests, use `ASSERT_TRUE(optional.has_value())` before accessing an optional's value.** Do not use `value_or("")` as a fallback -- it hides bugs.
@@ -465,6 +515,8 @@ EXPECT_EQ(map[*entry->uuid], expected_content);
 ```
 
 ---
+
+<a id="TI-026"></a>
 
 ## ✅ Test Both Sides of Guard Conditions
 
@@ -489,11 +541,15 @@ TEST_F(MyTest, ActionSucceedsAfterLoad) {
 
 ---
 
+<a id="TI-027"></a>
+
 ## ❌ Don't Simulate Impossible Production States in Tests
 
 **Tests should not construct states that cannot occur in production.** If a test needs to set up a scenario, it should follow the same code path as production rather than directly manipulating internal state into an impossible configuration. Tests for impossible states prove nothing and can give false confidence.
 
 ---
+
+<a id="TI-028"></a>
 
 ## ✅ Use `WillOnce` Instead of `WillRepeatedly` for Single Calls
 
@@ -508,6 +564,8 @@ EXPECT_CALL(mock, Fetch(_)).WillOnce(Return(result));
 ```
 
 ---
+
+<a id="TI-029"></a>
 
 ## ✅ Verify Observable Side Effects in Browser Tests
 
@@ -525,11 +583,15 @@ EXPECT_EQ(GetActiveWebContents()->GetURL(), url);
 
 ---
 
+<a id="TI-030"></a>
+
 ## ✅ Bug-Fix PRs Must Include Test Coverage
 
 **Every bug-fix PR should include a test that reproduces the specific bug scenario being fixed.** Without this, there's no guarantee the bug won't regress. The test should fail without the fix and pass with it.
 
 ---
+
+<a id="TI-031"></a>
 
 ## ✅ When Disabling Parameterized Tests, Filter Only Specific Flaky Variants
 
@@ -548,17 +610,23 @@ EXPECT_EQ(GetActiveWebContents()->GetURL(), url);
 
 ---
 
+<a id="TI-032"></a>
+
 ## ✅ Match Test Filter Specificity to Actual Failure Scope
 
 **Use the most specific/narrow filter approach.** If a test only fails under ASAN on Linux, use a platform-and-sanitizer-specific filter file (e.g., `browser_tests-linux-asan.filter`) rather than an all-platform filter. Look at existing patterns in `build/commands/lib/testUtils.js` for how sanitizer-specific filters are loaded.
 
 ---
 
+<a id="TI-033"></a>
+
 ## ✅ When Fixing a Test, Run All Tests in the Same File
 
 **When fixing a flaky or failing test, run all tests in the same file across all test fixtures,** not just the single test being changed. This catches regressions or interactions between tests that share fixtures.
 
 ---
+
+<a id="TI-034"></a>
 
 ## ✅ Use ASSERT for Preconditions That Subsequent Code Depends On
 
@@ -575,6 +643,8 @@ item->DoSomething();  // only reached if item is valid
 ```
 
 ---
+
+<a id="TI-035"></a>
 
 ## ✅ Use `DETACH_FROM_SEQUENCE()` in Database Constructors
 

@@ -1,6 +1,10 @@
 # Async Testing Patterns
 
+<a id="TA-001"></a>
+
 ## Root Cause Analysis
+
+<a id="TA-002"></a>
 
 ### ❌ NEVER Make Timing-Based "Fixes"
 
@@ -45,6 +49,8 @@ ExtractMethodThatChangesWhenThingsRun();  // Same code, different timing
 3. **They're platform dependent** - May work on your machine but fail in CI
 4. **They'll break again** - As soon as something else changes timing (new code, different CPU, etc.)
 
+<a id="TA-003"></a>
+
 ### ✅ Proper Root Cause Analysis
 
 **REQUIRED approach for all test fixes:**
@@ -88,6 +94,8 @@ class MyObserver : public content::WebContentsObserver {
 };
 ```
 
+<a id="TA-004"></a>
+
 ### Rule of Thumb
 
 **If removing your "fix" would make the test flaky again, but you can't explain WHY it fixes the race condition, it's not a real fix.**
@@ -98,6 +106,8 @@ Real fixes are:
 - Robust (work across different timing conditions, platforms, and build types)
 
 ---
+
+<a id="TA-005"></a>
 
 ## ❌ NEVER Use RunUntilIdle()
 
@@ -111,6 +121,8 @@ This is explicitly forbidden by Chromium style guide because it causes flaky tes
 **Reference:** [Chromium C++ Testing Best Practices](https://www.chromium.org/chromium-os/developer-library/guides/testing/cpp-writing-tests/)
 
 ---
+
+<a id="TA-006"></a>
 
 ## ✅ Use base::test::RunUntil() for C++ Conditions
 
@@ -129,6 +141,8 @@ ASSERT_TRUE(base::test::RunUntil([this]() {
 ```
 
 ---
+
+<a id="TA-007"></a>
 
 ## ❌ CRITICAL: Never Use EvalJs Inside RunUntil()
 
@@ -158,6 +172,8 @@ DCHECK failed: stack_.size() < static_cast<size_t>(nesting_level_)
 
 ---
 
+<a id="TA-008"></a>
+
 ## General Rule: Avoid Nested Run Loops
 
 **Any operation that creates its own run loop should NOT be called inside `base::test::RunUntil()`:**
@@ -170,6 +186,8 @@ DCHECK failed: stack_.size() < static_cast<size_t>(nesting_level_)
 - ✅ Checking object properties - safe
 
 ---
+
+<a id="TA-009"></a>
 
 ## ✅ ALWAYS Use `base::test::TestFuture` Over RunLoop for Callbacks
 
@@ -197,6 +215,8 @@ EXPECT_FALSE(future.Get());
 
 ---
 
+<a id="TA-010"></a>
+
 ## ✅ Mojo Message Ordering for Test Synchronization
 
 **Mojo processes messages in order on a given interface.** Making a synchronous mojo call through an interface guarantees that all prior async messages on that same interface have been processed. This is a precise alternative to polling for cross-process test synchronization.
@@ -214,6 +234,8 @@ EXPECT_EQ(true, content::EvalJs(web_contents,
 ```
 
 ---
+
+<a id="TA-011"></a>
 
 ## Alternative: QuitClosure() + Run()
 

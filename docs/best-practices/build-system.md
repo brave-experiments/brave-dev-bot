@@ -1,10 +1,14 @@
 # Build System
 
+<a id="BS-001"></a>
+
 ## ✅ DEPS File - Use Commit Hashes
 
 **In DEPS files, always use commit hashes rather than branch names or tags.** Commit hashes are immutable and ensure reproducible builds.
 
 ---
+
+<a id="BS-002"></a>
 
 ## ❌ Minimize Whitespace Changes in Patches
 
@@ -12,11 +16,15 @@
 
 ---
 
+<a id="BS-003"></a>
+
 ## ✅ Reuse Existing GN Config Args
 
 **Check for existing GN args before creating new ones.** Duplicating config arguments (e.g., creating `brave_android_keystore_path` when `android_keystore_path` already exists) adds confusion and maintenance burden.
 
 ---
+
+<a id="BS-004"></a>
 
 ## ✅ Python Build Scripts
 
@@ -34,6 +42,8 @@ Python scripts used in the build system should follow these conventions:
   ```
 
 ---
+
+<a id="BS-005"></a>
 
 ## ✅ Group Sources and Deps Together in BUILD.gn
 
@@ -55,11 +65,15 @@ source_set("branded_wallpaper") {
 
 ---
 
+<a id="BS-006"></a>
+
 ## ❌ Never More Than One Guard Per Target
 
 **There should almost never be more than one of the same guard in any given BUILD.gn target.** If you find yourself repeating the same `if (enable_brave_foo)` block multiple times, consolidate.
 
 ---
+
+<a id="BS-007"></a>
 
 ## ✅ Use Buildflags Instead of OS Guards for Features
 
@@ -81,6 +95,8 @@ Also: only feature-specific header files should go inside feature guards. Don't 
 
 ---
 
+<a id="BS-008"></a>
+
 ## ✅ Buildflag Naming Convention
 
 **Use `enable_brave_<feature>` as the naming convention for buildflags when the flag needs to be distinguished from a Chromium flag or is a top-level Brave feature.** The `enable_brave_` prefix is not required for flags that are clearly Brave-specific by context (e.g., a flag scoped within a Brave component's own buildflags file).
@@ -99,17 +115,23 @@ enable_tab_management_tool = !is_android
 
 ---
 
+<a id="BS-009"></a>
+
 ## ❌ Never Add Empty Lines in Patches
 
 **Never add empty lines in patch files.** Keep patches minimal - only change what's functionally necessary.
 
 ---
 
+<a id="BS-010"></a>
+
 ## ❌ Don't Duplicate License Files
 
 **Never duplicate Chromium or other project license files.** Use special cases or references instead.
 
 ---
+
+<a id="BS-011"></a>
 
 ## ✅ JSON Resources Should Go in GRD Files
 
@@ -118,6 +140,8 @@ enable_tab_management_tool = !is_android
 See `bat_ads_resources.grd` for an example.
 
 ---
+
+<a id="BS-012"></a>
 
 ## ✅ Always Double-Check Dependencies
 
@@ -130,6 +154,8 @@ See `bat_ads_resources.grd` for an example.
 ```
 
 ---
+
+<a id="BS-013"></a>
 
 ## ✅ Use `//brave/` Deps Instead of Modifying Visibility Lists
 
@@ -145,6 +171,8 @@ deps += [ "//brave/utility" ]
 
 ---
 
+<a id="BS-014"></a>
+
 ## ✅ Add `#endif` Comments for Clarity
 
 **Add `#endif` comments to clarify what each `#endif` is closing.** See the "Refined Rule: `#endif` Comments Based on Block Length" section below for specific guidance on when to include vs omit these comments.
@@ -157,11 +185,15 @@ deps += [ "//brave/utility" ]
 
 ---
 
+<a id="BS-015"></a>
+
 ## ✅ Scripts Go in brave/scripts
 
 **Build and utility scripts should go in `brave/scripts/`, not in `build/` or other Chromium directories.**
 
 ---
+
+<a id="BS-016"></a>
 
 ## ❌ Avoid Separate Repositories
 
@@ -169,11 +201,15 @@ deps += [ "//brave/utility" ]
 
 ---
 
+<a id="BS-017"></a>
+
 ## ✅ Add New URLs to the Network Audit Whitelist
 
 **When adding any new network endpoint URL, it must be added to the network audit whitelist** at `lib/whitelistedUrlPrefixes.js` in brave-browser. Without this, the network audit check will fail.
 
 ---
+
+<a id="BS-018"></a>
 
 ## ❌ Don't Use OS Guards as Proxy for Feature Guards
 
@@ -192,6 +228,8 @@ if (brave_wallet_enabled) {
 ```
 
 ---
+
+<a id="BS-019"></a>
 
 ## ✅ Use `use_blink` for Content-Layer Dependencies, Not `!is_ios`
 
@@ -225,11 +263,15 @@ if (use_blink) {
 
 ---
 
+<a id="BS-020"></a>
+
 ## ❌ Don't Have Both `BUILD.gn` and `sources.gni` in the Same Directory
 
 **A directory should contain either a `BUILD.gn` file (preferred) or a `sources.gni` file, but not both.** Having both creates confusion about which is authoritative and makes dependency tracking harder.
 
 ---
+
+<a id="BS-021"></a>
 
 ## ✅ Create Test Targets in Component BUILD.gn
 
@@ -250,6 +292,8 @@ deps += [ "//brave/components/ai_chat/core:unit_tests" ]
 ```
 
 ---
+
+<a id="BS-022"></a>
 
 ## ✅ Create `test_support` Targets for Reusable Fakes/Mocks
 
@@ -286,6 +330,8 @@ source_set("unit_tests") {
 
 ---
 
+<a id="BS-023"></a>
+
 ## ✅ Use `PlatformBrowserTest` for Cross-Platform Browser Tests
 
 **Browser tests that should run on both desktop and Android should use `PlatformBrowserTest` as the base class instead of `InProcessBrowserTest`.**
@@ -305,6 +351,8 @@ class MyBrowserTest : public PlatformBrowserTest {};
 ```
 
 ---
+
+<a id="BS-024"></a>
 
 ## ✅ Use `public_deps` for Header-File Includes in BUILD.gn
 
@@ -327,6 +375,8 @@ source_set("my_service") {
 
 ---
 
+<a id="BS-025"></a>
+
 ## ✅ Use `deps +=` with a Variable for Extensible GN Patches
 
 **When a patch adds dependencies to a Chromium BUILD.gn target, define a variable in Brave code and patch only the variable reference.** This allows adding/removing deps without modifying the patch.
@@ -345,11 +395,15 @@ brave_browser_window_deps = [
 
 ---
 
+<a id="BS-026"></a>
+
 ## ✅ Utility Scripts Should Be Python, Not Node.js or Shell
 
 **Build and utility scripts in brave-core should be written in Python (using `vpython` from depot tools), not Node.js or shell scripts.** This follows Chromium conventions, avoids additional runtime dependencies, and works on all platforms including Windows.
 
 ---
+
+<a id="BS-027"></a>
 
 ## ✅ Unconditional Buildflags Deps with Conditional `deps +=`
 
@@ -375,6 +429,8 @@ if (enable_brave_rewards) {
 
 ---
 
+<a id="BS-028"></a>
+
 ## ✅ Use source_set Only for Internal Targets (with Restricted Visibility)
 
 **Public targets for a component should use `static_library` or `component`, not `source_set`.** Only internal deps should use `source_set`, and those must have restricted visibility to prevent external use.
@@ -394,6 +450,8 @@ source_set("internal_network") {
 
 ---
 
+<a id="BS-029"></a>
+
 ## ✅ Python File Writes: Use `newline='\n'`
 
 **When writing files from Python scripts, always specify `newline='\n'`** in `open()` to ensure consistent LF line endings across platforms (especially Windows).
@@ -409,6 +467,8 @@ with open(output_path, 'w', newline='\n') as f:
 ```
 
 ---
+
+<a id="BS-030"></a>
 
 ## ✅ Use `include_rules` for Common Includes, `specific_include_rules` for Edge Cases
 
@@ -432,17 +492,23 @@ include_rules = [
 
 ---
 
+<a id="BS-031"></a>
+
 ## ✅ Bump `resource_ids.spec` by 5
 
 **When adding new resource IDs in `resource_ids.spec`, bump the next ID by 5 (not 1)** to leave room for additions without conflicting with adjacent entries.
 
 ---
 
+<a id="BS-032"></a>
+
 ## ✅ Use `component()` Not `static_library()` for Service GN Targets
 
 **Mojo service targets should use `component()` instead of `static_library()` in BUILD.gn.** Components support dynamic linking and are the correct target type for service implementations.
 
 ---
+
+<a id="BS-033"></a>
 
 ## ❌ Unit Tests for Components Must NOT Live in Browser
 
@@ -461,6 +527,8 @@ source_set("unit_tests") {
 ```
 
 ---
+
+<a id="BS-034"></a>
 
 ## ✅ Place Includes Inside BUILDFLAG Guards When Only Used There
 
@@ -485,6 +553,8 @@ source_set("unit_tests") {
 
 ---
 
+<a id="BS-035"></a>
+
 ## ✅ Merge Consecutive Identical BUILDFLAG Blocks
 
 **When multiple consecutive code regions use the same `#if BUILDFLAG(...)` condition, merge them into a single guard block.**
@@ -508,11 +578,15 @@ namespace rewards { ... }
 
 ---
 
+<a id="BS-036"></a>
+
 ## ✅ DEPS Allowlist Paths Must Exactly Match Include Paths
 
 **DEPS file allowlist paths must exactly match the `#include` paths used in source files.** A mismatch (e.g., `common/` vs `core/`) means the DEPS check doesn't validate the right file.
 
 ---
+
+<a id="BS-037"></a>
 
 ## ✅ Use `assert()` at Top of Entire-Feature BUILD.gn Files
 
@@ -535,6 +609,8 @@ source_set("wallet_tests") {
 
 ---
 
+<a id="BS-038"></a>
+
 ## ✅ Add `static_assert` in Public Headers for Build Flag Guards
 
 **When introducing a build flag for a component, add `static_assert` in public-facing headers** to catch accidental inclusion when the feature is disabled.
@@ -546,6 +622,8 @@ static_assert(BUILDFLAG(ENABLE_BRAVE_WALLET));
 ```
 
 ---
+
+<a id="BS-039"></a>
 
 ## ❌ Don't Use `nogncheck` - Fix the Underlying Dep Guard
 
@@ -560,6 +638,8 @@ static_assert(BUILDFLAG(ENABLE_BRAVE_WALLET));
 ```
 
 ---
+
+<a id="BS-040"></a>
 
 ## ✅ GN Deps Guarded by Feature Flags Only, Not Platform Guards
 
@@ -580,6 +660,8 @@ if (enable_tor) {
 ```
 
 ---
+
+<a id="BS-041"></a>
 
 ## ❌ Don't Guard Deps with Unrelated Guards
 
@@ -605,6 +687,8 @@ if (use_blink) {
 
 ---
 
+<a id="BS-042"></a>
+
 ## ✅ When Disabling a Feature, Compile Out Its Tests
 
 **When a build flag disables a feature, exclude the feature-specific test files from the build** using conditionals rather than trying to fix compilation errors by adjusting test dependencies.
@@ -621,11 +705,15 @@ if (enable_brave_rewards) {
 
 ---
 
+<a id="BS-043"></a>
+
 ## ✅ Build Flag Validation Requires Both States
 
 **When adding a build flag, run `gn_check`, unit tests, component tests, browser tests, and presubmit with the flag both enabled AND disabled.** Issues frequently only appear in the disabled state.
 
 ---
+
+<a id="BS-044"></a>
 
 ## ✅ Use Chromium UI Preprocessor for Conditional WebUI Code
 
@@ -640,6 +728,8 @@ import { SpeedreaderPage } from './speedreader_page.js';
 
 ---
 
+<a id="BS-045"></a>
+
 ## ✅ Refined Rule: `#endif` Comments Based on Block Length
 
 **Clarification of the `#endif` comment rule:**
@@ -649,6 +739,8 @@ import { SpeedreaderPage } from './speedreader_page.js';
 - **Can omit** for short (1-2 line), unambiguous blocks
 
 ---
+
+<a id="BS-046"></a>
 
 ## ✅ Assert Build Flag Dependencies Between Features
 
@@ -661,6 +753,8 @@ assert(enable_brave_wallet,
 ```
 
 ---
+
+<a id="BS-047"></a>
 
 ## ✅ Share Constants via Common Headers
 
