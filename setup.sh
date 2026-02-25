@@ -103,10 +103,6 @@ if [ -z "$GIT_USER" ] || [ -z "$GIT_EMAIL" ]; then
   echo "  git config user.name \"Your Bot Name\""
   echo "  git config user.email \"your-bot@example.com\""
   echo ""
-  echo "For the netzenbot account (with dependency restrictions):"
-  echo "  git config user.name \"netzenbot\""
-  echo "  git config user.email \"netzenbot@brave.com\""
-  echo ""
 else
   echo "✓ Git user: $GIT_USER"
   echo "✓ Git email: $GIT_EMAIL"
