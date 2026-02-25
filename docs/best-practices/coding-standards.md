@@ -778,7 +778,7 @@ DoSomething(base::BindOnce(&ProcessResult));
 
 **Don't use `auto` merely to avoid writing a type name** when the explicit type is short and adds readability. Spell out types like `base::TimeDelta`, `base::Time`, etc. Per Google style guide: "Do not use [auto] merely to avoid the inconvenience of writing an explicit type."
 
-However, `auto` **is appropriate** when the explicit type is verbose/complex and doesn't improve readability (e.g., nested templates, long type names). This is a preference, not a hard rule — do not insist if the developer declines.
+However, `auto` **is appropriate** when the explicit type is verbose/complex and doesn't improve readability (e.g., nested templates, long type names). This is a preference, not a hard rule — always prefix with `nit:` and do not insist if the developer declines.
 
 ```cpp
 // ❌ WRONG - auto hides a short, descriptive type
