@@ -488,6 +488,8 @@ source_set("unit_tests") {
 
 **When an `#include` is only used inside a `#if BUILDFLAG(...)` block, the include must also be inside that guard.** An unconditional include for a conditionally-used header breaks builds when the feature is disabled.
 
+**IMPORTANT: Only apply this rule when the BUILDFLAG actually exists.** Before suggesting that code be wrapped in a `#if BUILDFLAG(...)` guard, verify the buildflag is defined in the codebase (check `buildflags.gni` files or existing usage). Never fabricate or assume a buildflag name — if no buildflag exists for a feature, do not invent one. Instead, check if the feature uses `base::FeatureList` runtime checks or has no compile-time guard at all.
+
 ```cpp
 // ❌ WRONG - unconditional include for conditionally-used header
 #include "chrome/browser/extensions/extension_web_ui.h"

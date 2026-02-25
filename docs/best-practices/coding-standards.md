@@ -182,6 +182,11 @@ Also: `static` has no meaning for free functions in C++ (it's a C holdover). Use
 
 **Headers should use forward declarations instead of `#include` for types only used as pointers or references.** Move the full `#include` to the `.cc` file.
 
+**Exceptions — do NOT suggest forward declarations when:**
+- The type is **not directly `#include`d** but comes transitively through a base class header that must be included anyway (e.g., `content::WebUI*` comes through `webui_config.h` or `mojo_web_ui_controller.h` — there's nothing to remove)
+- The type is **not actually used** in the file — verify the type appears in the file before suggesting a forward declaration
+- The `#include` is for a **base class** the current class inherits from — these cannot be forward-declared
+
 ```cpp
 // ❌ WRONG - full include in header for pointer-only usage
 // my_class.h
@@ -192,6 +197,13 @@ Also: `static` has no meaning for free functions in C++ (it's a C holdover). Use
 namespace foo { class Bar; }
 // my_class.cc
 #include "components/foo/bar.h"
+
+// ✅ OK - no change needed, content::WebUI* comes transitively
+//    through base class headers that must be included anyway
+#include "content/public/browser/webui_config.h"       // base class
+#include "ui/webui/mojo_web_ui_controller.h"            // base class
+// These headers transitively provide content::WebUI* —
+// adding a forward declaration gains nothing.
 ```
 
 ---
