@@ -367,6 +367,28 @@ brave_browser_window_deps = [
 
 ---
 
+## ✅ Put All Patch Statements on a Single Line
+
+**In GN patch files, put the `import()` and all variable assignments (`deps +=`, `sources +=`, `public_deps +=`, etc.) on a single added line.** This is valid GN syntax (GN does not require newlines between statements) and minimizes the patch footprint, making patches smaller and less likely to conflict during upstream rebases.
+
+```patch
+# ❌ WRONG - multiple added lines in the patch
++  import("//brave/services/speech/sources.gni")
++  deps += brave_services_speech_deps
+
+# ✅ CORRECT - single added line
++  import("//brave/services/speech/sources.gni") deps += brave_services_speech_deps
+```
+
+This is the established convention across brave-core. Examples:
+```patch
++  import("//brave/browser/sources.gni") deps += brave_chrome_browser_prefs_impl_deps
++  import("//brave/components/sync/base/sources.gni") public_deps += brave_components_sync_base_public_deps
++  import("//brave/browser/importer/sources.gni") sources += brave_browser_importer_sources public_deps += brave_browser_importer_public_deps
+```
+
+---
+
 ## ✅ Utility Scripts Should Be Python, Not Node.js or Shell
 
 **Build and utility scripts in brave-core should be written in Python (using `vpython` from depot tools), not Node.js or shell scripts.** This follows Chromium conventions, avoids additional runtime dependencies, and works on all platforms including Windows.
