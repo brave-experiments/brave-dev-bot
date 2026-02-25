@@ -57,6 +57,16 @@ When invoked with `/review-prs [days|page<N>|#<PR>] [open|closed|all] [auto]`:
 
 **IMPORTANT:** The main context does NOT load best practices docs or PR diffs. Each PR is reviewed by multiple focused subagents — one per best-practice document — running in parallel. This ensures every rule is systematically checked rather than relying on a single subagent to hold many rules in mind.
 
+### Step 0: Resolve Bot Username
+
+Before processing any PRs, resolve the bot's GitHub username dynamically. Do NOT hardcode a username — different operators may run this skill under different GitHub accounts.
+
+```bash
+BOT_USERNAME=$(gh api user --jq '.login')
+```
+
+Use `$BOT_USERNAME` in ALL subsequent jq queries and comparisons that need to identify the bot's own comments. This variable is referenced throughout Steps 1.5, 1.6, 1.7, and the deduplication logic.
+
 ### Step 1: Classify Changed Files
 
 Before launching subagents, fetch the file list to determine which categories apply:
@@ -83,7 +93,7 @@ Before launching subagents, fetch all existing review comments and discussion on
 This returns all past review comments, inline code comments, and discussion comments from Brave org members (filtered for security). Pass this output to each subagent as `PRIOR_COMMENTS` context (see Step 3).
 
 **Why this matters:** When re-reviewing a PR after new commits, the bot must be aware of:
-- Its own previous comments (from "brave-core-bot") to avoid repeating the same feedback
+- Its own previous comments (identified by `$BOT_USERNAME` from Step 0) to avoid repeating the same feedback
 - Author and reviewer responses that explain or justify a design choice
 - Issues that were already acknowledged and addressed
 
@@ -93,14 +103,14 @@ If there are no prior comments (first review), skip this step and omit the prior
 
 When prior comments exist (re-review), check if the developer addressed previous bot review comments. For each addressed comment: add a 👍 reaction to the developer's reply AND resolve the review thread. This is a lightweight courtesy step that runs before launching subagents.
 
-**When to run:** Only when Step 1.5 found prior bot comments (from "brave-core-bot") AND the developer has pushed new commits or replied since the bot's last review.
+**When to run:** Only when Step 1.5 found prior bot comments (from `$BOT_USERNAME`) AND the developer has pushed new commits or replied since the bot's last review.
 
 **How to detect and act:**
 
 1. Fetch the bot's previous inline review comment IDs:
    ```bash
    gh api "repos/brave/brave-core/pulls/{number}/comments" --paginate \
-     --jq '[.[] | select(.user.login == "brave-core-bot") | {id, body, created_at, path}]'
+     --jq '[.[] | select(.user.login == "$BOT_USERNAME") | {id, body, created_at, path}]'
    ```
 
 2. Fetch all review comments to find developer replies to those bot comments:
@@ -127,7 +137,7 @@ When prior comments exist (re-review), check if the developer addressed previous
        }
      }
    }' -f owner=brave -f name=brave-core -F number={number} \
-     --jq '.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved == false) | select(.comments.nodes[0].author.login == "brave-core-bot") | {threadId: .id, commentId: .comments.nodes[0].databaseId}'
+     --jq '.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved == false) | select(.comments.nodes[0].author.login == "$BOT_USERNAME") | {threadId: .id, commentId: .comments.nodes[0].databaseId}'
    ```
    This gives you a mapping of bot comment `databaseId` → GraphQL `threadId` for all unresolved bot threads.
 
@@ -197,7 +207,7 @@ query($owner: String!, $name: String!, $number: Int!) {
     }
   }
 }' -f owner=brave -f name=brave-core -F number={number} \
-  --jq '[.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved == false) | select(.comments.nodes[0].author.login == "brave-core-bot")] | length'
+  --jq '[.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved == false) | select(.comments.nodes[0].author.login == "$BOT_USERNAME")] | length'
 ```
 
 If the count is 0 AND there were bot threads (resolved ones exist):
@@ -268,7 +278,7 @@ Each subagent prompt MUST include:
    - **Only comment on things the PR author introduced.** If a dependency, pattern, or architectural issue already existed before this PR, do not flag it — even if it violates a best practice. The PR author is not responsible for pre-existing issues. Focus exclusively on what this PR changes or adds.
    - **Respect the intent of the PR.** If a PR is moving, renaming, or refactoring files, do not suggest restructuring dependencies, changing `public_deps` vs `deps`, or reorganizing code that was simply carried over from the old location. The author's goal is to preserve existing behavior, not to optimize the code they're moving. Only flag issues that are actual bugs introduced by the move (e.g., broken paths, missing deps that cause build failures), not "while you're here, you should also fix X" improvements.
    - Security-sensitive areas (wallet, crypto, sync, credentials) deserve extra scrutiny — type mismatches, truncation, and correctness issues should use stronger language
-   - Do NOT flag: existing code the PR isn't changing, template functions defined in headers, simple inline getters in headers, style preferences not in the documented best practices
+   - Do NOT flag: existing code the PR isn't changing, template functions defined in headers, simple inline getters in headers, style preferences not in the documented best practices, **include/import ordering** (this is handled by formatting tools and linters, not this bot)
    - Comment style: short (1-3 sentences), targeted, acknowledge context. Use "nit:" for genuinely minor/stylistic issues (including missing comments/documentation). Substantive issues (test reliability, correctness, banned APIs) should be direct without "nit:" prefix
 5. **Best practice link requirement** — for each violation, the subagent MUST include a direct link to the specific rule heading in the best practices doc. The link format is:
    ```
@@ -277,9 +287,11 @@ Each subagent prompt MUST include:
    Where `<heading-anchor>` is the `##` heading converted to a GitHub anchor (lowercase, spaces to hyphens, special characters/emojis removed). For example, `## ❌ Don't Use rapidjson` becomes `#dont-use-rapidjson`.
 
    **CRITICAL: The `rule` field MUST be the EXACT text of a `##` heading that exists in the best practices document you read. Do NOT paraphrase, summarize, or invent heading names.** If your observation is a general bug or correctness issue that doesn't map to any specific `##` heading in the document, omit the `rule_link` field entirely — do not fabricate a link to a non-existent anchor. Only include `rule_link` when pointing to an actual documented rule.
+
+   **CRITICAL: Do NOT invent rules that contradict documented best practices.** If the best practices doc says "bump by 5", you must NOT suggest the opposite. If you're unsure whether a rule exists, read the actual document — do not guess or reconstruct rules from memory. A hallucinated rule that contradicts a real rule is worse than no comment at all.
 6. **Prior comments context (re-review awareness)** — if prior comments exist from Step 1.5, include them in the subagent prompt with these rules:
    - **Do NOT re-raise issues that the author or a reviewer has already explained or justified.** If a prior comment thread shows the author explaining why a design choice was made (e.g., "only two subclasses will ever use this, both pass constants"), accept that explanation and do not flag the same issue again.
-   - **Do NOT repeat your own previous comments.** If a comment from "brave-core-bot" already raised the same point, skip it — even if the code hasn't changed. The author has already seen it.
+   - **Do NOT repeat your own previous comments.** If a comment from the bot (identified by `$BOT_USERNAME` from Step 0) already raised the same point, skip it — even if the code hasn't changed. The author has already seen it.
    - **Do NOT flag new issues on re-review that were missed the first time.** If an issue existed in the code during the first review and was not caught, do not raise it on a subsequent review — unless it is a serious correctness or security concern. Flagging new nits or minor issues on re-review that the bot simply missed earlier is annoying to developers and should be avoided. Only flag issues on re-review if they were **introduced in commits since the last reviewed commit**.
    - **DO re-raise an issue only if:** (a) the author's explanation is factually incorrect or introduces a real risk, OR (b) new code in the latest diff introduces a new instance of the same problem that wasn't previously discussed.
    - When in doubt about whether an issue was addressed, err on the side of NOT re-raising it. Repeating resolved feedback is more disruptive than missing a marginal issue.
@@ -403,7 +415,7 @@ Before presenting violations to the user (interactive) or posting them (auto), y
 
 ```bash
 gh api "repos/brave/brave-core/pulls/{number}/comments" --paginate \
-  --jq '[.[] | select(.user.login == "brave-core-bot") | {path, line, body}]'
+  --jq '[.[] | select(.user.login == "$BOT_USERNAME") | {path, line, body}]'
 ```
 
 For each violation, if an existing bot comment exists on the **same file path AND same line number**, drop the violation. Do not re-post it even if the wording differs slightly — a comment on the same file+line means the issue was already raised. Log each: `DEDUP: skipped <file>:<line> — bot already commented`.
@@ -531,7 +543,7 @@ REVIEW_URL=$(echo "$REVIEW_RESPONSE" | python3 -c "import sys,json; print(json.l
 2. **Deduplicate against existing bot comments (MANDATORY)** — before posting, fetch all existing bot comments on the PR and drop any violation that the bot already commented on:
    ```bash
    gh api "repos/brave/brave-core/pulls/{number}/comments" --paginate \
-     --jq '[.[] | select(.user.login == "brave-core-bot") | {path, line, body}]'
+     --jq '[.[] | select(.user.login == "$BOT_USERNAME") | {path, line, body}]'
    ```
    For each violation, check if an existing bot comment matches the **same file path AND same line number**. If a match exists, **drop the violation** — do not re-post it regardless of whether the wording differs. This is a hard programmatic check that cannot be overridden by subagent output.
    Log each dropped duplicate: `DEDUP: skipped <file>:<line> — bot already commented`
