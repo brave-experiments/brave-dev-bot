@@ -757,20 +757,6 @@ return base::FindOrNull(metric_configs_, metric_name);
 
 ---
 
-## ✅ Use `host_piece()` Over `host()` on GURL
-
-**When comparing or checking GURL hosts, prefer `host_piece()` over `host()`.** `host_piece()` returns a `std::string_view` (zero-copy) while `host()` returns a `std::string` (allocates).
-
-```cpp
-// ❌ WRONG - unnecessary allocation
-if (url.host() == "search.brave.com") { ... }
-
-// ✅ CORRECT - zero-copy comparison
-if (url.host_piece() == "search.brave.com") { ... }
-```
-
----
-
 ## ✅ Use `base::Extend` for Appending Ranges to Vectors
 
 **Use `base::Extend(target, source)` instead of manual `insert(end, begin, end)` for appending one collection to another.**
