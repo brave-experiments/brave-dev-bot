@@ -107,75 +107,36 @@ When prior comments exist (re-review), check if the developer addressed previous
 
 **How to detect and act:**
 
-1. Fetch the bot's previous inline review comment IDs:
-   ```bash
-   gh api "repos/brave/brave-core/pulls/{number}/comments" --paginate \
-     --jq '[.[] | select(.user.login == "$BOT_USERNAME") | {id, body, created_at, path}]'
-   ```
+Run the resolve script to atomically handle all bot thread resolution:
+```bash
+python3 ./brave-core-bot/scripts/resolve-bot-threads.py {number} "$BOT_USERNAME"
+```
 
-2. Fetch all review comments to find developer replies to those bot comments:
-   ```bash
-   gh api "repos/brave/brave-core/pulls/{number}/comments" --paginate \
-     --jq '[.[] | select(.in_reply_to_id != null) | {id, user: .user.login, body, created_at, in_reply_to_id}]'
-   ```
+The script fetches bot comments, finds developer replies, adds 👍 reactions, and resolves threads in a single deterministic pass. It outputs JSON:
+```json
+{
+  "resolved": [{"botCommentId": 123, "threadId": "...", "replyId": 456, "replyUser": "dev"}],
+  "already_resolved": [...],
+  "no_reply": [...],
+  "unresolved_bot_threads": 2,
+  "total_bot_threads": 10
+}
+```
 
-3. Fetch review threads (needed for resolving) via GraphQL:
-   ```bash
-   gh api graphql -f query='
-   query($owner: String!, $name: String!, $number: Int!) {
-     repository(owner: $owner, name: $name) {
-       pullRequest(number: $number) {
-         reviewThreads(first: 100) {
-           nodes {
-             id
-             isResolved
-             comments(first: 1) {
-               nodes { databaseId, author { login } }
-             }
-           }
-         }
-       }
-     }
-   }' -f owner=brave -f name=brave-core -F number={number} \
-     --jq '.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved == false) | select(.comments.nodes[0].author.login == "$BOT_USERNAME") | {threadId: .id, commentId: .comments.nodes[0].databaseId}'
-   ```
-   This gives you a mapping of bot comment `databaseId` → GraphQL `threadId` for all unresolved bot threads.
+Use `--dry-run` to preview what would be done without making changes.
 
-4. For each bot comment that the developer addressed (replied to with an explanation or fix, or pushed new commits that address the issue):
+**Decision override:** Before running the script, briefly review the developer's replies (from Step 1.5 context). If any reply reveals a misunderstanding that could lead to a real bug or security issue, exclude that thread by resolving it manually after posting a follow-up reply. This should be rare — the default is to resolve.
 
-   **a. Thumbs-up the developer's reply:**
-   ```bash
-   gh api "repos/brave/brave-core/pulls/comments/{reply_comment_id}/reactions" \
-     --method POST -f content="+1"
-   ```
-
-   **b. Resolve the review thread:**
-   ```bash
-   gh api graphql -f query='
-   mutation($threadId: ID!) {
-     resolveReviewThread(input: {threadId: $threadId}) {
-       thread { isResolved }
-     }
-   }' -f threadId="{threadId}"
-   ```
-
-   Use the `threadId` from step 3 that corresponds to the bot comment being addressed.
-
-5. **When to resolve vs. when to reply:**
-   - **Resolve (default):** If the developer fixed the code, acknowledged the feedback, or gave a reasonable explanation for their approach — resolve the thread and thumbs-up. Do NOT re-post the same comment or argue.
-   - **Reply then resolve:** If you have brief additional context that's genuinely helpful (not repeating the original point), you may add a short reply before resolving.
-   - **Leave open:** Only if the developer's reply reveals a misunderstanding that could lead to a real bug or security issue. This should be rare.
-
-6. Also check general issue comments — if the PR author posted a comment after the bot's review acknowledging the feedback (e.g., "Fixed", "Done", "Addressed", or describing what they changed), and new commits were pushed, thumbs-up that comment too:
-   ```bash
-   gh api "repos/brave/brave-core/issues/comments/{comment_id}/reactions" \
-     --method POST -f content="+1"
-   ```
+Also check general issue comments — if the PR author posted a comment after the bot's review acknowledging the feedback (e.g., "Fixed", "Done", "Addressed", or describing what they changed), and new commits were pushed, thumbs-up that comment too:
+```bash
+gh api "repos/brave/brave-core/issues/comments/{comment_id}/reactions" \
+  --method POST -f content="+1"
+```
 
 **Important rules:**
 - The reaction and resolve APIs are idempotent — no need to check for duplicates first.
 - This step does NOT re-post any comments. It only reacts and resolves. **NEVER re-post the same feedback when resolving.**
-- In auto mode, log each acknowledgment: `ACK: [PR #<number>](https://github.com/brave/brave-core/pull/<number>) - resolved + 👍 comment by @<user> (addressed bot feedback)`
+- In auto mode, log the script output: `ACK: [PR #<number>](https://github.com/brave/brave-core/pull/<number>) - resolved N threads, M remaining unresolved`
 - Skip this step entirely if there are no prior bot comments or no new commits/replies since the last review.
 
 ### Step 1.7: Approve if Settled (No Remaining Unresolved Threads)
@@ -189,28 +150,9 @@ After Step 1.6 resolves addressed comments, check if the bot has any remaining u
 
 **How to check remaining unresolved bot threads:**
 
-Re-run the GraphQL query from Step 1.6 step 3 to get current unresolved bot threads:
-```bash
-gh api graphql -f query='
-query($owner: String!, $name: String!, $number: Int!) {
-  repository(owner: $owner, name: $name) {
-    pullRequest(number: $number) {
-      reviewThreads(first: 100) {
-        nodes {
-          id
-          isResolved
-          comments(first: 1) {
-            nodes { databaseId, author { login } }
-          }
-        }
-      }
-    }
-  }
-}' -f owner=brave -f name=brave-core -F number={number} \
-  --jq '[.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved == false) | select(.comments.nodes[0].author.login == "$BOT_USERNAME")] | length'
-```
+Use the JSON output from the Step 1.6 resolve script. The `unresolved_bot_threads` and `total_bot_threads` fields tell you directly whether all bot threads are resolved.
 
-If the count is 0 AND there were bot threads (resolved ones exist):
+If `unresolved_bot_threads` is 0 AND `total_bot_threads` > 0:
 
 **Submit APPROVE review:**
 ```bash
