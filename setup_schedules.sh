@@ -28,6 +28,9 @@ CRON_JOBS=$(cat <<EOF
 # Learnable pattern search
 0 6 * * * cd $SCRIPT_DIR && $CLAUDE_BIN -p '/learnable-pattern-search --username netzenbot 2d' --allowedTools '$CLAUDE_TOOLS' >> $LOG_DIR/learnable-pattern-search-cron.log 2>&1
 
+# Check Signal messages (every hour, only runs Claude if messages pending)
+0 * * * * cd $SCRIPT_DIR && source .envrc && ./scripts/check-signal-messages.sh && $CLAUDE_BIN -p '/check-signal' --allowedTools '$CLAUDE_TOOLS' >> $LOG_DIR/check-signal-cron.log 2>&1
+
 # === end brave-core-bot ===
 EOF
 )
@@ -47,6 +50,7 @@ echo "$NEW_CRONTAB" | crontab -
 echo "Cron jobs installed successfully."
 echo ""
 echo "Current schedule:"
+echo "  Every hour - /check-signal (only if messages pending)"
 echo "  03:00 - /add-backlog-to-prd"
 echo "  04:00 - run.sh (3 iterations)"
 echo "  05:00, 08-20 (even) - /review-prs"
