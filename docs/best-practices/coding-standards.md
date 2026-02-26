@@ -347,17 +347,6 @@ base::flat_map<std::string, int> lookup_;
 
 ---
 
-<a id="CS-020"></a>
-
-## ✅ Document All New Classes, Public Methods, and Fields
-
-**All new classes, public methods, and non-obvious fields must have documentation comments.** For IDL types, document dictionaries and fields.
-
-**Exception — do NOT suggest doc comments when:**
-- The method's signature and purpose are **already fully specified by an interface it implements** (e.g., a Mojo `BindInterface` method whose contract is defined by the base class). Repeating interface-specified documentation on the implementation is noise.
-
----
-
 <a id="CS-021"></a>
 
 ## ✅ Document Non-Obvious Failure Branches

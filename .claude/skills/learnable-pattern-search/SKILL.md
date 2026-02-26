@@ -248,6 +248,7 @@ GitHub API has rate limits. If you hit rate limits:
 - **Commit changes** as you find them rather than batching everything at the end
 - **Focus on the reviewer's comments**, not the PR code itself
 - PRs with no review comments or only "LGTM" can be quickly skipped
+- **Never rename anchor IDs when removing rules** — anchor IDs (e.g., `<a id="CS-020">`) are permanent identifiers that stay with the content they were first assigned to. When a rule is removed, its ID is retired — do NOT renumber remaining rules to fill the gap. New rules always get the next unused ID.
 
 ## Signal Notifications
 
