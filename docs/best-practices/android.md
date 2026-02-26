@@ -400,3 +400,111 @@ private void handleState() {
     // ... lots of code at top level ...
 }
 ```
+
+---
+
+<a id="AND-022"></a>
+
+## ✅ Bytecode Adapter Changes Require Bytecode Tests
+
+**When adding or modifying a bytecode class adapter (files in `build/android/bytecode/java/org/brave/bytecode/`), add a corresponding bytecode test** in `android/javatests/org/chromium/chrome/browser/BytecodeTest.java`. Tests should verify both class existence (in `testClassesExist`) and method existence with correct return types (in `testMethodsExist`). This ensures upstream refactors are caught at test time rather than causing silent runtime failures.
+
+---
+
+<a id="AND-023"></a>
+
+## ✅ Proguard Rules: Separate Runtime vs Test Keep Rules
+
+**Proguard keep rules must go in the correct file:**
+- `android/java/proguard.flags` — Only for classes/methods accessed via reflection at runtime
+- `android/java/apk_for_test.flags` — For rules needed only during testing
+
+Putting test-only keep rules in `proguard.flags` unnecessarily increases the production APK size by preventing code shrinking.
+
+---
+
+<a id="AND-024"></a>
+
+## ✅ Apply `@NullMarked` to New Java Classes
+
+**New Java classes in brave-core's Android code should apply the `@NullMarked` annotation** (from `org.jspecify.annotations`) as part of the NullAway migration. This follows the [Chromium NullAway style guide](https://chromium.googlesource.com/chromium/src/+/main/styleguide/java/nullaway.md).
+
+---
+
+<a id="AND-025"></a>
+
+## ✅ Use `@VisibleForTesting` for Package-Private Test Accessors
+
+**When a field or method is made package-private solely for testing purposes, annotate it with `@VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)`.** This communicates intent to other developers and allows IDEs to flag improper usage from non-test code.
+
+---
+
+<a id="AND-026"></a>
+
+## ✅ Prefer Programmatic `addView` Over Full XML Layout Replacement
+
+**When customizing Android UI, prefer adding views programmatically (via `addView` in Java) over replacing entire upstream XML layout files.** Replacing full XML files creates maintenance burden during Chromium upgrades. However, if programmatic addition requires extending final classes or leads to equally invasive changes, document the trade-off and accept the XML replacement.
+
+---
+
+<a id="AND-027"></a>
+
+## ✅ Brave Resources Go in `brave-res`, Not Upstream Folders
+
+**Brave-specific Android resources (drawables, layouts, etc.) should be placed in a dedicated `brave-res` folder, not copied into upstream Chromium resource directories.** The upstream resource directories should only be used when intentionally overriding an existing upstream resource. Adding new Brave-only resources to upstream folders creates confusion about whether a resource is a Brave addition or an upstream override.
+
+---
+
+<a id="AND-028"></a>
+
+## ✅ Comprehensively Clean Up All Artifacts When Removing a Feature
+
+**When removing a feature from Android, audit and remove all related artifacts:** bytecode class adapters, ProGuard rules, bytecode test entries, Java source files, resource files, JNI bindings, feature flags, and build system references. A feature removal PR should account for all integration points across the codebase.
+
+---
+
+<a id="AND-029"></a>
+
+## ✅ Remove Dead API-Level Checks Below Min SDK
+
+**Remove Android version checks for API levels below the app's minimum SDK version.** Dead code checking for Lollipop (API 21) or Marshmallow (API 23) should be cleaned up since Brave's minimum SDK is higher.
+
+---
+
+<a id="AND-030"></a>
+
+## ❌ Avoid Raw `SharedPreferences`
+
+**Direct use of Android `SharedPreferences` triggers presubmit warnings.** Use the appropriate Chromium-provided abstractions (such as `ChromeSharedPreferences` or preference-backed settings) instead of raw `SharedPreferences` access.
+
+---
+
+<a id="AND-031"></a>
+
+## ✅ Direct Patches: Add New Lines, Don't Modify Existing
+
+**When creating direct patches (non-chromium_src overrides), prefer adding entirely new lines rather than modifying existing upstream lines.** This reduces the risk of patch conflicts during Chromium version upgrades, because new lines have no upstream anchor that might change.
+
+---
+
+<a id="AND-032"></a>
+
+## ✅ Patches Are Acceptable for Anonymous Inner Classes
+
+**When the Brave override system cannot handle anonymous inner classes in upstream Chromium Java code, a `.patch` file is the accepted fallback.** Document the reason in the PR and link to the tracking issue for better override support.
+
+---
+
+<a id="AND-033"></a>
+
+## ✅ Verify Shared Resource Changes Don't Break Other UIs
+
+**When modifying shared Android resource values (colors, dimensions, styles in files like `brave_colors.xml`), verify the impact on ALL UIs that reference those resources.** Shared resources can affect multiple screens — always cross-check usages before modifying.
+
+---
+
+<a id="AND-034"></a>
+
+## ✅ Use Baseline Colors Over Java Code Patches for Theming
+
+**When fixing Android color/theming issues, prefer following upstream's approach of using baseline colors (XML color resources) for non-dynamic color states rather than patching Java code to programmatically set colors.** This is more maintainable and aligns with upstream's theming system. Always verify fixes work with the Dynamic Colors flag both enabled and disabled.
