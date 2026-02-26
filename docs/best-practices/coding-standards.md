@@ -710,6 +710,8 @@ Also: be judicious with VLOG - make sure each log statement has a specific purpo
 
 **`LOG(ERROR)` should be reserved for truly unexpected and serious failures.** For expected or non-critical failure cases (e.g., a bad user-supplied filter list, a failed parse of optional data), use `VLOG` for debug info or `LOG(WARNING)` for noteworthy but non-critical issues.
 
+**Do not suggest lowering log severity for failures you haven't confirmed are non-critical.** The developer knows whether a failure is critical for their service better than a reviewer can infer from the code alone. For example, failing to load a model file may look non-critical in isolation but could be a critical failure for the keyed service that depends on it.
+
 ```cpp
 // ❌ WRONG
 LOG(ERROR) << "Failed to parse filter list";
