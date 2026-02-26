@@ -25,7 +25,7 @@ When the user invokes `/learnable-pattern-search <pr-numbers>`:
 2. **For each PR**, fetch review data and analyze it
 3. **Identify learnable patterns** across the reviews
 4. **Update documentation** with discovered patterns
-5. **Generate a report** of findings
+5. **Summarize findings** to the user
 
 ### Mode 2: Username
 
@@ -35,7 +35,7 @@ When the user invokes `/learnable-pattern-search --username <github-user>`:
 2. **For each PR**, fetch review data and analyze it (focus on comments by the specified user)
 3. **Identify learnable patterns** across the reviews
 4. **Update documentation** with discovered patterns
-5. **Generate a report** of findings
+5. **Summarize findings** to the user
 
 ---
 
@@ -195,10 +195,10 @@ Classify each discovered pattern into one of these categories:
 | Review responses | `docs/workflow-pushed.md` |
 | Security | `SECURITY.md` |
 | Front-end (TS/React) | `docs/best-practices/frontend.md` |
-| General codebase | Report file (for user to triage) |
+| General codebase | `BEST-PRACTICES.md` |
 | Chromium conventions | `BEST-PRACTICES.md` |
-| Code style/naming | Report file |
-| Architecture | Report file |
+| Code style/naming | `docs/best-practices/coding-standards.md` |
+| Architecture | `docs/best-practices/architecture.md` |
 
 ---
 
@@ -215,51 +215,6 @@ Only capture patterns that meet ALL of these criteria:
 
 ## Output
 
-### Report File
-
-Write findings to `.ignore/learnable-patterns-report.md` (or `.ignore/learnable-patterns-report-<username>.md` when using `--username` mode). Do NOT proactively create the `.ignore` directory — just write the file and if it fails because the directory doesn't exist, create it then.
-
-Use this format:
-
-```markdown
-# Learnable Patterns Report
-
-Generated: <date>
-Reviewer: <username> (if username mode)
-PRs analyzed: <list>
-
-## Patterns Found
-
-### Pattern 1: <title>
-- **Category:** <category>
-- **Pattern:** <description of the convention/rule>
-- **Example:** <code example if applicable>
-- **Action taken:** Updated <document> / Added to report for triage
-
-### Pattern 2: ...
-
-## PRs With No Actionable Patterns
-- #<number> - <reason> (e.g., "routine approval, no substantive comments")
-
-## Summary
-- Total PRs analyzed: X
-- Patterns found: Y
-- Documents updated: <list>
-```
-
-For self-review mode, use this additional section in the report:
-
-```markdown
-## Pushback Analysis
-
-### Pushback 1: <best practice rule that received pushback>
-- **PRs:** #<number>, #<number>
-- **Bot's comment:** <summary of what the bot said>
-- **Developer's pushback:** <summary of the developer's response>
-- **Assessment:** <"Adjust needed" | "No change needed" — with brief reasoning>
-- **Action taken:** <"Created PR #<number> to adjust rule" | "No action — developer preference, rule is correct">
-```
-
 ### Documentation Updates
 
 For high-confidence, clearly generalizable patterns (username mode / PR list mode):
@@ -273,10 +228,6 @@ For self-review mode adjustments:
 - **Always create a branch and PR** (see "Creating Best Practice PRs" in the Self-Review section above) — do NOT commit directly to master
 - The branch must be based on `origin/master`
 - Keep changes minimal and focused — one PR per rule adjustment
-
-For patterns that need human review before adding:
-- Include them in the report file only
-- Mark them as "Needs triage" in the report
 
 ---
 
