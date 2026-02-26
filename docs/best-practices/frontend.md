@@ -190,7 +190,7 @@ color: var(--leo-color-text-primary);
 
 ## ✅ New UI Components Must Have Storybook Stories
 
-**All new UI components must have Storybook stories covering their primary states** (default, loading, error, empty, populated). Stories serve as both documentation and visual regression baselines.
+**New UI features should have Storybook stories that cover their primary visual states.** Stories serve as both documentation and visual regression baselines. A single integrated story that exercises multiple closely-coupled components together (e.g., a panel story that covers the full panel with all sub-components) is sufficient — individual per-component stories are not always necessary. This is a preference, not a requirement — do not insist if the developer considers existing story coverage adequate.
 
 ---
 
