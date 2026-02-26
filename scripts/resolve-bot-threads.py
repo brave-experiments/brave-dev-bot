@@ -242,11 +242,13 @@ def main():
             })
             continue
 
-        # Add reaction and resolve
-        reaction_ok = add_reaction(reply["id"], args.dry_run)
+        # Resolve first, then react — both must succeed or neither is visible.
+        # Resolve is the harder operation; only add the visible thumbs-up
+        # if the thread was actually resolved.
         resolve_ok = resolve_thread(thread_id, args.dry_run)
+        reaction_ok = add_reaction(reply["id"], args.dry_run) if resolve_ok else False
 
-        if reaction_ok and resolve_ok:
+        if resolve_ok and reaction_ok:
             resolved.append({
                 "botCommentId": bot_comment_id,
                 "threadId": thread_id,
