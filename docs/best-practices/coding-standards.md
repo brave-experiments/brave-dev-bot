@@ -1007,3 +1007,45 @@ Profile* profile = static_cast<Profile*>(browser_context);
 // ✅ CORRECT
 Profile* profile = Profile::FromBrowserContext(browser_context);
 ```
+
+---
+
+<a id="CS-060"></a>
+
+## ✅ Validate URLs with `GURL::is_valid()` Before Use
+
+**Always check `GURL::is_valid()` before using a constructed URL.** Passing invalid or malformed URLs to network functions can cause crashes or unexpected behavior.
+
+```cpp
+// ❌ WRONG - no validity check
+GURL url(user_input);
+loader->DownloadUrl(url);
+
+// ✅ CORRECT - validate first
+GURL url(user_input);
+if (!url.is_valid())
+  return;
+loader->DownloadUrl(url);
+```
+
+---
+
+<a id="CS-061"></a>
+
+## ✅ Name Death Test Suites with `*DeathTest` Suffix
+
+**Per GoogleTest conventions, death test suite names must end with `DeathTest`.** GoogleTest uses this suffix to apply special threading behavior needed for death tests to work reliably.
+
+```cpp
+// ❌ WRONG - missing DeathTest suffix
+using MyFeatureTest = testing::Test;
+TEST_F(MyFeatureTest, CrashesOnNull) {
+  EXPECT_DEATH(Process(nullptr), "");
+}
+
+// ✅ CORRECT - DeathTest suffix
+using MyFeatureDeathTest = testing::Test;
+TEST_F(MyFeatureDeathTest, CrashesOnNull) {
+  EXPECT_DEATH(Process(nullptr), "");
+}
+```

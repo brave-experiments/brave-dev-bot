@@ -984,3 +984,11 @@ struct ModelFiles {
   mojo_base.mojom.BigBuffer weights;
 };
 ```
+
+---
+
+<a id="ARCH-053"></a>
+
+## ❌ Avoid Cross-Feature Module Dependencies
+
+**Feature modules should not import classes from other unrelated feature modules.** For example, a VPN feature should not directly depend on classes from the Rewards or Wallet modules. If shared functionality is needed, extract it into a common utility or use an interface/abstraction layer. Cross-feature dependencies create tight coupling that makes features hard to modify or remove independently.

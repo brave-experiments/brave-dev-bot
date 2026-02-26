@@ -508,3 +508,65 @@ Putting test-only keep rules in `proguard.flags` unnecessarily increases the pro
 ## ✅ Use Baseline Colors Over Java Code Patches for Theming
 
 **When fixing Android color/theming issues, prefer following upstream's approach of using baseline colors (XML color resources) for non-dynamic color states rather than patching Java code to programmatically set colors.** This is more maintainable and aligns with upstream's theming system. Always verify fixes work with the Dynamic Colors flag both enabled and disabled.
+
+---
+
+<a id="AND-035"></a>
+
+## ❌ Don't Modify Upstream String Resource Files
+
+**Never modify upstream Chromium string resource files (e.g., `chrome_strings.grd`, upstream `strings.xml`).** Add Brave-specific strings to `android_brave_strings.grd` or the appropriate Brave-owned resource file instead. Modifying upstream files creates patch conflicts during Chromium upgrades.
+
+---
+
+<a id="AND-036"></a>
+
+## ✅ Match Upstream Nullability Annotations in Overridden Methods
+
+**When overriding upstream methods in Brave Java code, match the upstream nullability annotations (e.g., `@NullUnmarked`, `@Nullable`, `@NonNull`).** Mismatched annotations cause NullAway build failures and prevent merging.
+
+```java
+// ❌ WRONG - upstream method has @NullUnmarked but override doesn't
+@Override
+public void onResult(Profile profile) { ... }
+
+// ✅ CORRECT - match upstream annotations
+@NullUnmarked
+@Override
+public void onResult(Profile profile) { ... }
+```
+
+---
+
+<a id="AND-037"></a>
+
+## ❌ Don't Repeat Class Name in Log TAG
+
+**Android Log TAG fields should use a short, descriptive string — not repeat the full class name when it adds no value.** Keep TAGs concise and informative.
+
+```java
+// ❌ WRONG - redundant, TAG just repeats class name
+private static final String TAG = "BraveVpnProfileController";
+
+// ✅ CORRECT - short and clear
+private static final String TAG = "BraveVPN";
+```
+
+---
+
+<a id="AND-038"></a>
+
+## ✅ Use Layout Shorthand Attributes
+
+**Use shorthand XML layout attributes (`paddingHorizontal`, `marginHorizontal`, `paddingVertical`, `marginVertical`) instead of setting start/end or top/bottom separately.** This reduces XML verbosity and improves readability.
+
+```xml
+<!-- ❌ WRONG - verbose -->
+<View
+    android:paddingStart="16dp"
+    android:paddingEnd="16dp" />
+
+<!-- ✅ CORRECT - shorthand -->
+<View
+    android:paddingHorizontal="16dp" />
+```

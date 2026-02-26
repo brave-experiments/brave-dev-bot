@@ -397,3 +397,20 @@ static_assert(static_cast<int>(policy::POLICY_SOURCE_COUNT) <= kBravePolicySourc
   base_feature: "none",
 },
 ```
+
+---
+
+<a id="CSRC-023"></a>
+
+## ❌ `chromium_src` Overrides Cannot Handle Private Methods in `.cc` Files
+
+**The `chromium_src` override mechanism only works for symbols with external linkage.** Private (static or anonymous-namespace) methods in upstream `.cc` files cannot be overridden via `chromium_src` because they are not visible outside the translation unit. Use a direct `.patch` file for these cases instead.
+
+```cpp
+// Upstream file: chrome/browser/feature.cc
+namespace {
+void PrivateHelper() { ... }  // Cannot override via chromium_src
+}
+
+// ✅ Use a .patch file to modify PrivateHelper directly
+```
