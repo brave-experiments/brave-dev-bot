@@ -117,15 +117,15 @@ private void hideSplash() {
 
 ```cpp
 // ❌ WRONG - assumes service is always available
-void NtpBackgroundImagesBridge::RegisterPageView() {
-  view_counter_service_->RegisterPageView();
+void NTPBackgroundImagesBridge::GetCurrentWallpaperForDisplay() {
+  view_counter_service_->GetCurrentWallpaperForDisplay();
 }
 
 // ✅ CORRECT - explicit null check
-void NtpBackgroundImagesBridge::RegisterPageView() {
+void NTPBackgroundImagesBridge::GetCurrentWallpaperForDisplay() {
   if (!view_counter_service_)
     return;
-  view_counter_service_->RegisterPageView();
+  view_counter_service_->GetCurrentWallpaperForDisplay();
 }
 ```
 
@@ -281,11 +281,11 @@ public void onCreate() {
 ```java
 // ✅ CORRECT - guard JNI calls for Robolectric compatibility
 if (FeatureList.isNativeInitialized()) {
-    BraveFeatureList.isEnabled(BraveFeatureList.SOME_FEATURE);
+    ChromeFeatureList.isEnabled(BraveFeatureList.SOME_FEATURE);
 }
 ```
 
-See `BraveTabbedAppMenuPropertiesDelegate.java` for an existing example of this pattern.
+See `BraveDynamicColors.java` for an existing example of this pattern.
 
 ---
 
@@ -427,7 +427,7 @@ Putting test-only keep rules in `proguard.flags` unnecessarily increases the pro
 
 ## ✅ Apply `@NullMarked` to New Java Classes
 
-**New Java classes in brave-core's Android code should apply the `@NullMarked` annotation** (from `org.jspecify.annotations`) as part of the NullAway migration. This follows the [Chromium NullAway style guide](https://chromium.googlesource.com/chromium/src/+/main/styleguide/java/nullaway.md).
+**New Java classes in brave-core's Android code should apply the `@NullMarked` annotation** (from `org.chromium.build.annotations`) as part of the NullAway migration. This follows the [Chromium NullAway style guide](https://chromium.googlesource.com/chromium/src/+/main/styleguide/java/nullaway.md).
 
 ---
 

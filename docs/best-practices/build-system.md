@@ -137,7 +137,7 @@ enable_tab_management_tool = !is_android
 
 **JSON data files should be packaged as resources in `.grd` files, not loaded from disk.** This allows the same data to be used from both C++ and JS.
 
-See `bat_ads_resources.grd` for an example.
+See `brave/components/brave_rewards/resources/brave_rewards_static_resources.grd` for an example.
 
 ---
 

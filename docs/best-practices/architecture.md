@@ -161,11 +161,11 @@ void Init(const network::ResourceRequest& request) {
 **Never use `#include "brave/vendor/..."` to access internal headers.** Internal headers are not part of the public API and should not be accessed using full paths to bypass visibility.
 
 ```cpp
-// ❌ WRONG - accessing internal headers via full vendor path
-#include "brave/vendor/bat-native-ads/src/bat/ads/internal/locale_helper.h"
+// ❌ WRONG - accessing internal vendor headers directly
+#include "brave/vendor/brave_base/random.h"
 
-// ✅ CORRECT - use the public API header
-#include "brave/components/brave_ads/browser/locale_helper.h"
+// ✅ CORRECT - use the public component API header
+#include "brave/components/brave_rewards/core/utility/random_util.h"
 ```
 
 ---
@@ -411,16 +411,16 @@ void RewardsService::SetRecurringDonation(amount) {
 
 ## ❌ Don't Expose Internal Library Types in Public Headers
 
-**Never expose internal library types (e.g., `ledger::*`, `bat/ledger/*`) in public component headers.** Use wrapper types defined in the component's public API.
+**Never expose internal implementation types in public component headers.** Use the component's public API types (e.g., Mojo types) instead.
 
 ```cpp
-// ❌ WRONG - internal ledger types in public rewards header
-#include "bat/ledger/ledger.h"
-void DoSomething(ledger::PublisherInfo info);
+// ❌ WRONG - internal database types in public rewards header
+#include "brave/components/brave_rewards/core/engine/database/database_publisher_info.h"
+void DoSomething(internal::database::DatabasePublisherInfo info);
 
-// ✅ CORRECT - use component's own types
-#include "brave/components/brave_rewards/browser/content_site.h"
-void DoSomething(ContentSite site);
+// ✅ CORRECT - use public Mojo types
+#include "brave/components/brave_rewards/common/mojom/rewards.mojom.h"
+void DoSomething(mojom::PublisherInfoPtr info);
 ```
 
 ---
