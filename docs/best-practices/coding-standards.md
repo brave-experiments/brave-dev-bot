@@ -157,6 +157,7 @@ std::string user_name;
 - **Opening brace** goes at the end of the previous line (K&R style)
 - **Continuation lines** should be indented 4 spaces
 - **No `{}` when not required** in C++ (e.g., single-line if/for bodies)
+- **Do NOT enforce include order** — include ordering is handled by code formatting tools and lint, not by code review
 
 ---
 
@@ -351,6 +352,9 @@ base::flat_map<std::string, int> lookup_;
 ## ✅ Document All New Classes, Public Methods, and Fields
 
 **All new classes, public methods, and non-obvious fields must have documentation comments.** For IDL types, document dictionaries and fields.
+
+**Exception — do NOT suggest doc comments when:**
+- The method's signature and purpose are **already fully specified by an interface it implements** (e.g., a Mojo `BindInterface` method whose contract is defined by the base class). Repeating interface-specified documentation on the implementation is noise.
 
 ---
 

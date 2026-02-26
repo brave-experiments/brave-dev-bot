@@ -41,32 +41,6 @@ void FetchData() { ... }
 
 ---
 
-<a id="DOC-003"></a>
-
-## ✅ Inline Comments Should Explain "Why", Not "What"
-
-**Inline comments should provide information that the code itself cannot convey — especially the rationale behind implementation decisions.** Don't restate what the code does; explain why it does it that way.
-
-```cpp
-// ❌ WRONG - restates the code
-// Increment the counter
-counter++;
-
-// ❌ WRONG - restates the code
-// Check if URL is valid
-if (!url.is_valid()) return;
-
-// ✅ CORRECT - explains why
-// Skip invalid URLs early to avoid triggering the content settings
-// lookup which CHECKs on invalid URLs (see crbug.com/123456).
-if (!url.is_valid()) return;
-
-// ✅ CORRECT - explains a non-obvious choice
-// Use 30s timeout instead of the default 10s because the rewards
-// server can be slow under load during grant claim periods.
-constexpr base::TimeDelta kTimeout = base::Seconds(30);
-```
-
 ---
 
 <a id="DOC-004"></a>

@@ -611,6 +611,34 @@ source_set("wallet_tests") {
 
 <a id="BS-038"></a>
 
+## ❌ Don't Confuse Feature Flags with Build Flags
+
+**Runtime feature flags (`base::FeatureList`) and compile-time build flags (`BUILDFLAG()`) are completely different mechanisms.** Do not suggest wrapping GN `deps` or `sources` in a runtime feature flag — GN is evaluated at build time and has no knowledge of runtime feature state.
+
+- **Build flags** (e.g., `enable_brave_wallet`, `BUILDFLAG(ENABLE_EXTENSIONS)`) are set at compile time via GN args. They can guard `deps`, `sources`, `#include` blocks, and code blocks.
+- **Feature flags** (e.g., `base::FeatureList::IsEnabled(kMyFeature)`) are checked at runtime. They can only guard code execution, not build-time dependency inclusion.
+
+```gn
+# ❌ WRONG - runtime feature flag cannot gate build-time deps
+# (kLocalAIModels is a base::Feature, not a GN arg)
+if (kLocalAIModels) {  # Does not exist in GN!
+  deps += [ "//brave/components/local_ai/resources" ]
+}
+
+# ✅ CORRECT - use a build flag if one exists
+if (enable_local_ai) {
+  deps += [ "//brave/components/local_ai/resources" ]
+}
+
+# ✅ ALSO CORRECT - if no build flag exists yet, don't invent one
+# Include deps unconditionally and let runtime feature checks handle enablement
+deps += [ "//brave/components/local_ai/resources" ]
+```
+
+---
+
+<a id="BS-038"></a>
+
 ## ✅ Add `static_assert` in Public Headers for Build Flag Guards
 
 **When introducing a build flag for a component, add `static_assert` in public-facing headers** to catch accidental inclusion when the feature is disabled.
