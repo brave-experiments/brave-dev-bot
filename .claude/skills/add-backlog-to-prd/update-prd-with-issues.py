@@ -227,7 +227,7 @@ def build_generic_story(story_id, priority, issue):
 
 # Read GitHub issues and existing PRD
 if len(sys.argv) < 2:
-    print("Usage: cat github_issues.json | python3 update_prd_with_issues.py path/to/prd.json", file=sys.stderr)
+    print("Usage: cat github_issues.json | python3 update-prd-with-issues.py path/to/prd.json", file=sys.stderr)
     sys.exit(1)
 
 prd_path = sys.argv[1]

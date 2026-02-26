@@ -51,7 +51,7 @@ Extract the PR number from the user's input. The PR number is required. Check fo
 Run the script in dry-run mode to analyze without triggering:
 
 ```bash
-python3 .claude/skills/make-ci-green/retrigger_ci.py <pr-number> --dry-run --format json
+python3 .claude/skills/make-ci-green/retrigger-ci.py <pr-number> --dry-run --format json
 ```
 
 ### Step 3: Present Findings
@@ -110,7 +110,7 @@ PR 33936: 1 failing Jenkins check(s)
 If the user wants to proceed (and not `--dry-run`), run the script to trigger rebuilds:
 
 ```bash
-python3 .claude/skills/make-ci-green/retrigger_ci.py <pr-number> --format json
+python3 .claude/skills/make-ci-green/retrigger-ci.py <pr-number> --format json
 ```
 
 Report the results: which checks were retriggered, the action taken, and any errors.
@@ -179,16 +179,16 @@ The user must confirm before any issue is created.
 
 ```bash
 # Dry run: analyze without triggering
-python3 .claude/skills/make-ci-green/retrigger_ci.py 33936 --dry-run
+python3 .claude/skills/make-ci-green/retrigger-ci.py 33936 --dry-run
 
 # Trigger rebuilds for all failing checks
-python3 .claude/skills/make-ci-green/retrigger_ci.py 33936
+python3 .claude/skills/make-ci-green/retrigger-ci.py 33936
 
 # JSON output for programmatic use
-python3 .claude/skills/make-ci-green/retrigger_ci.py 33936 --format json
+python3 .claude/skills/make-ci-green/retrigger-ci.py 33936 --format json
 
 # Dry run with JSON output
-python3 .claude/skills/make-ci-green/retrigger_ci.py 33936 --dry-run --format json
+python3 .claude/skills/make-ci-green/retrigger-ci.py 33936 --dry-run --format json
 ```
 
 ---

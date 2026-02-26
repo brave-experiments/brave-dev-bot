@@ -7,7 +7,7 @@ and triggers rebuilds with WIPE_WORKSPACE for build/infra failures or normal
 re-runs for test/storybook failures.
 
 Usage:
-    python3 retrigger_ci.py <pr-number> [--dry-run] [--format json|markdown]
+    python3 retrigger-ci.py <pr-number> [--dry-run] [--format json|markdown]
 """
 
 import argparse
@@ -409,7 +409,7 @@ def extract_test_failures(console_text):
 def _resolve_src_dir():
     """Resolve the path to the chromium src directory relative to this script.
 
-    The script is at: brave-core-bot/.claude/skills/make-ci-green/retrigger_ci.py
+    The script is at: brave-core-bot/.claude/skills/make-ci-green/retrigger-ci.py
     The src dir is at: src/ (4 levels up from the script)
     """
     script_dir = os.path.dirname(os.path.abspath(__file__))

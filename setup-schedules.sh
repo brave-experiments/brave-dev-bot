@@ -14,7 +14,7 @@ LOG_DIR="$SCRIPT_DIR/.ignore"
 # Note: add-backlog-to-prd runs 1 hour before each run.sh invocation
 CRON_JOBS=$(cat <<EOF
 # === brave-core-bot scheduled jobs ===
-# Managed by setup_schedules.sh - do not edit manually
+# Managed by setup-schedules.sh - do not edit manually
 
 # Add backlog to PRD (1 hour before each run.sh)
 0 3,12 * * * cd $SCRIPT_DIR && $CLAUDE_BIN -p '/add-backlog-to-prd' --allowedTools '$CLAUDE_TOOLS' >> $LOG_DIR/add-backlog-cron.log 2>&1

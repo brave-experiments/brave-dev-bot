@@ -63,7 +63,7 @@ A single helper script handles both new and existing PRDs:
 jq -s '[.[][] | {number, title, url, labels}] | unique_by(.number)' \
   <(gh issue list --repo brave/brave-browser --label "bot/type/test" --state open --json number,title,url,labels --limit 100) \
   <(gh issue list --repo brave/brave-browser --assignee "$(git config user.name)" --state open --json number,title,url,labels --limit 100) | \
-  .claude/skills/add-backlog-to-prd/update_prd_with_issues.py ./prd.json > /tmp/prd_updated.json && \
+  .claude/skills/add-backlog-to-prd/update-prd-with-issues.py ./prd.json > /tmp/prd_updated.json && \
   mv /tmp/prd_updated.json ./prd.json
 ```
 

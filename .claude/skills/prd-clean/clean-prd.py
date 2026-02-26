@@ -14,7 +14,7 @@ import tempfile
 
 def main():
     if len(sys.argv) < 2:
-        print("Usage: clean_prd.py path/to/prd.json", file=sys.stderr)
+        print("Usage: clean-prd.py path/to/prd.json", file=sys.stderr)
         sys.exit(1)
 
     prd_path = sys.argv[1]

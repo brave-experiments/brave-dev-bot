@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 #
-# detect_chain.sh - Detect downstream branch tree from a starting branch.
+# detect-chain.sh - Detect downstream branch tree from a starting branch.
 #
-# Usage: detect_chain.sh [starting-branch]
+# Usage: detect-chain.sh [starting-branch]
 #
 # Outputs "branch:parent" per line in rebase order (depth-first pre-order).
 # Handles trees with sibling branches (forks).

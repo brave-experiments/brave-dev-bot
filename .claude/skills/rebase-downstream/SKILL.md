@@ -24,10 +24,10 @@ git branch --show-current
 
 ### 2. Auto-detect downstream chain
 
-Run the `detect_chain.sh` helper script to find all downstream branches:
+Run the `detect-chain.sh` helper script to find all downstream branches:
 
 ```bash
-bash .claude/skills/rebase-downstream/detect_chain.sh <current-branch>
+bash .claude/skills/rebase-downstream/detect-chain.sh <current-branch>
 ```
 
 The script outputs `branch:parent` per line in rebase order (depth-first pre-order). This handles both linear chains and trees with sibling branches.
