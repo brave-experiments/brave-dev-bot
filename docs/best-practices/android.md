@@ -338,29 +338,6 @@ public interface OnAnimationCompleteListener {
 
 ---
 
-<a id="AND-018"></a>
-
-## ✅ Java Field Naming Conventions
-
-**Follow Chromium/Android field naming conventions:**
-- Private non-static fields: `m` prefix (e.g., `mIgnorePullToRefresh`)
-- Public fields: no `m` prefix (e.g., `ignorePullToRefresh`)
-- Static fields: `s` prefix (e.g., `sInstance`)
-
-The presubmit enforces the `m` prefix rule for private fields. Prefer setter/getter methods over public fields for encapsulation.
-
-```java
-// ❌ WRONG
-private boolean ignorePullToRefresh;  // missing m prefix
-public boolean mPublicField;  // m prefix on public field
-
-// ✅ CORRECT
-private boolean mIgnorePullToRefresh;
-public boolean ignorePullToRefresh;
-```
-
----
-
 <a id="AND-019"></a>
 
 ## ✅ Group Feature-Specific Java Sources into Separate Build Targets
@@ -423,14 +400,6 @@ Putting test-only keep rules in `proguard.flags` unnecessarily increases the pro
 
 ---
 
-<a id="AND-024"></a>
-
-## ✅ Apply `@NullMarked` to New Java Classes
-
-**New Java classes in brave-core's Android code should apply the `@NullMarked` annotation** (from `org.chromium.build.annotations`) as part of the NullAway migration. This follows the [Chromium NullAway style guide](https://chromium.googlesource.com/chromium/src/+/main/styleguide/java/nullaway.md).
-
----
-
 <a id="AND-025"></a>
 
 ## ✅ Use `@VisibleForTesting` for Package-Private Test Accessors
@@ -468,14 +437,6 @@ Putting test-only keep rules in `proguard.flags` unnecessarily increases the pro
 ## ✅ Remove Dead API-Level Checks Below Min SDK
 
 **Remove Android version checks for API levels below the app's minimum SDK version.** Dead code checking for Lollipop (API 21) or Marshmallow (API 23) should be cleaned up since Brave's minimum SDK is higher.
-
----
-
-<a id="AND-030"></a>
-
-## ❌ Avoid Raw `SharedPreferences`
-
-**Direct use of Android `SharedPreferences` triggers presubmit warnings.** Use the appropriate Chromium-provided abstractions (such as `ChromeSharedPreferences` or preference-backed settings) instead of raw `SharedPreferences` access.
 
 ---
 

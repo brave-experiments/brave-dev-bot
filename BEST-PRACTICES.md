@@ -14,7 +14,7 @@ This document is an index of best practices for the Brave Browser codebase, disc
 - **[C++ API Usage, Containers & Types](./docs/best-practices/coding-standards-apis.md)** - base utilities, containers, type safety, optional, span, callbacks
 - **[Documentation](./docs/best-practices/documentation.md)** - Inline comments, method docs, READMEs, keeping docs fresh, avoiding duplication
 - **[Front-End (TypeScript/React)](./docs/best-practices/frontend.md)** - Component props, spread args, XSS prevention
-- **[Android (Java/Kotlin)](./docs/best-practices/android.md)** - Activity/Fragment lifecycle, null safety, LazyHolder singletons, theme handling, Robolectric, bytecode patching, field naming
+- **[Android (Java/Kotlin)](./docs/best-practices/android.md)** - Activity/Fragment lifecycle, null safety, LazyHolder singletons, theme handling, Robolectric, bytecode patching
 - **[chromium_src Overrides](./docs/best-practices/chromium-src-overrides.md)** - Overrides vs patches, minimizing duplication, ChromiumImpl fallback
 - **[Build System](./docs/best-practices/build-system.md)** - BUILD.gn organization, buildflags, DEPS, patches, GRD resources
 
