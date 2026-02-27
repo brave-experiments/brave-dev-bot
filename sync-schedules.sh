@@ -17,16 +17,16 @@ CRON_JOBS=$(cat <<EOF
 # Managed by sync-schedules.sh - do not edit manually
 
 # Add backlog to PRD (1 hour before each run.sh) — skip if no prd.json
-0 3,12 * * * cd $SCRIPT_DIR && git fetch origin && git checkout master && git reset --hard origin/master && git submodule update --init --recursive && ./scripts/check-has-prd.sh && $CLAUDE_BIN -p '/add-backlog-to-prd' --allowedTools '$CLAUDE_TOOLS' >> $LOG_DIR/add-backlog-cron.log 2>&1
+0 3,12 * * * cd $SCRIPT_DIR && git fetch origin && git checkout master && git reset --hard origin/master && git submodule update --init --recursive && source .envrc && ./scripts/check-has-prd.sh && $CLAUDE_BIN -p '/add-backlog-to-prd' --allowedTools '$CLAUDE_TOOLS' >> $LOG_DIR/add-backlog-cron.log 2>&1
 
 # Main agent run — run.sh has its own prd check built in
-0 4,13 * * * cd $SCRIPT_DIR && git fetch origin && git checkout master && git reset --hard origin/master && git submodule update --init --recursive && ./run.sh 3 >> $LOG_DIR/run-cron.log 2>&1
+0 4,13 * * * cd $SCRIPT_DIR && git fetch origin && git checkout master && git reset --hard origin/master && git submodule update --init --recursive && source .envrc && ./run.sh 3 >> $LOG_DIR/run-cron.log 2>&1
 
 # Review PRs — skip if no recent open PRs
-0 5,8,10,12,14,16,18,20 * * * cd $SCRIPT_DIR && git fetch origin && git checkout master && git reset --hard origin/master && git submodule update --init --recursive && ./scripts/check-new-prs.sh && $CLAUDE_BIN -p '/review-prs 1d open auto' --allowedTools '$CLAUDE_TOOLS' >> $LOG_DIR/review-prs-cron.log 2>&1
+0 5,8,10,12,14,16,18,20 * * * cd $SCRIPT_DIR && git fetch origin && git checkout master && git reset --hard origin/master && git submodule update --init --recursive && source .envrc && ./scripts/check-new-prs.sh && $CLAUDE_BIN -p '/review-prs 1d open auto' --allowedTools '$CLAUDE_TOOLS' >> $LOG_DIR/review-prs-cron.log 2>&1
 
 # Learnable pattern search — skip if no recent merged PRs
-0 6 * * * cd $SCRIPT_DIR && git fetch origin && git checkout master && git reset --hard origin/master && git submodule update --init --recursive && ./scripts/check-bot-prs.sh && $CLAUDE_BIN -p '/learnable-pattern-search 2d' --allowedTools '$CLAUDE_TOOLS' >> $LOG_DIR/learnable-pattern-search-cron.log 2>&1
+0 6 * * * cd $SCRIPT_DIR && git fetch origin && git checkout master && git reset --hard origin/master && git submodule update --init --recursive && source .envrc && ./scripts/check-bot-prs.sh && $CLAUDE_BIN -p '/learnable-pattern-search 2d' --allowedTools '$CLAUDE_TOOLS' >> $LOG_DIR/learnable-pattern-search-cron.log 2>&1
 
 # Check Signal messages (every hour, only runs Claude if messages pending)
 0 * * * * cd $SCRIPT_DIR && git fetch origin && git checkout master && git reset --hard origin/master && git submodule update --init --recursive && source .envrc && ./scripts/check-signal-messages.sh && $CLAUDE_BIN -p '/check-signal' --allowedTools '$CLAUDE_TOOLS' >> $LOG_DIR/check-signal-cron.log 2>&1
