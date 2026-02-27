@@ -1,7 +1,7 @@
 ---
 name: review-prs
 description: "Review PRs in brave/brave-core for best practices violations. Supports single PR (#12345), state filter (open/closed/all), and auto mode for cron. Triggers on: review prs, review recent prs, /review-prs, check prs for best practices."
-argument-hint: "[days|page<N>|#<PR>] [open|closed|all] [auto]"
+argument-hint: "[days|page<N>|#<PR>] [open|closed|all] [auto] [reviewer-priority]"
 allowed-tools: Bash(gh pr diff:*)
 ---
 
@@ -18,19 +18,21 @@ Scan recent open PRs in `brave/brave-core` for violations of documented best pra
 
 ## The Job
 
-When invoked with `/review-prs [days|page<N>|#<PR>] [open|closed|all] [auto]`:
+When invoked with `/review-prs [days|page<N>|#<PR>] [open|closed|all] [auto] [reviewer-priority]`:
 
 **Detect auto mode:** If the arguments contain `auto`, set `AUTO_MODE=true`. In auto mode, all violations are posted without asking for user approval. Strip `auto` from arguments before passing to the fetch script.
 
-1. **Fetch and filter PRs** by running the fetch script (pass through all arguments except `auto`):
+**Detect reviewer-priority mode:** If the arguments contain `reviewer-priority`, set `REVIEWER_PRIORITY=true`. Strip `reviewer-priority` from arguments before passing to the fetch script. When enabled, pass `--reviewer-priority $BOT_USERNAME` to the fetch script (after resolving `$BOT_USERNAME` in Step 0). This sorts PRs so those where the bot user is assigned as a reviewer are processed first.
+
+1. **Fetch and filter PRs** by running the fetch script (pass through all arguments except `auto` and `reviewer-priority`, and append `--reviewer-priority $BOT_USERNAME` if `REVIEWER_PRIORITY` is set):
    ```bash
-   python3 .claude/skills/review-prs/fetch-prs.py [args...]
+   python3 .claude/skills/review-prs/fetch-prs.py [args...] [--reviewer-priority $BOT_USERNAME]
    ```
    The script handles all fetching, filtering (drafts, uplifts, CI runs, l10n, date cutoff, external contributors), and cache checking. It outputs JSON:
    ```json
    {
-     "prs": [{"number": 42001, "title": "...", "headRefOid": "abc123", "author": "user", "hasApproval": false}],
-     "cached_prs": [{"number": 42002, "title": "...", "headRefOid": "def456", "author": "user", "hasApproval": true}],
+     "prs": [{"number": 42001, "title": "...", "headRefOid": "abc123", "author": "user", "hasApproval": false, "isRequestedReviewer": true}],
+     "cached_prs": [{"number": 42002, "title": "...", "headRefOid": "def456", "author": "user", "hasApproval": true, "isRequestedReviewer": false}],
      "summary": {"total_fetched": 50, "to_review": 5, "cached_with_possible_threads": 8, "skipped_filtered": 30, "skipped_cached": 7, "skipped_approved": 3, "skipped_external": 2}
    }
    ```

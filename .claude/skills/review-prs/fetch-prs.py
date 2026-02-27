@@ -4,7 +4,7 @@
 Handles all PR fetching, filtering, and cache checking in one script
 so the LLM doesn't burn tokens on this logic.
 
-Usage: fetch-prs.py [days|page<N>|#<PR>] [open|closed|all]
+Usage: fetch-prs.py [days|page<N>|#<PR>] [open|closed|all] [--reviewer-priority <username>]
 
 Examples:
   fetch-prs.py              # Default: 5 days, open PRs
@@ -14,6 +14,7 @@ Examples:
   fetch-prs.py page1 all    # Page 1, all states
   fetch-prs.py #12345       # Single PR by number
   fetch-prs.py 12345        # Single PR by number (large numbers treated as PR#)
+  fetch-prs.py 1 open --reviewer-priority user  # Prioritize PRs requesting review from user
 
 Output: JSON with "prs" array and "summary" stats.
 """
@@ -37,9 +38,17 @@ def parse_args():
     page = None
     pr_number = None
     state = "open"
+    reviewer_priority = None
 
-    for arg in sys.argv[1:]:
-        if arg.startswith("#"):
+    args = sys.argv[1:]
+    i = 0
+    while i < len(args):
+        arg = args[i]
+        if arg == "--reviewer-priority" and i + 1 < len(args):
+            reviewer_priority = args[i + 1]
+            i += 2
+            continue
+        elif arg.startswith("#"):
             mode = "single"
             pr_number = int(arg[1:])
         elif arg.startswith("page"):
@@ -58,8 +67,9 @@ def parse_args():
                     days = num
             except ValueError:
                 pass
+        i += 1
 
-    return mode, days, page, pr_number, state
+    return mode, days, page, pr_number, state, reviewer_priority
 
 
 def has_any_approval(pr):
@@ -73,7 +83,7 @@ def has_any_approval(pr):
 
 
 def fetch_single_pr(pr_number):
-    fields = "number,title,updatedAt,author,isDraft,headRefOid,reviewDecision,latestReviews"
+    fields = "number,title,updatedAt,author,isDraft,headRefOid,reviewDecision,latestReviews,reviewRequests"
     result = subprocess.run(
         [
             "gh", "pr", "view", str(pr_number),
@@ -85,11 +95,24 @@ def fetch_single_pr(pr_number):
     return [json.loads(result.stdout)]
 
 
+def is_requested_reviewer(pr, username):
+    """Check if the given username is a requested reviewer on the PR."""
+    if not username:
+        return False
+    for req in pr.get("reviewRequests", []):
+        login = req.get("login", "")
+        if not login:
+            login = req.get("name", "")
+        if login.lower() == username.lower():
+            return True
+    return False
+
+
 def fetch_prs(mode, days, page, pr_number, state):
     if mode == "single":
         return fetch_single_pr(pr_number)
 
-    fields = "number,title,updatedAt,author,isDraft,headRefOid,reviewDecision,latestReviews"
+    fields = "number,title,updatedAt,author,isDraft,headRefOid,reviewDecision,latestReviews,reviewRequests"
     base_cmd = [
         "gh", "pr", "list", "--repo", "brave/brave-core",
         "--state", state, "--json", fields,
@@ -214,7 +237,7 @@ def filter_prs(prs, mode, days, cache, org_members):
 
 
 def main():
-    mode, days, page, pr_number, state = parse_args()
+    mode, days, page, pr_number, state, reviewer_priority = parse_args()
     prs = fetch_prs(mode, days, page, pr_number, state)
 
     if mode == "single":
@@ -232,14 +255,28 @@ def main():
             filter_prs(prs, mode, days, cache, org_members)
         )
 
+    # Sort PRs so those requesting review from the priority user come first
+    if reviewer_priority:
+        to_review.sort(
+            key=lambda pr: (0 if is_requested_reviewer(pr, reviewer_priority) else 1)
+        )
+        cached_prs.sort(
+            key=lambda pr: (0 if is_requested_reviewer(pr, reviewer_priority) else 1)
+        )
+
     def pr_entry(pr):
-        return {
+        entry = {
             "number": pr["number"],
             "title": pr["title"],
             "headRefOid": pr["headRefOid"],
             "author": pr.get("author", {}).get("login", "unknown"),
             "hasApproval": has_any_approval(pr),
         }
+        if reviewer_priority:
+            entry["isRequestedReviewer"] = is_requested_reviewer(
+                pr, reviewer_priority
+            )
+        return entry
 
     output = {
         "prs": [pr_entry(pr) for pr in to_review],
