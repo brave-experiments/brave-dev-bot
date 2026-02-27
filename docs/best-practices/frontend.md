@@ -283,7 +283,9 @@ if ('text' in value && 'role' in value) { ... }
 
 ## ✅ Provide Sufficient Context in Localization String Descriptions
 
-**Localization string descriptions must contain enough context for translators who only see the description.** For example, "History" alone might be ambiguous across languages (browser history vs. event history). Add specifics like "Title for the browser visits history section of a URL picker".
+**Localization string descriptions should contain enough context for translators who only see the description.** For example, "History" alone might be ambiguous across languages (browser history vs. event history). Add specifics like "Title for the browser visits history section of a URL picker".
+
+For simple, self-evident strings where the meaning is unambiguous in any language (e.g., "Summary", "Settings", "Cancel"), a brief description is fine — do not insist on verbose descriptions when the string speaks for itself.
 
 ---
 
