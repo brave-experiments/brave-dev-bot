@@ -77,3 +77,144 @@ leo_icons = [
 ```
 
 ---
+
+<a id="NA-005"></a>
+
+## ❌ Don't Use HTML elements when there's a relevant Nala component
+
+**In WebUI React code, use Leo components from `@brave/leo/react/*` instead of native HTML elements.** Leo components are design-system-approved, theme-aware, and accessible. Using raw HTML elements produces visual inconsistency, bypasses Brave's design tokens, and requires manual accessibility work.
+
+> **Reviewer note:** Tag `@nala-token-reviewers` when flagging this violation.
+
+### Common substitutions
+
+| Instead of… | Use… |
+|---|---|
+| `<select>` | `Dropdown` from `@brave/leo/react/dropdown` |
+| `<button>` | `Button` from `@brave/leo/react/button` |
+| `<input type="text">` | `Input` from `@brave/leo/react/input` |
+| `<input type="checkbox">` | `Checkbox` from `@brave/leo/react/checkbox` |
+| `<input type="radio">` | `RadioButton` from `@brave/leo/react/radioButton` |
+| Toggle/switch UI | `Toggle` from `@brave/leo/react/toggle` |
+| `<dialog>` / modal | `Dialog` from `@brave/leo/react/dialog` |
+
+```tsx
+// ❌ WRONG - native HTML select
+<select value={value} onChange={e => setValue(e.target.value)}>
+  <option value="a">Option A</option>
+  <option value="b">Option B</option>
+</select>
+
+// ✅ CORRECT - Leo Dropdown
+import Dropdown from '@brave/leo/react/dropdown'
+
+<Dropdown value={value} onChange={e => setValue(e.detail.value)}>
+  <leo-option value="a">Option A</leo-option>
+  <leo-option value="b">Option B</leo-option>
+</Dropdown>
+```
+
+```tsx
+// ❌ WRONG - native HTML button
+<button onClick={handleClick} disabled={isLoading}>Submit</button>
+
+// ✅ CORRECT - Leo Button
+import Button from '@brave/leo/react/button'
+
+<Button onClick={handleClick} isDisabled={isLoading}>Submit</Button>
+```
+
+```tsx
+// ❌ WRONG - native HTML input
+<input type="text" value={value} onChange={e => setValue(e.target.value)} />
+
+// ✅ CORRECT - Leo Input
+import Input from '@brave/leo/react/input'
+
+<Input value={value} onInput={e => setValue(e.detail.value)} />
+```
+
+---
+
+<a id="NA-006"></a>
+
+## ❌ Don't Reinvent Components That Already Exist in Leo
+
+**Before creating a custom React component, check whether Leo already provides it.** Custom re-implementations of Leo components add maintenance burden, deviate from the design system, and are often less accessible than the Leo originals.
+
+> **Reviewer note:** Tag `@nala-token-reviewers` when flagging this violation.
+
+### Components that are commonly reinvented — use Leo instead
+
+| Don't build a custom… | Use… |
+|---|---|
+| Button with a dropdown menu | `ButtonMenu` from `@brave/leo/react/buttonMenu` |
+| Tooltip / hover popover | `Tooltip` from `@brave/leo/react/tooltip` |
+| Segmented control / tab switcher | `SegmentedControl` + `SegmentedControlItem` from `@brave/leo/react/segmentedControl` / `@brave/leo/react/segmentedControlItem` |
+| Loading spinner / activity indicator | `ProgressRing` from `@brave/leo/react/progressRing` |
+| Dropdown/context menu | `Menu` from `@brave/leo/react/menu` |
+| Modal / overlay dialog | `Dialog` from `@brave/leo/react/dialog` |
+| Toast / notification banner | `Alert` from `@brave/leo/react/alert` |
+| Collapsible / accordion | `Collapse` from `@brave/leo/react/collapse` |
+
+```tsx
+// ❌ WRONG - hand-rolled loading spinner
+function Spinner() {
+  return <div className="spinner" aria-label="Loading..." />
+}
+
+// ✅ CORRECT - Leo ProgressRing
+import ProgressRing from '@brave/leo/react/progressRing'
+
+<ProgressRing />
+```
+
+```tsx
+// ❌ WRONG - custom tooltip built from a div + hover state
+function MyTooltip({ text, children }) {
+  const [visible, setVisible] = React.useState(false)
+  return (
+    <div onMouseEnter={() => setVisible(true)} onMouseLeave={() => setVisible(false)}>
+      {children}
+      {visible && <div className="tooltip">{text}</div>}
+    </div>
+  )
+}
+
+// ✅ CORRECT - Leo Tooltip
+import Tooltip from '@brave/leo/react/tooltip'
+
+<Tooltip text="Helpful hint">
+  <Button>Hover me</Button>
+</Tooltip>
+```
+
+```tsx
+// ❌ WRONG - bespoke segmented control
+function MySegmentedControl({ options, value, onChange }) {
+  return (
+    <div className="segmented-control">
+      {options.map(opt => (
+        <button
+          key={opt.value}
+          className={value === opt.value ? 'active' : ''}
+          onClick={() => onChange(opt.value)}
+        >
+          {opt.label}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+// ✅ CORRECT - Leo SegmentedControl
+import SegmentedControl from '@brave/leo/react/segmentedControl'
+import SegmentedControlItem from '@brave/leo/react/segmentedControlItem'
+
+<SegmentedControl value={value} onChange={e => onChange(e.detail.value)}>
+  <SegmentedControlItem value="a">Option A</SegmentedControlItem>
+  <SegmentedControlItem value="b">Option B</SegmentedControlItem>
+</SegmentedControl>
+```
+
+---
