@@ -4,6 +4,4 @@ description: "Commit changes without Co-Authored-By attribution. Creates logical
 argument-hint: "[branch] [push]"
 ---
 
-Invoke the `commit` skill from the `brave-core-tools` submodule with the same arguments that were passed to this skill.
-
-Use the Skill tool: `skill: "brave-core-tools:commit"` with the same `args` string.
+Read the skill file at `./brave-core-tools/.claude/skills/commit/SKILL.md` and follow its instructions exactly, using the same arguments that were passed to this skill.
