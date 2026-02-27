@@ -548,7 +548,7 @@ Key configuration facts:
 
 ---
 
-<a id="NA-001"></a>
+<a id="AND-039"></a>
 
 ## ✅ Place `@Nullable` Immediately Before the Type
 
@@ -582,7 +582,7 @@ private @Nullable Callback<@Nullable String> mNullableCallbackOfNullableString;
 
 ---
 
-<a id="NA-002"></a>
+<a id="AND-040"></a>
 
 ## ✅ Use Method Annotations for Pre/Post Conditions
 
@@ -629,7 +629,7 @@ private boolean isParamNonNull(@Nullable String foo) {
 
 ---
 
-<a id="NA-003"></a>
+<a id="AND-041"></a>
 
 ## ✅ Use `@MonotonicNonNull` for Late-Initialized Fields
 
@@ -650,7 +650,7 @@ public void doThing(String value) {
 
 ---
 
-<a id="NA-004"></a>
+<a id="AND-042"></a>
 
 ## ✅ Choose the Right Assert/Assume Pattern
 
@@ -706,11 +706,13 @@ public String describe(@MyIntDef int validity) {
 
 ---
 
-<a id="NA-005"></a>
+<a id="AND-043"></a>
 
 ## ✅ Handle Object Destruction Correctly
 
 **For classes with `destroy()` methods that null out otherwise non-null fields, choose one of two strategies:**
+
+<a id="AND-053"></a>
 
 ### Strategy 1: `@Nullable` fields with `@EnsuresNonNullIf` guards (preferred for complex cases)
 
@@ -732,6 +734,8 @@ public void destroy() {
 }
 ```
 
+<a id="AND-054"></a>
+
 ### Strategy 2: Suppress warnings on `destroy()` (simpler cases)
 
 ```java
@@ -745,7 +749,7 @@ public void destroy() {
 
 ---
 
-<a id="NA-006"></a>
+<a id="AND-044"></a>
 
 ## ✅ Use `assertBound()` for View Binders, Not `@Initializer`
 
@@ -775,7 +779,7 @@ private void updateView() {
 
 ---
 
-<a id="NA-007"></a>
+<a id="AND-045"></a>
 
 ## ✅ Initialize Struct-Like Class Fields via Constructor
 
@@ -805,7 +809,7 @@ new TabInfo(/* title= */ "Home", /* url= */ "https://brave.com");
 
 ---
 
-<a id="NA-008"></a>
+<a id="AND-046"></a>
 
 ## ✅ Use "Checked" Companion Methods for Effectively Non-Null Returns
 
@@ -827,7 +831,7 @@ Do not annotate `@Nullable` methods as `@NonNull` just because callers expect no
 
 ---
 
-<a id="NA-009"></a>
+<a id="AND-047"></a>
 
 ## ✅ Handle Supplier Nullability Variance
 
@@ -852,7 +856,7 @@ See [NullAway#1356](https://github.com/uber/NullAway/issues/1356) for background
 
 ---
 
-<a id="NA-010"></a>
+<a id="AND-048"></a>
 
 ## ✅ Use `@Initializer` for Two-Phase Initialization
 
@@ -877,7 +881,7 @@ public class MyComponent {
 
 ---
 
-<a id="NA-011"></a>
+<a id="AND-049"></a>
 
 ## ✅ Understand `@SuppressWarnings("NullAway")` vs `@NullUnmarked`
 
@@ -892,7 +896,7 @@ public class MyComponent {
 
 ---
 
-<a id="NA-012"></a>
+<a id="AND-050"></a>
 
 ## ❌ Don't Use Intermediate Booleans for Null Checks
 
@@ -915,7 +919,7 @@ This is a known NullAway limitation: [NullAway#98](https://github.com/uber/NullA
 
 ---
 
-<a id="NA-013"></a>
+<a id="AND-051"></a>
 
 ## ✅ JNI: `@CalledByNative` Skips Checks, Java-to-Native Is Checked
 
@@ -925,7 +929,7 @@ Ensure native-bound parameters have correct nullability annotations so that call
 
 ---
 
-<a id="NA-014"></a>
+<a id="AND-052"></a>
 
 ## ✅ Use JSpecify Annotations for Mirrored Code
 
