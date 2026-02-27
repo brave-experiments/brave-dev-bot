@@ -73,13 +73,16 @@ Categorize every changed file to determine which best practices documents apply:
 
 | File Pattern | Category | Best Practices Doc |
 |---|---|---|
-| `*.cc`, `*.h`, `*.mm` | C++ code | `coding-standards.md` |
+| `*.cc`, `*.h`, `*.mm` | C++ code | `coding-standards.md`, `coding-standards-memory.md`, `coding-standards-apis.md` |
 | `*_browsertest*`, `*_unittest*`, `*test*.cc` | C++ tests | `testing-async.md`, `testing-isolation.md` |
 | `*browsertest*` with JS eval | JS in tests | `testing-javascript.md` |
 | `*browsertest*` with navigation | Navigation tests | `testing-navigation.md` |
 | `*.ts`, `*.tsx`, `*.js`, `*.jsx` | Front-end | `frontend.md` |
+| `*.java`, `*.kt`, `android/` paths | Android | `android.md` |
+| `*.swift`, `ios/` paths | iOS | `ios.md` |
 | `BUILD.gn`, `*.gni`, `DEPS` | Build system | `build-system.md` |
 | `chromium_src/**` | chromium_src overrides | `chromium-src-overrides.md` |
+| `*/res/drawable/*`, `*/res/values/*`, `components/vector_icons/`, `*.icon`, `*.svg` | Nala/icons | `nala.md` |
 | Architecture/service files | Architecture | `architecture.md` |
 | `*.md`, comments, docs | Documentation | `documentation.md` |
 
@@ -114,15 +117,20 @@ For each applicable best practices document, perform a focused audit:
 Audit documents in this order (most impactful first):
 
 1. **`coding-standards.md`** — if any C++ files changed
-2. **`testing-async.md`** — if any test files changed
-3. **`testing-isolation.md`** — if any test files changed
-4. **`testing-javascript.md`** — if tests use JS evaluation
-5. **`testing-navigation.md`** — if tests involve navigation
-6. **`architecture.md`** — if service/component architecture changed
-7. **`chromium-src-overrides.md`** — if chromium_src files changed
-8. **`build-system.md`** — if BUILD.gn/gni/DEPS files changed
-9. **`frontend.md`** — if TypeScript/React files changed
-10. **`documentation.md`** — if documentation or comments changed
+2. **`coding-standards-memory.md`** — if any C++ files changed
+3. **`coding-standards-apis.md`** — if any C++ files changed
+4. **`testing-async.md`** — if any test files changed
+5. **`testing-isolation.md`** — if any test files changed
+6. **`testing-javascript.md`** — if tests use JS evaluation
+7. **`testing-navigation.md`** — if tests involve navigation
+8. **`architecture.md`** — if service/component architecture changed
+9. **`chromium-src-overrides.md`** — if chromium_src files changed
+10. **`build-system.md`** — if BUILD.gn/gni/DEPS files changed
+11. **`frontend.md`** — if TypeScript/React files changed
+12. **`android.md`** — if Java/Kotlin or android/ path files changed
+13. **`ios.md`** — if Swift or ios/ path files changed
+14. **`nala.md`** — if icon/drawable/vector icon files changed
+15. **`documentation.md`** — if documentation or comments changed
 
 **Skip documents entirely if no changed files fall into their category.** Report which documents were skipped and why.
 
@@ -157,7 +165,7 @@ After the per-document audit, also check the quick checklist from `BEST-PRACTICE
 - **Branch**: <branch-name>
 - **Base branch**: <base-branch> (detection method: PR / tracking / default)
 - **Files changed**: <count>
-- **Documents audited**: <count> of 10
+- **Documents audited**: <count> of 15
 - **Documents skipped**: <count> (not applicable)
 
 ## Violations Found

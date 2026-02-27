@@ -87,6 +87,8 @@ Classify the changed files:
 - **has_chromium_src**: `chromium_src/` paths
 - **has_build_files**: `BUILD.gn`, `DEPS`, `*.gni`
 - **has_frontend_files**: `.ts`, `.tsx`, `.html`, `.css`
+- **has_android_files**: `.java`, `.kt` files, or paths containing `android/`
+- **has_ios_files**: `.swift` files, or paths containing `ios/`
 - **has_nala_files**: files matching `*/res/drawable/*`, `*/res/values/*`, or `*/res/values-night/*`, paths `components/vector_icons/`, `.icon` files, or `.svg` files
 
 ### Step 1.5: Fetch Existing PR Comments (Re-review Context)
@@ -208,6 +210,8 @@ Launch one **Task subagent** (subagent_type: "general-purpose") per applicable b
 | **testing-isolation** | `testing-isolation.md` | has_test_files |
 | **chromium-src** | `chromium-src-overrides.md` | has_chromium_src |
 | **frontend** | `frontend.md` | has_frontend_files |
+| **android** | `android.md` | has_android_files |
+| **ios** | `ios.md` | has_ios_files |
 | **nala** | `nala.md` | has_nala_files |
 
 All doc paths are under `./brave-core-bot/docs/best-practices/`.
