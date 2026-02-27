@@ -86,6 +86,8 @@ leo_icons = [
 
 > **Reviewer note:** Tag `@nala-token-reviewers` when flagging this violation.
 
+<a id="NA-007"></a>
+
 ### Common substitutions
 
 | Instead of… | Use… |
@@ -143,6 +145,8 @@ import Input from '@brave/leo/react/input'
 **Before creating a custom React component, check whether Leo already provides it.** Custom re-implementations of Leo components add maintenance burden, deviate from the design system, and are often less accessible than the Leo originals.
 
 > **Reviewer note:** Tag `@nala-token-reviewers` when flagging this violation.
+
+<a id="NA-008"></a>
 
 ### Components that are commonly reinvented — use Leo instead
 

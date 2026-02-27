@@ -32,6 +32,10 @@ DOC_PREFIXES = {
     "testing-isolation": "TI",
     "testing-javascript": "TJ",
     "testing-navigation": "TN",
+    "android": "AND",
+    "ios": "IOS",
+    "nala": "NA",
+    "patches": "PATCH",
 }
 
 ANCHOR_RE = re.compile(r'^<a\s+id="([^"]+)"\s*></a>\s*$')

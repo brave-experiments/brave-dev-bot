@@ -601,7 +601,7 @@ deps += [ "//brave/components/local_ai/resources" ]
 
 ---
 
-<a id="BS-038"></a>
+<a id="BS-049"></a>
 
 ## ✅ Add `static_assert` in Public Headers for Build Flag Guards
 
