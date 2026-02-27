@@ -103,14 +103,6 @@ void SomeClass::LargeMethod() {
 
 ---
 
-<a id="CSRC-006"></a>
-
-## ❌ No Multiline Patches - Use Defines
-
-**Never create multiline patches. Use `#define` macros or chromium_src overrides instead.**
-
----
-
 <a id="CSRC-007"></a>
 
 ## ✅ Prefer Subclassing Over Patching
@@ -139,66 +131,6 @@ Subclassing is better for long-term maintenance and makes changes easier to unde
 
 ---
 
-<a id="CSRC-008"></a>
-
-## ❌ Never Add Comments in Patches
-
-**Never add comments, empty lines, or any non-functional changes in patch files.** Patches should contain only the minimal functional changes needed.
-
----
-
-<a id="CSRC-009"></a>
-
-## ✅ Use `include` for Extensible Patches
-
-**When a patch adds to a list or block, use an `include` directive to make the patch extensible.** This way additional items can be added in brave-core without modifying the patch.
-
----
-
-<a id="CSRC-010"></a>
-
-## ✅ Patches Should Use `define` for Extensibility
-
-**Patches should use `#define` macros to be extensible.** This allows adding behavior in brave-core without changing the patch.
-
-```cpp
-// ❌ WRONG - patching inline code directly
-+  if (permission == AUTOPLAY) return true;
-
-// ✅ CORRECT - define macro that can be changed in brave-core
-+#include "brave/chromium_src/path/to/override.h"
-+BRAVE_PERMISSION_CONTROLLER_IMPL_METHOD
-```
-
-Convention for define names: `BRAVE_ALL_CAPS_ORIGINAL_METHOD_NAME`.
-
----
-
-<a id="CSRC-011"></a>
-
-## Patch Style Guidelines
-
-- **Keep patches to one line** even if it violates lint character line limits (lint doesn't run on patched files)
-- **In XML patches, use HTML comments** (`<!-- -->`) instead of deleting lines to reduce the diff
-- **Minimize line modifications** - put additions on separate lines to avoid modifying existing lines
-- **Match existing code exactly** when possible so patches auto-resolve during updates
-
-```xml
-<!-- ❌ WRONG - deleting XML elements -->
--<LinearLayout ...>
--  ...
--</LinearLayout>
-
-<!-- ✅ CORRECT - commenting out -->
-+<!--
- <LinearLayout ...>
-   ...
- </LinearLayout>
-+-->
-```
-
----
-
 <a id="CSRC-012"></a>
 
 ## ✅ Always Use Original Header Paths
@@ -211,22 +143,6 @@ Convention for define names: `BRAVE_ALL_CAPS_ORIGINAL_METHOD_NAME`.
 
 // ✅ CORRECT
 #include "net/proxy_resolution/proxy_resolution_service.h"
-```
-
----
-
-<a id="CSRC-013"></a>
-
-## ✅ Use `-=` for List Removal in Patches
-
-**When removing items from GN lists, use `-=` instead of modifying the original line.** This makes the patch an addition rather than a modification.
-
-```gn
-# ❌ WRONG - modifying the original deps line
--  public_deps += [ ":chrome_framework_widevine_signature" ]
-
-# ✅ CORRECT - separate removal line (addition-only patch)
-+  public_deps -= [ ":chrome_framework_widevine_signature" ]
 ```
 
 ---

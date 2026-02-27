@@ -82,6 +82,7 @@ Categorize every changed file to determine which best practices documents apply:
 | `*.swift`, `ios/` paths | iOS | `ios.md` |
 | `BUILD.gn`, `*.gni`, `DEPS` | Build system | `build-system.md` |
 | `chromium_src/**` | chromium_src overrides | `chromium-src-overrides.md` |
+| `*.patch`, `patches/` paths | Patches | `patches.md` |
 | `*/res/drawable/*`, `*/res/values/*`, `components/vector_icons/`, `*.icon`, `*.svg` | Nala/icons | `nala.md` |
 | Architecture/service files | Architecture | `architecture.md` |
 | `*.md`, comments, docs | Documentation | `documentation.md` |
@@ -129,8 +130,9 @@ Audit documents in this order (most impactful first):
 11. **`frontend.md`** — if TypeScript/React files changed
 12. **`android.md`** — if Java/Kotlin or android/ path files changed
 13. **`ios.md`** — if Swift or ios/ path files changed
-14. **`nala.md`** — if icon/drawable/vector icon files changed
-15. **`documentation.md`** — if documentation or comments changed
+14. **`patches.md`** — if .patch files or patches/ path files changed
+15. **`nala.md`** — if icon/drawable/vector icon files changed
+16. **`documentation.md`** — if documentation or comments changed
 
 **Skip documents entirely if no changed files fall into their category.** Report which documents were skipped and why.
 
@@ -165,7 +167,7 @@ After the per-document audit, also check the quick checklist from `BEST-PRACTICE
 - **Branch**: <branch-name>
 - **Base branch**: <base-branch> (detection method: PR / tracking / default)
 - **Files changed**: <count>
-- **Documents audited**: <count> of 15
+- **Documents audited**: <count> of 16
 - **Documents skipped**: <count> (not applicable)
 
 ## Violations Found

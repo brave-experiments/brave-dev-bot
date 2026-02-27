@@ -8,14 +8,6 @@
 
 ---
 
-<a id="BS-002"></a>
-
-## ❌ Minimize Whitespace Changes in Patches
-
-**Leave whitespace intact in patch files to minimize diff size.** Only change what's functionally necessary. Unnecessary whitespace changes make patches harder to review and more likely to conflict.
-
----
-
 <a id="BS-003"></a>
 
 ## ✅ Reuse Existing GN Config Args
@@ -112,14 +104,6 @@ enable_brave_perf_predictor = true
 # (e.g., in components/ai_chat/core/common/buildflags/buildflags.gni)
 enable_tab_management_tool = !is_android
 ```
-
----
-
-<a id="BS-009"></a>
-
-## ❌ Never Add Empty Lines in Patches
-
-**Never add empty lines in patch files.** Keep patches minimal - only change what's functionally necessary.
 
 ---
 
@@ -371,26 +355,6 @@ source_set("my_service") {
   public_deps = [ "//components/prefs" ]  # used in header
   deps = [ "//base" ]  # only used in .cc
 }
-```
-
----
-
-<a id="BS-025"></a>
-
-## ✅ Use `deps +=` with a Variable for Extensible GN Patches
-
-**When a patch adds dependencies to a Chromium BUILD.gn target, define a variable in Brave code and patch only the variable reference.** This allows adding/removing deps without modifying the patch.
-
-```gn
-# ❌ WRONG - patching inline deps
-+  deps += [ "//brave/browser/ui/views/location_bar" ]
-
-# ✅ CORRECT - patch references a variable
-+  deps += brave_browser_window_deps
-# In brave code:
-brave_browser_window_deps = [
-  "//brave/browser/ui/views/location_bar",
-]
 ```
 
 ---
@@ -779,14 +743,6 @@ import { SpeedreaderPage } from './speedreader_page.js';
 assert(enable_brave_wallet,
        "Rewards requires Wallet (enable_brave_wallet=true)")
 ```
-
----
-
-<a id="BS-047"></a>
-
-## ❌ Don't Patch Python Build Scripts
-
-**Do not add patches to Python build scripts (e.g., `java_cpp_enum.py` or similar build tools).** These patches prevent correct incremental rebuilds and break remote `siso` build actions. Instead, prefer: (1) a `chromium_src` override, (2) a multiline header patch, or (3) a `#define`-based approach. For Java/C++ enums processed by upstream Python scripts, a multiline patch in the header file is acceptable as a pragmatic solution.
 
 ---
 

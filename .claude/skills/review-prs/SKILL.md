@@ -89,6 +89,7 @@ Classify the changed files:
 - **has_frontend_files**: `.ts`, `.tsx`, `.html`, `.css`
 - **has_android_files**: `.java`, `.kt` files, or paths containing `android/`
 - **has_ios_files**: `.swift` files, or paths containing `ios/`
+- **has_patch_files**: `.patch` files or paths containing `patches/`
 - **has_nala_files**: files matching `*/res/drawable/*`, `*/res/values/*`, or `*/res/values-night/*`, paths `components/vector_icons/`, `.icon` files, or `.svg` files
 
 ### Step 1.5: Fetch Existing PR Comments (Re-review Context)
@@ -212,6 +213,7 @@ Launch one **Task subagent** (subagent_type: "general-purpose") per applicable b
 | **frontend** | `frontend.md` | has_frontend_files |
 | **android** | `android.md` | has_android_files |
 | **ios** | `ios.md` | has_ios_files |
+| **patches** | `patches.md` | has_patch_files |
 | **nala** | `nala.md` | has_nala_files |
 
 All doc paths are under `./brave-core-bot/docs/best-practices/`.
