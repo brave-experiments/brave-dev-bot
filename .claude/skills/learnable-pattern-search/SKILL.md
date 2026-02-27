@@ -1,7 +1,7 @@
 ---
 name: learnable-pattern-search
 description: "Analyze review comments from brave-core PRs to discover learnable patterns for improving bot documentation and best practices. Triggers on: learnable-pattern-search, learn from prs, analyze reviews, find patterns in prs."
-argument-hint: <pr-numbers... | --username <github-user>>
+argument-hint: "<pr-numbers... | --username <github-user>> [<N>d]"
 ---
 
 # Learnable Pattern Search
@@ -13,9 +13,18 @@ Supports three modes:
 - **Username mode:** Provide a GitHub username to find and analyze all PRs they reviewed
 - **Self-review mode:** When the username is the bot's own account (`brave-core-bot` or `netzenbot`), analyze pushback against the bot's own review comments to identify best practices that may be wrong or incomplete
 
+**Optional lookback window:** Append `<N>d` (e.g., `2d`, `7d`, `30d`) to limit analysis to PRs updated within the last N days. Without this parameter, all matching PRs are analyzed.
+
 ---
 
 ## The Job
+
+### Argument Parsing
+
+Parse all arguments. Look for:
+- **`<N>d`** pattern (e.g., `2d`, `7d`, `30d`): Sets the lookback window to N days. Only PRs updated within the last N days will be analyzed. If omitted, no date filter is applied.
+- **`--username <user>`**: Username mode
+- **Numeric values**: PR numbers
 
 ### Mode 1: PR Numbers
 
@@ -41,23 +50,34 @@ When the user invokes `/learnable-pattern-search --username <github-user>`:
 
 ## Fetching PRs by Reviewer
 
-When `--username <user>` is provided, use the GitHub search API to find merged PRs the user reviewed:
+When `--username <user>` is provided, use the GitHub search API to find merged PRs the user reviewed.
+
+**If a lookback window `<N>d` was specified**, compute the cutoff date (N days ago in `YYYY-MM-DD` format) and add it to the query:
 
 ```bash
-# Fetch all merged PRs reviewed by the user (paginated, fetch all pages)
+# Compute cutoff date (e.g., for 2d: 2 days ago)
+CUTOFF_DATE=$(date -u -d "$N days ago" +%Y-%m-%d 2>/dev/null || date -u -v-${N}d +%Y-%m-%d)
+
+# Fetch merged PRs reviewed by the user, updated since cutoff
+gh search prs --repo brave/brave-core --reviewed-by <username> --state merged --sort updated --order desc --limit 1000 --json number,title,updatedAt -- "updated:>=$CUTOFF_DATE"
+```
+
+**If no lookback window was specified**, fetch all:
+
+```bash
 gh search prs --repo brave/brave-core --reviewed-by <username> --state merged --sort updated --order desc --limit 1000 --json number,title,updatedAt
 ```
 
 If `gh search prs` doesn't work or returns errors, fall back to the search API with pagination:
 
 ```bash
-# Page through all results (100 per page)
-gh api 'search/issues?q=repo:brave/brave-core+type:pr+is:merged+reviewed-by:<username>&sort=updated&order=desc&per_page=100&page=1' --jq '.items[] | {number: .number, title: .title}'
+# Page through results (100 per page) — add +updated:>=$CUTOFF_DATE if lookback specified
+gh api 'search/issues?q=repo:brave/brave-core+type:pr+is:merged+reviewed-by:<username>+updated:>='$CUTOFF_DATE'&sort=updated&order=desc&per_page=100&page=1' --jq '.items[] | {number: .number, title: .title}'
 # Continue incrementing &page=2, &page=3, etc. until no more results
 ```
 
 **Important notes:**
-- Fetch **all** PRs reviewed by the user — do not cap or limit results.
+- If a lookback window is set, only fetch PRs updated within that window.
 - Process PRs in batches of 10 to avoid rate limiting. After each batch, check `gh api rate_limit` and pause if needed.
 - Skip PRs where the user left no substantive review comments (only approvals with no body text).
 - When analyzing, **focus on comments from the specified user** rather than all reviewers.
