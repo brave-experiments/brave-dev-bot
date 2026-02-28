@@ -364,14 +364,29 @@ Process PRs **one at a time** (sequentially). After ALL document subagents retur
    If the ID is invalid (exit code 1), strip the `[best practice](...)` link from the `draft_comment` text before posting. Log: `INVALID_LINK: stripped broken link #<ID> from <file>:<line>`. The comment text itself is still posted — only the broken link is removed.
 
    **Violations missing `rule_link` must be recovered or dropped — unless they are genuine bug/correctness/security findings.** Best-practice-style comments (style, conventions, patterns) must cite a specific rule so developers can understand the basis and push back. If a subagent returns such a violation without a `rule_link`, search the subagent's best practice document for a heading that matches the violation's subject. If a matching rule with an `<a id>` anchor exists, add the `rule_link` and post. If no matching rule exists, drop it — log: `DROPPED: no rule_link for <file>:<line> — "<draft_comment snippet>"`. However, high-severity findings (real bugs, correctness issues, security vulnerabilities, logic errors) may be posted without a `rule_link` since they don't need a style guide to justify them.
-4. **If AUTO_MODE**: post the prioritized violations using the inline review API (see Auto Posting below), then move to the next PR
-5. **If interactive mode**: present the prioritized violations to the user for approval before moving to the next PR
-6. **If no violations across all categories**: run the approval gate script to verify all prior bot threads are resolved before approving:
+4. **Deep-dive validation and enhancement** — before posting, you MUST validate and enhance every remaining violation (typically 1–8 comments at this point) by reading the actual source code in `src/` and `src/brave/`. This is a mandatory phase that ensures accuracy and improves comment quality.
+
+   **For each violation, do the following:**
+   - **Read the actual source file** at and around the flagged line. Use the Read tool (not the diff) to see the full file context — surrounding functions, class definitions, includes, namespace scope, and nearby code patterns.
+   - **Verify the claim is true.** If the violation says "this should use X instead of Y", confirm that X is actually available, appropriate, and consistent with how the rest of the file/module works. If the violation claims something is missing (e.g., a missing include, a missing null check), verify it's actually missing in the full file, not just absent from the diff.
+   - **Check surrounding context for justification.** Look for comments, TODOs, or patterns in the surrounding code that might explain why the author wrote the code a certain way. If the surrounding code uses the same pattern the violation is flagging, the comment may be invalid or should acknowledge the existing pattern.
+   - **Enhance the comment with concrete context.** If the violation is valid, improve the `draft_comment` with specific details from the source — e.g., reference the specific function/class that provides the better alternative, mention the existing pattern in the file that the new code should follow, or cite a concrete example from nearby code.
+   - **Drop false positives.** If reading the source reveals the violation is incorrect (the code is actually fine, the pattern is consistent with the codebase, or the claim is based on incomplete information from the diff alone), drop the violation. Log: `VALIDATED_DROP: <file>:<line> — <reason it was dropped>`.
+   - **Log validation results** for each violation:
+     - `VALIDATED: <file>:<line> — confirmed, <brief note on what was checked>`
+     - `VALIDATED_ENHANCED: <file>:<line> — improved comment with <what context was added>`
+     - `VALIDATED_DROP: <file>:<line> — <reason it was dropped>`
+
+   **This phase is NOT optional.** Subagents work only from the diff, which lacks surrounding context. Reading the actual source code catches false positives that look like violations in the diff but are correct in context. Since there are typically only 1–8 comments at this stage, this deep dive is fast and dramatically improves review quality.
+
+5. **If AUTO_MODE**: post the prioritized violations using the inline review API (see Auto Posting below), then move to the next PR
+6. **If interactive mode**: present the prioritized violations to the user for approval before moving to the next PR
+7. **If no violations across all categories**: run the approval gate script to verify all prior bot threads are resolved before approving:
    ```bash
    python3 ./brave-core-bot/scripts/check-can-approve.py {number} "$BOT_USERNAME"
    ```
    **Only if exit code is 0** (`"can_approve": true`): submit an APPROVE review and mark as settled using `--approve` (see Step 1.7). This completes the bot's engagement with this PR — future runs will skip it entirely. Log: `APPROVE: [PR #<number>](...) - no violations, approved`. **If exit code is 1: do NOT approve** — log the reason and move on. The bot will re-check on the next run.
-7. **If violations were posted**: do NOT approve. The bot will re-check this PR on the next run after the developer addresses the feedback
+8. **If violations were posted**: do NOT approve. The bot will re-check this PR on the next run after the developer addresses the feedback
 
 **PR Link Format (CRITICAL):** When displaying PR numbers to the user, ALWAYS use a full markdown link with the `brave/brave-core` URL: `[PR #<number>](https://github.com/brave/brave-core/pull/<number>) - <title>`. **NEVER use bare `#<number>` references** — the TUI auto-links them against the current repo's git remote (`brave-experiments/brave-core-bot`), sending users to the wrong repository. Every single PR number shown to the user must be a full `https://github.com/brave/brave-core/pull/` link.
 
