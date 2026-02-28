@@ -168,11 +168,17 @@ After Step 1.6 resolves addressed comments, check if the bot can approve this PR
 python3 ./brave-core-bot/scripts/check-can-approve.py {number} "$BOT_USERNAME"
 ```
 
-The script checks all three conditions programmatically and returns:
+The script checks programmatically and returns:
 - **Exit code 0** + `"can_approve": true` → safe to approve
 - **Exit code 1** + `"can_approve": false` + `"reason"` → do NOT approve, log the reason
 
-**CRITICAL: If the script returns exit code 1, you MUST NOT submit an APPROVE review. No exceptions. No overrides. The script is the single source of truth.**
+The principle is simple: **only approve if the bot has reviewed the PR AND has zero outstanding comments of any kind.** The script checks:
+1. The bot has left some feedback (threads or comments) — i.e., it actually reviewed
+2. No body-level review comments exist (these have no resolution mechanism and always block)
+3. All inline review threads are resolved
+4. The bot hasn't already approved at the current SHA
+
+**CRITICAL: If the script returns exit code 1, you MUST NOT submit an APPROVE review. No exceptions. No overrides. No reinterpretation of the reason text. The script is the single source of truth. ANY non-zero exit code means DO NOT APPROVE — regardless of what the "reason" field says.**
 
 **Only if the script returns exit code 0**, submit the APPROVE review:
 ```bash
@@ -192,8 +198,8 @@ python3 .claude/skills/review-prs/update-cache.py <PR_NUMBER> <HEAD_REF_OID> --a
 ```
 
 **When NOT to approve (enforced by the gate script):**
-- If there are still unresolved bot threads (the developer hasn't addressed all feedback yet)
-- If the bot never left any comments on this PR (nothing to settle — don't approve a PR you never reviewed)
+- If the bot has ANY outstanding comments — inline threads or body-level review comments. If the bot raised a concern, it must not approve until that concern is resolved.
+- If the bot never left any comments on this PR (hasn't reviewed — don't approve something you haven't reviewed)
 - If the bot already approved at this SHA
 - If Step 2 (full review) is about to run and may find new violations — for full reviews, defer approval to Step 6 after aggregation
 
@@ -445,10 +451,21 @@ EOF
 - `side: "RIGHT"` targets the new version of the file (added lines)
 - `line` is the line number in the new file, which matches what the subagent reports from `+` lines in the diff
 - All approved violations for a single PR are batched into one review (one notification to the author)
-- If the API call fails (e.g., a line is outside the diff range), retry by splitting: post the valid inline comments and fall back to a general review comment for any that failed:
+- If the API call fails (e.g., a line is outside the diff range), retry by splitting: post each inline comment individually via the single-comment API to create proper review threads:
   ```bash
-  gh pr review --repo brave/brave-core {number} --comment --body "[file:line] comment text"
+  gh api repos/brave/brave-core/pulls/{number}/comments \
+    --method POST \
+    -f body="comment text" \
+    -f commit_id="<HEAD_SHA>" \
+    -f path="path/to/file.cc" \
+    -F line=42 \
+    -f side="RIGHT"
   ```
+  If a specific comment still fails (line truly outside the diff), post it as a PR issue comment as a last resort, but log a warning — issue comments are NOT review threads and will block future approval via the gate check:
+  ```bash
+  gh pr comment --repo brave/brave-core {number} --body "[file:line] comment text"
+  ```
+  **NEVER use `gh pr review --comment --body "..."` as a fallback** — this creates a COMMENT review with body text that is NOT a review thread, cannot be resolved, and will block approval permanently via `check-can-approve.py`.
 
 ---
 
