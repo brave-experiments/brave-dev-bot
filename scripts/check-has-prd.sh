@@ -7,7 +7,7 @@
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
-PRD_FILE="$BOT_DIR/prd.json"
+PRD_FILE="$BOT_DIR/data/prd.json"
 
 if [ ! -f "$PRD_FILE" ]; then
   echo "No prd.json found — skipping add-backlog-to-prd."

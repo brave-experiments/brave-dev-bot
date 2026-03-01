@@ -108,7 +108,7 @@ COMMENT_ID=$(echo "$FILTERED_DATA" | jq -r '.issue_comments[] | select(.user.log
 
 ```bash
 # Get PR repository from prd.json
-PR_REPO=$(jq -r '.ralphConfig.prRepository' ./brave-core-bot/prd.json)
+PR_REPO=$(jq -r '.ralphConfig.prRepository' ./brave-core-bot/data/prd.json)
 
 # Calculate next check timespan based on current mergedCheckCount
 # mergedCheckCount 0 (just did first check): next in 2 days
@@ -170,7 +170,7 @@ For each follow-up task requested in post-merge comments:
 Get the issue repository from `prd.json` config:
 ```bash
 # Read issueRepository from prd.json ralphConfig
-ISSUE_REPO=$(jq -r '.ralphConfig.issueRepository' ./brave-core-bot/prd.json)
+ISSUE_REPO=$(jq -r '.ralphConfig.issueRepository' ./brave-core-bot/data/prd.json)
 ```
 
 Create a detailed GitHub issue:
@@ -250,7 +250,7 @@ From the filtered PR reviews data, you have the comment ID of the post-merge com
 Reply directly to that comment using the GitHub API:
 ```bash
 # Get PR repository from prd.json
-PR_REPO=$(jq -r '.ralphConfig.prRepository' ./brave-core-bot/prd.json)
+PR_REPO=$(jq -r '.ralphConfig.prRepository' ./brave-core-bot/data/prd.json)
 
 # Reply to the specific comment (creates a threaded reply)
 gh api \

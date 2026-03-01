@@ -109,4 +109,4 @@ Task selection is handled deterministically by `scripts/select-task.py` — the 
 **GitHub CLI (gh) Failures:**
 - If any `gh` command fails, log the error and abort immediately
 - Do NOT attempt workarounds or continue without the gh operation
-- Document the failure in ./brave-core-bot/progress.txt (story remains at current status)
+- Document the failure in ./brave-core-bot/data/progress.txt (story remains at current status)

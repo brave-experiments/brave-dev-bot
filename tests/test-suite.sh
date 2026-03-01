@@ -173,7 +173,7 @@ test_required_files_exist() {
   assert_file_exists "CLAUDE.md exists" "$ROOT_DIR/CLAUDE.md"
   assert_file_exists "run.sh exists" "$ROOT_DIR/run.sh"
   assert_file_exists "setup.sh exists" "$ROOT_DIR/scripts/setup.sh"
-  assert_file_exists "prd.json exists" "$ROOT_DIR/prd.json"
+  assert_file_exists "prd.json exists" "$ROOT_DIR/data/prd.json"
   assert_file_exists "pre-commit hook exists" "$ROOT_DIR/hooks/pre-commit"
 }
 
@@ -355,13 +355,13 @@ test_precommit_hook_allows_non_bot() {
 
 test_prd_json_valid() {
   # Test that prd.json is valid JSON
-  assert_success "prd.json is valid JSON" \
-    jq . "$ROOT_DIR/prd.json"
+  assert_success "data/prd.json is valid JSON" \
+    jq . "$ROOT_DIR/data/prd.json"
 }
 
 test_prd_json_has_config() {
   # Test that prd.json has config or ralphConfig
-  local has_config=$(jq 'has("config") or has("ralphConfig")' "$ROOT_DIR/prd.json")
+  local has_config=$(jq 'has("config") or has("ralphConfig")' "$ROOT_DIR/data/prd.json")
 
   TESTS_RUN=$((TESTS_RUN + 1))
   if [ "$has_config" = "true" ]; then
@@ -378,7 +378,7 @@ test_prd_json_has_config() {
 
 test_prd_json_has_user_stories() {
   # Test that prd.json has userStories array
-  local has_stories=$(jq 'has("userStories")' "$ROOT_DIR/prd.json")
+  local has_stories=$(jq 'has("userStories")' "$ROOT_DIR/data/prd.json")
 
   TESTS_RUN=$((TESTS_RUN + 1))
   if [ "$has_stories" = "true" ]; then

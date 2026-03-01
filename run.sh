@@ -27,12 +27,12 @@ for arg in "$@"; do
   fi
 done
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PRD_FILE="$SCRIPT_DIR/prd.json"
-PROGRESS_FILE="$SCRIPT_DIR/progress.txt"
+PRD_FILE="$SCRIPT_DIR/data/prd.json"
+PROGRESS_FILE="$SCRIPT_DIR/data/progress.txt"
 ARCHIVE_DIR="$SCRIPT_DIR/archive"
 LOGS_DIR="$SCRIPT_DIR/logs"
 LAST_BRANCH_FILE="$SCRIPT_DIR/.last-branch"
-RUN_STATE_FILE="$SCRIPT_DIR/run-state.json"
+RUN_STATE_FILE="$SCRIPT_DIR/data/run-state.json"
 
 # Function to switch back to master branch on exit
 cleanup_and_return_to_master() {
@@ -234,8 +234,8 @@ while [ $loop_count -lt $MAX_ITERATIONS ]; do
   # In print mode: use stream-json output format with verbose flag to capture detailed execution logs
   # In TUI mode: omit --print to show the interactive TUI
   CLAUDE_PROMPT="You are working on story $STORY_ID (current status: $STORY_STATUS).
-Read ./brave-core-bot/prd.json for full story details.
-Read ./brave-core-bot/progress.txt (check Codebase Patterns section).
+Read ./brave-core-bot/data/prd.json for full story details.
+Read ./brave-core-bot/data/progress.txt (check Codebase Patterns section).
 Follow ./brave-core-bot/docs/workflow-${STORY_STATUS}.md for the workflow.
 Follow the general instructions in ./brave-core-bot/CLAUDE.md."
   if [ -n "$EXTRA_PROMPT" ]; then

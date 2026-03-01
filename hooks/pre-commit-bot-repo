@@ -11,9 +11,9 @@ fi
 
 # Hardcoded list of runtime files that should never be committed
 NEVER_COMMIT=(
-  "prd.json"
-  "progress.txt"
-  "run-state.json"
+  "data/prd.json"
+  "data/progress.txt"
+  "data/run-state.json"
 )
 
 # Check each staged file against the never-commit list

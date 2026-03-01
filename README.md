@@ -6,7 +6,7 @@ An autonomous coding agent for the Brave browser project. Built on Claude Code, 
 
 The bot operates in an iterative loop with a state machine workflow:
 
-1. Reads PRD from `prd.json`
+1. Reads PRD from `data/prd.json`
 2. Picks the next story using smart priority (reviewers first!):
    - **URGENT**: Pushed PRs where reviewer responded (respond immediately)
    - **HIGH**: Pushed PRs where bot responded (check for new reviews/merge)
@@ -20,7 +20,7 @@ The bot operates in an iterative loop with a state machine workflow:
      - If reviewer commented: Implement feedback, push → (lastActivityBy: "bot")
      - If waiting: Skip to next story (will check again next iteration)
    - **merged**: Post-merge monitoring (CI breakage, flakes)
-4. Updates progress in `progress.txt`
+4. Updates progress in `data/progress.txt`
 5. Repeats until all stories have terminal status (`merged`, `skipped`, or `invalid`)
 
 **Story Lifecycle:**
@@ -79,7 +79,7 @@ brave-browser/
 │   └── brave/              # Target git repository
 └── brave-core-bot/         # This bot (clone here)
     ├── run.sh
-    ├── prd.json
+    ├── data/prd.json
     └── ...
 ```
 
@@ -107,12 +107,12 @@ Copy the example templates and customize:
 ```bash
 cd brave-core-bot
 
-cp prd.example.json prd.json
-cp run-state.example.json run-state.json
-cp progress.example.txt progress.txt
+cp data/prd.example.json data/prd.json
+cp data/run-state.example.json data/run-state.json
+cp data/progress.example.txt data/progress.txt
 ```
 
-Edit `prd.json` to set your working directory path (e.g., `src/brave`).
+Edit `data/prd.json` to set your working directory path (e.g., `src/brave`).
 
 These files contain user-specific paths and runtime state, so they're gitignored.
 
@@ -126,7 +126,7 @@ make setup
 This will:
 - Install Python dev dependencies (pytest, ruff)
 - Install pre-commit hooks to the target repository and bot repository
-- Validate `prd.json` configuration
+- Validate `data/prd.json` configuration
 - Verify git repo structure and user configuration
 - Create and populate the org-members cache (`.ignore/org-members.txt`)
 - Display next steps
@@ -138,9 +138,9 @@ This will:
 claude
 > /prd [describe your feature]
 ```
-Follow the prompts, then use `/prd-json` to convert to `prd.json`.
+Follow the prompts, then use `/prd-json` to convert to `data/prd.json`.
 
-**Option B: Manually edit `prd.json`**
+**Option B: Manually edit `data/prd.json`**
 
 ```json
 {
@@ -199,7 +199,7 @@ claude
 ### Monitor Progress
 
 ```bash
-tail -f progress.txt
+tail -f data/progress.txt
 ```
 
 ### Stop the Bot
@@ -212,7 +212,7 @@ Press `Ctrl+C`. The bot will attempt to switch back to the master branch before 
 ./scripts/reset-run-state.sh
 ```
 
-Resets `run-state.json` for a fresh run while preserving configuration flags.
+Resets `data/run-state.json` for a fresh run while preserving configuration flags.
 
 ## Skills
 
@@ -247,7 +247,7 @@ Bot-only skills are available as slash commands in Claude Code. 8 bot-specific s
 
 ## Run State Configuration
 
-`run-state.json` controls per-run behavior:
+`data/run-state.json` controls per-run behavior:
 
 | Field | Description |
 |-------|-------------|
@@ -260,7 +260,7 @@ Bot-only skills are available as slash commands in Claude Code. 8 bot-specific s
 
 ## Configuration Files
 
-### prd.json
+### data/prd.json
 
 Product Requirements Document defining user stories and acceptance criteria.
 
@@ -274,7 +274,7 @@ Product Requirements Document defining user stories and acceptance criteria.
 - `userStories[].lastActivityBy`: Who acted last — `"bot"` | `"reviewer"` | `null`
 - `userStories[].acceptanceCriteria`: Test commands that must pass
 
-### progress.txt
+### data/progress.txt
 
 Log of completed iterations:
 - Codebase Patterns section (reusable patterns discovered during development)
@@ -303,7 +303,7 @@ See [BEST-PRACTICES.md](brave-core-tools/BEST-PRACTICES.md) for the full index a
 
 ### Branch Management
 
-Each user story gets its own branch, created automatically by the bot from `prd.json`.
+Each user story gets its own branch, created automatically by the bot from `data/prd.json`.
 
 ### Pre-commit Hooks
 
@@ -313,7 +313,7 @@ Two hooks are installed by `make setup`:
 Blocks the `netzenbot` account from modifying dependency files (package.json, DEPS, Cargo.toml, go.mod, etc.). Prevents bots from introducing external dependencies without review.
 
 **Bot repo hook** (`hooks/pre-commit-bot-repo`):
-Blocks committing `prd.json`, `progress.txt`, and `run-state.json` to ensure user-specific files don't get committed.
+Blocks committing `data/prd.json`, `data/progress.txt`, and `data/run-state.json` to ensure user-specific files don't get committed.
 
 ### Commit Format
 
@@ -489,8 +489,8 @@ When the branch changes between runs, previous state is automatically archived:
 ```
 brave-core-bot/archive/
   └── 2026-01-30-old-branch/
-      ├── prd.json
-      └── progress.txt
+      ├── data/prd.json
+      └── data/progress.txt
 ```
 
 ## Project Structure
@@ -508,12 +508,13 @@ brave-core-bot/
 ├── LICENSE                    # MPL-2.0 license
 ├── Makefile                   # Dev commands: make test, lint, format, setup, schedules
 ├── run.sh                     # Main entry point (iterations, TUI mode)
-├── prd.json                   # Product requirements (gitignored)
-├── prd.example.json           # Example PRD template
-├── run-state.json             # Run state tracking (gitignored)
-├── run-state.example.json     # Example run state template
-├── progress.txt               # Progress log (gitignored)
-├── progress.example.txt       # Example progress template
+├── data/
+│   ├── prd.json               # Product requirements (gitignored)
+│   ├── prd.example.json       # Example PRD template
+│   ├── run-state.json         # Run state tracking (gitignored)
+│   ├── run-state.example.json # Example run state template
+│   ├── progress.txt           # Progress log (gitignored)
+│   └── progress.example.txt   # Example progress template
 ├── .ignore/
 │   └── org-members.txt        # Cached org members (security, gitignored)
 ├── .claude/
@@ -599,7 +600,7 @@ This project is licensed under the Mozilla Public License 2.0 (MPL-2.0). See the
 ## Support
 
 For issues or questions:
-- Check `progress.txt` for detailed logs
+- Check `data/progress.txt` for detailed logs
 - Review `CLAUDE.md` for agent behavior
 - Verify configuration with `make setup`
 - Run `./tests/test-suite.sh` to validate setup

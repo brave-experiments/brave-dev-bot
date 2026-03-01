@@ -17,7 +17,7 @@ TERMINAL_STATUSES = {"merged", "skipped", "invalid"}
 def main():
     script_dir = os.path.dirname(os.path.abspath(__file__))
     project_root = os.path.join(script_dir, os.pardir)
-    prd_file = os.path.join(project_root, "prd.json")
+    prd_file = os.path.join(project_root, "data", "prd.json")
 
     if not os.path.exists(prd_file):
         print("No prd.json found — nothing to work on.")

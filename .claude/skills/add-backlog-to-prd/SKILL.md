@@ -16,7 +16,7 @@ Automatically fetch open issues from the brave/brave-browser repository and add 
 2. Fetch all open issues with the `bot/type/test` label from brave/brave-browser
 3. Fetch all open issues assigned to the git user.name from brave/brave-browser
 4. Combine both sets of issues (deduplicated)
-5. Compare with existing issues in the PRD (`./prd.json`)
+5. Compare with existing issues in the PRD (`./data/prd.json`)
 6. Add any missing issues as new user stories
 7. Provide a recap of what was added
 
@@ -63,11 +63,11 @@ A single helper script handles both new and existing PRDs:
 jq -s '[.[][] | {number, title, url, labels}] | unique_by(.number)' \
   <(gh issue list --repo brave/brave-browser --label "bot/type/test" --state open --json number,title,url,labels --limit 100) \
   <(gh issue list --repo brave/brave-browser --assignee "$(git config user.name)" --state open --json number,title,url,labels --limit 100) | \
-  .claude/skills/add-backlog-to-prd/update-prd-with-issues.py ./prd.json > /tmp/prd_updated.json && \
-  mv /tmp/prd_updated.json ./prd.json
+  .claude/skills/add-backlog-to-prd/update-prd-with-issues.py ./data/prd.json > /tmp/prd_updated.json && \
+  mv /tmp/prd_updated.json ./data/prd.json
 ```
 
-If `./prd.json` doesn't exist yet, the script creates a new PRD. If it already exists, it only appends missing issues and never modifies existing stories.
+If `./data/prd.json` doesn't exist yet, the script creates a new PRD. If it already exists, it only appends missing issues and never modifies existing stories.
 
 ### What the script does:
 
@@ -169,6 +169,6 @@ Successfully fetched 15 open issues from the `bot/type/test` label and added 7 m
 ## Error Handling
 
 - If `gh` CLI is not available, report error and exit
-- If `./prd.json` doesn't exist, a new one is created automatically
+- If `./data/prd.json` doesn't exist, a new one is created automatically
 - If GitHub API rate limit is hit, report error with retry time
 - If `jq` is not available, report error and exit

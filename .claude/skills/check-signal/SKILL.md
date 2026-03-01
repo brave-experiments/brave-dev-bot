@@ -36,7 +36,7 @@ Process incoming Signal messages and execute the requested commands. Messages ar
       - "Review PR #12345" — invoke the review workflow
       - "What are the top crashers?" — run the crashers script
       - "Run preflight checks" — run build/test checks
-      - "What stories are in progress?" — read prd.json
+      - "What stories are in progress?" — read data/prd.json
 
    c. **Update the cache** after processing each message. Read the current cache from `./brave-core-bot/.ignore/signal-messages-cache.json` (create if missing), append the processed timestamp, keep only the last 1000 entries, and write back:
       ```bash

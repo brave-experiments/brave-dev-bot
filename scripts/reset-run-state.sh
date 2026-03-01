@@ -4,7 +4,7 @@
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-RUN_STATE_FILE="$PROJECT_ROOT/run-state.json"
+RUN_STATE_FILE="$PROJECT_ROOT/data/run-state.json"
 
 echo "Resetting run state..."
 

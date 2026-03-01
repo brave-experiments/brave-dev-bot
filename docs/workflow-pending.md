@@ -105,7 +105,7 @@ Only read the docs relevant to your story — don't load all of them every time.
        ```bash
        python3 <brave-core-bot>/scripts/update-prd-status.py skipped <story-id> --reason "PR #XXXXX already exists for this issue"
        ```
-     - Document in `./brave-core-bot/progress.txt` that you found an existing PR
+     - Document in `./brave-core-bot/data/progress.txt` that you found an existing PR
      - **Post a comment on the GitHub issue** (if not already commented):
        ```bash
        gh issue comment <issue-number> --repo brave/brave-browser --body "$(cat <<'EOF'
@@ -293,14 +293,14 @@ Only read the docs relevant to your story — don't load all of them every time.
      ```bash
      python3 <brave-core-bot>/scripts/update-prd-status.py committed <story-id> --branch <branch-name>
      ```
-   - Append your progress to `./brave-core-bot/progress.txt` (see [progress-reporting.md](./progress-reporting.md))
+   - Append your progress to `./brave-core-bot/data/progress.txt` (see [progress-reporting.md](./progress-reporting.md))
    - **Continue in same iteration:** Do NOT mark story as checked yet - proceed immediately to push and create PR (see [workflow-committed.md](./workflow-committed.md))
 
 13. **If ANY tests fail:**
    - DO NOT commit changes
    - Keep `status: "pending"`
    - Keep `branchName` (so we can continue on same branch next iteration)
-   - Document failure in `./brave-core-bot/progress.txt`
+   - Document failure in `./brave-core-bot/data/progress.txt`
    - **END THE ITERATION** - Stop processing
 
 ## Retry Policy for Persistent Failures

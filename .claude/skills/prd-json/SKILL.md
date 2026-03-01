@@ -11,7 +11,7 @@ Converts existing PRDs to the prd.json format that brave-core-bot uses for auton
 
 ## The Job
 
-Take a PRD (markdown file or text) and convert it to `prd.json` in your brave-core-bot directory.
+Take a PRD (markdown file or text) and convert it to `data/prd.json` in your brave-core-bot directory.
 
 ---
 
@@ -273,24 +273,24 @@ Add ability to mark tasks with different statuses.
 
 ## Archiving Previous Runs
 
-**Before writing a new prd.json, check if there is an existing one from a different feature:**
+**Before writing a new data/prd.json, check if there is an existing one from a different feature:**
 
-1. Read the current `prd.json` if it exists
+1. Read the current `data/prd.json` if it exists
 2. Check if `branchName` differs from the new feature's branch name
-3. If different AND `progress.txt` has content beyond the header:
+3. If different AND `data/progress.txt` has content beyond the header:
    - Create archive folder: `archive/YYYY-MM-DD-feature-name/`
-   - Copy current `prd.json` and `progress.txt` to archive
-   - Reset `progress.txt` with fresh header
+   - Copy current `data/prd.json` and `data/progress.txt` to archive
+   - Reset `data/progress.txt` with fresh header
 
-**The run.sh script handles this automatically** when you run it, but if you are manually updating prd.json between runs, archive first.
+**The run.sh script handles this automatically** when you run it, but if you are manually updating data/prd.json between runs, archive first.
 
 ---
 
 ## Checklist Before Saving
 
-Before writing prd.json, verify:
+Before writing data/prd.json, verify:
 
-- [ ] **Previous run archived** (if prd.json exists with different branchName, archive it first)
+- [ ] **Previous run archived** (if data/prd.json exists with different branchName, archive it first)
 - [ ] Each story is completable in one iteration (small enough)
 - [ ] Stories are ordered by dependency (schema to backend to UI)
 - [ ] Every story has "Typecheck passes" as criterion

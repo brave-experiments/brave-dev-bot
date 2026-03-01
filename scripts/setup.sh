@@ -45,14 +45,14 @@ if [ ! -d "$EXPECTED_REPO_PATH" ]; then
 fi
 
 # Check if prd.json exists
-if [ ! -f "$PROJECT_ROOT/prd.json" ]; then
-  echo "❌ Error: prd.json not found in $SCRIPT_DIR"
-  echo "   Please create a prd.json file before running setup."
+if [ ! -f "$PROJECT_ROOT/data/prd.json" ]; then
+  echo "❌ Error: data/prd.json not found in $PROJECT_ROOT"
+  echo "   Please create a data/prd.json file before running setup."
   exit 1
 fi
 
-# Extract git repo from prd.json
-GIT_REPO=$(jq -r '.config.workingDirectory // .config.gitRepo // .ralphConfig.workingDirectory // .ralphConfig.gitRepo // empty' "$PROJECT_ROOT/prd.json" 2>/dev/null || echo "")
+# Extract git repo from data/prd.json
+GIT_REPO=$(jq -r '.config.workingDirectory // .config.gitRepo // .ralphConfig.workingDirectory // .ralphConfig.gitRepo // empty' "$PROJECT_ROOT/data/prd.json" 2>/dev/null || echo "")
 
 if [ -z "$GIT_REPO" ]; then
   echo "❌ Error: Could not find git repository in prd.json"
@@ -116,7 +116,7 @@ echo "Installing pre-commit hook to brave-core-bot repo..."
 cp "$BOT_HOOK_SOURCE" "$BOT_HOOK_DEST"
 chmod +x "$BOT_HOOK_DEST"
 echo "✓ Pre-commit hook installed to $BOT_HOOK_DEST"
-echo "  (Prevents committing prd.json, progress.txt, run-state.json)"
+echo "  (Prevents committing data/prd.json, data/progress.txt, data/run-state.json)"
 echo ""
 
 # Check org members cache exists (manually maintained, never auto-generated)

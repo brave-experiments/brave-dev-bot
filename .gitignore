@@ -2,10 +2,10 @@
 .ignore/
 
 # Runtime files - user-specific state
-prd.json
-prd.archived.json
-progress.txt
-run-state.json
+data/prd.json
+data/prd.archived.json
+data/progress.txt
+data/run-state.json
 .last-branch
 
 # Trusted reviewers allowlist - user-specific

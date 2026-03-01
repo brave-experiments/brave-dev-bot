@@ -41,10 +41,10 @@ Set `skipPushedTasks: true` in `run-state.json` when you want to:
 To toggle this setting:
 ```bash
 # Skip pushed tasks (focus on new development only)
-jq '.skipPushedTasks = true' run-state.json > tmp.$$.json && mv tmp.$$.json run-state.json
+jq '.skipPushedTasks = true' data/run-state.json > tmp.$$.json && mv tmp.$$.json data/run-state.json
 
 # Resume checking pushed tasks (normal mode)
-jq '.skipPushedTasks = false' run-state.json > tmp.$$.json && mv tmp.$$.json run-state.json
+jq '.skipPushedTasks = false' data/run-state.json > tmp.$$.json && mv tmp.$$.json data/run-state.json
 ```
 
 ## Post-Merge Checking Configuration
@@ -78,17 +78,17 @@ Control whether the bot performs post-merge monitoring with exponential backoff 
 
 ```bash
 # Disable all post-merge checking temporarily
-jq '.enableMergeBackoff = false' run-state.json > tmp.$$.json && mv tmp.$$.json run-state.json
+jq '.enableMergeBackoff = false' data/run-state.json > tmp.$$.json && mv tmp.$$.json data/run-state.json
 
 # Re-enable post-merge checking
-jq '.enableMergeBackoff = true' run-state.json > tmp.$$.json && mv tmp.$$.json run-state.json
+jq '.enableMergeBackoff = true' data/run-state.json > tmp.$$.json && mv tmp.$$.json data/run-state.json
 
 # Only check specific merged stories (useful for debugging)
-jq '.mergeBackoffStoryIds = ["US-012"]' run-state.json > tmp.$$.json && mv tmp.$$.json run-state.json
-jq '.mergeBackoffStoryIds = ["US-012", "US-013"]' run-state.json > tmp.$$.json && mv tmp.$$.json run-state.json
+jq '.mergeBackoffStoryIds = ["US-012"]' data/run-state.json > tmp.$$.json && mv tmp.$$.json data/run-state.json
+jq '.mergeBackoffStoryIds = ["US-012", "US-013"]' data/run-state.json > tmp.$$.json && mv tmp.$$.json data/run-state.json
 
 # Resume checking all merged stories
-jq '.mergeBackoffStoryIds = null' run-state.json > tmp.$$.json && mv tmp.$$.json run-state.json
+jq '.mergeBackoffStoryIds = null' data/run-state.json > tmp.$$.json && mv tmp.$$.json data/run-state.json
 ```
 
 **During Task Selection:**

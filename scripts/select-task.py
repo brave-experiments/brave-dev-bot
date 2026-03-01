@@ -214,8 +214,8 @@ def main():
     script_dir = os.path.dirname(os.path.abspath(__file__))
     bot_dir = os.path.dirname(script_dir)
 
-    prd_path = args.prd or os.path.join(bot_dir, "prd.json")
-    run_state_path = args.run_state or os.path.join(bot_dir, "run-state.json")
+    prd_path = args.prd or os.path.join(bot_dir, "data", "prd.json")
+    run_state_path = args.run_state or os.path.join(bot_dir, "data", "run-state.json")
 
     # Read prd.json
     try:

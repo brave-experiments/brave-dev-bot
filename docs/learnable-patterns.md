@@ -81,7 +81,7 @@ After pushing review-requested changes, answer these questions:
 | PR creation, commit messages | `./brave-core-bot/docs/workflow-committed.md` |
 | Review response patterns | `./brave-core-bot/docs/workflow-pushed.md` |
 | Security practices | `./brave-core-bot/brave-core-tools/SECURITY.md` |
-| General codebase patterns | `./brave-core-bot/progress.txt` (Codebase Patterns section) |
+| General codebase patterns | `./brave-core-bot/data/progress.txt` (Codebase Patterns section) |
 
 ### 2. Create a Separate Branch and PR for brave-core-bot
 
@@ -152,7 +152,7 @@ If a pattern from previous failures would prevent future PRs from repeating the 
 
 ## Codebase Patterns in progress.txt
 
-For quick, lightweight patterns that don't warrant a documentation PR, add them to the `## Codebase Patterns` section at the TOP of `./brave-core-bot/progress.txt`:
+For quick, lightweight patterns that don't warrant a documentation PR, add them to the `## Codebase Patterns` section at the TOP of `./brave-core-bot/data/progress.txt`:
 
 ```
 ## Codebase Patterns

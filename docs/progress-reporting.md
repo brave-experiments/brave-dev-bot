@@ -1,6 +1,6 @@
 # Progress Reporting
 
-APPEND to ./brave-core-bot/progress.txt (never replace, always append).
+APPEND to ./brave-core-bot/data/progress.txt (never replace, always append).
 
 **IMPORTANT:** Every progress entry MUST include a `Resume command` line with the claude resume command for the current session. Use the format: `claude -r <session-id>` where `<session-id>` is the current conversation's session ID. This allows easy resumption of the agent.
 

@@ -23,7 +23,7 @@ If a story has `status: "pushed"` with `prUrl` and `prNumber` already defined, t
      ```bash
      python3 <brave-core-bot>/scripts/update-prd-status.py invalid <story-id> --reason "PR was closed without merging"
      ```
-   - Append to `./brave-core-bot/progress.txt`:
+   - Append to `./brave-core-bot/data/progress.txt`:
      - Document that PR was closed externally
    - **END THE ITERATION** - Story is marked as invalid
 
@@ -107,7 +107,7 @@ Before merging, verify ALL of the following:
      ```bash
      python3 <brave-core-bot>/scripts/update-prd-status.py merged <story-id>
      ```
-   - Append to `./brave-core-bot/progress.txt` (see [progress-reporting.md](./progress-reporting.md))
+   - Append to `./brave-core-bot/data/progress.txt` (see [progress-reporting.md](./progress-reporting.md))
 
 **IMPORTANT**: Always use `--squash` merge strategy to keep git history clean.
 
@@ -196,7 +196,7 @@ python3 ./brave-core-bot/scripts/business-hours-elapsed.py <reference-timestamp>
 4. **If less than 24 business hours have passed OR no reviewers are assigned:**
    - Skip the reminder (normal status check)
 
-- Append to `./brave-core-bot/progress.txt` documenting the status check (no new comments, and whether reminder was sent)
+- Append to `./brave-core-bot/data/progress.txt` documenting the status check (no new comments, and whether reminder was sent)
 - **END THE ITERATION** - Stop processing, don't continue to the next story
 - This story will be checked again in the next iteration for merge readiness or new review comments
 
@@ -259,7 +259,7 @@ Before implementing changes, analyze review comments to detect if the reviewer i
    python3 <brave-core-bot>/scripts/update-prd-status.py invalid <story-id> --reason "[Brief explanation from reviewer about why task is already done]"
    ```
 
-4. **Append to `./brave-core-bot/progress.txt`:**
+4. **Append to `./brave-core-bot/data/progress.txt`:**
    - Document that reviewer indicated task is already complete
    - Include the skip reason
 
@@ -312,7 +312,7 @@ Before implementing changes, analyze review comments to detect if the reviewer i
   ```bash
   python3 <brave-core-bot>/scripts/update-prd-status.py set-activity <story-id> --who bot
   ```
-- Update `./brave-core-bot/progress.txt` with what was changed
+- Update `./brave-core-bot/data/progress.txt` with what was changed
 - Keep `status: "pushed"` (stay in this state)
 - **Send Signal notification** (no-op if not configured):
   ```bash
@@ -327,7 +327,7 @@ Follow **[docs/learnable-patterns.md](./learnable-patterns.md)** to evaluate whe
 - DO NOT commit or push
 - Keep `status: "pushed"` (stays in review state)
 - Keep `lastActivityBy: "reviewer"` (still needs our response)
-- Document failure in `./brave-core-bot/progress.txt`
+- Document failure in `./brave-core-bot/data/progress.txt`
 - **END THE ITERATION** - Stop processing
 
 ## Retry Policy for Review Response Failures
@@ -336,7 +336,7 @@ Same as the pending state retry policy - if review feedback implementation fails
 
 1. **First Failure**: Document and retry
 2. **Second Failure**: Try different implementation approach
-3. **Third+ Failure**: Add detailed comment in `./brave-core-bot/progress.txt`, mark as "BLOCKED - Requires manual review response", and skip until resolved
+3. **Third+ Failure**: Add detailed comment in `./brave-core-bot/data/progress.txt`, mark as "BLOCKED - Requires manual review response", and skip until resolved
 
 In this case, the reviewer should be notified via a PR comment that automated fixes are blocked and manual intervention is needed.
 

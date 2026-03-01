@@ -9,7 +9,8 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PRD_FILE="$SCRIPT_DIR/prd.json"
+BOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+PRD_FILE="$BOT_DIR/data/prd.json"
 
 # Check if prd.json exists
 if [ ! -f "$PRD_FILE" ]; then

@@ -102,7 +102,7 @@ EOF
      ```bash
      python3 <brave-core-bot>/scripts/update-prd-status.py pushed <story-id> --pr-number <number>
      ```
-   - Append to `./brave-core-bot/progress.txt` (see [progress-reporting.md](./progress-reporting.md))
+   - Append to `./brave-core-bot/data/progress.txt` (see [progress-reporting.md](./progress-reporting.md))
    - **Send Signal notification** (no-op if not configured):
      ```bash
      <brave-core-bot>/scripts/signal-notify.sh "PR created: #<number> - <title> https://github.com/brave/brave-core/pull/<number>"
@@ -111,5 +111,5 @@ EOF
 
 8. **If push or PR creation fails:**
    - DO NOT update status in prd.json (keep as "committed")
-   - Document failure in `./brave-core-bot/progress.txt`
+   - Document failure in `./brave-core-bot/data/progress.txt`
    - **END THE ITERATION** - Stop processing

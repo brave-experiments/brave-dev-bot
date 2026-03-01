@@ -48,7 +48,7 @@ cd brave-core-bot
 - Direct script execution tests (avoids global git hook interference)
 
 ### 5. Configuration Tests
-- Validates prd.json is valid JSON
+- Validates data/prd.json is valid JSON
 - Checks for required config sections
 - Verifies userStories array exists
 
@@ -119,10 +119,10 @@ run_all_tests() {
 
 ## Common Issues
 
-### "prd.json is not valid JSON"
-Your prd.json has a syntax error. Validate it:
+### "data/prd.json is not valid JSON"
+Your data/prd.json has a syntax error. Validate it:
 ```bash
-jq . prd.json
+jq . data/prd.json
 ```
 
 ### "GitHub CLI not authenticated"
