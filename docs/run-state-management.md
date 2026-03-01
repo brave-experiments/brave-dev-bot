@@ -13,7 +13,7 @@ The `run-state.json` file tracks which stories have been checked in the current 
 To manually start a fresh run (useful when you want to re-check all pushed PRs or start over):
 
 ```bash
-./brave-core-bot/reset-run-state.sh
+./brave-core-bot/scripts/reset-run-state.sh
 ```
 
 This resets the iteration state (`runId` and `storiesCheckedThisRun`) while **preserving** configuration settings (`skipPushedTasks`, `enableMergeBackoff`, `mergeBackoffStoryIds`). This allows all stories to be checked again without losing your configuration preferences.

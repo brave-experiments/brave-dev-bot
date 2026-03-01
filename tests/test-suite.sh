@@ -172,14 +172,14 @@ test_required_files_exist() {
   assert_file_exists "SECURITY.md exists" "$ROOT_DIR/SECURITY.md"
   assert_file_exists "CLAUDE.md exists" "$ROOT_DIR/CLAUDE.md"
   assert_file_exists "run.sh exists" "$ROOT_DIR/run.sh"
-  assert_file_exists "setup.sh exists" "$ROOT_DIR/setup.sh"
+  assert_file_exists "setup.sh exists" "$ROOT_DIR/scripts/setup.sh"
   assert_file_exists "prd.json exists" "$ROOT_DIR/prd.json"
   assert_file_exists "pre-commit hook exists" "$ROOT_DIR/hooks/pre-commit"
 }
 
 test_scripts_executable() {
   assert_executable "run.sh is executable" "$ROOT_DIR/run.sh"
-  assert_executable "setup.sh is executable" "$ROOT_DIR/setup.sh"
+  assert_executable "setup.sh is executable" "$ROOT_DIR/scripts/setup.sh"
   assert_executable "pre-commit hook is executable" "$ROOT_DIR/hooks/pre-commit"
   assert_executable "fetch-issue.sh is executable" "$ROOT_DIR/scripts/fetch-issue.sh"
   assert_executable "filter-issue-json.sh is executable" "$ROOT_DIR/scripts/filter-issue-json.sh"

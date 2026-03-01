@@ -1,12 +1,4 @@
-.PHONY: run test lint format
-
-# Run the agent loop
-# Usage:
-#   make run                          # 10 iterations, print mode
-#   make run ARGS="1 tui"             # 1 iteration, TUI mode
-#   make run ARGS="1 tui fix the bug" # 1 iteration, TUI mode, extra instructions
-run:
-	./run.sh $(ARGS)
+.PHONY: test lint format setup schedules
 
 # Run the test suite
 test:
@@ -21,3 +13,12 @@ lint:
 format:
 	ruff check --fix .
 	ruff format .
+
+# Install dev dependencies and run project setup
+setup:
+	pip3 install -e ".[dev]"
+	./scripts/setup.sh
+
+# Install/update cron schedules
+schedules:
+	./scripts/sync-schedules.sh

@@ -120,10 +120,11 @@ These files contain user-specific paths and runtime state, so they're gitignored
 
 ```bash
 cd brave-core-bot
-./setup.sh
+make setup
 ```
 
 This will:
+- Install Python dev dependencies (pytest, ruff)
 - Install pre-commit hooks to the target repository and bot repository
 - Validate `prd.json` configuration
 - Verify git repo structure and user configuration
@@ -208,7 +209,7 @@ Press `Ctrl+C`. The bot will attempt to switch back to the master branch before 
 ### Reset Between Runs
 
 ```bash
-./reset-run-state.sh
+./scripts/reset-run-state.sh
 ```
 
 Resets `run-state.json` for a fresh run while preserving configuration flags.
@@ -306,7 +307,7 @@ Each user story gets its own branch, created automatically by the bot from `prd.
 
 ### Pre-commit Hooks
 
-Two hooks are installed by `setup.sh`:
+Two hooks are installed by `make setup`:
 
 **Target repo hook** (`hooks/pre-commit`):
 Blocks the `netzenbot` account from modifying dependency files (package.json, DEPS, Cargo.toml, go.mod, etc.). Prevents bots from introducing external dependencies without review.
@@ -357,7 +358,7 @@ External user content is marked as `[filtered]` to prevent prompt injection atta
 
 ### Org Member Cache
 
-Org membership is cached in `.ignore/org-members.txt` (survives reboots, unlike /tmp). The cache is required for `run.sh` to start — regenerate with `setup.sh` if missing.
+Org membership is cached in `.ignore/org-members.txt` (survives reboots, unlike /tmp). The cache is required for `run.sh` to start — regenerate with `make setup` if missing.
 
 ### Trusted Reviewers Allowlist
 
@@ -505,9 +506,8 @@ brave-core-bot/
 │   ├── docs/best-practices/   # Best practices sub-documents
 │   └── scripts/               # Shared utility scripts
 ├── LICENSE                    # MPL-2.0 license
-├── setup.sh                   # Install hooks, validate config, create caches
+├── Makefile                   # Dev commands: make test, lint, format, setup, schedules
 ├── run.sh                     # Main entry point (iterations, TUI mode)
-├── reset-run-state.sh         # Reset run state between runs
 ├── prd.json                   # Product requirements (gitignored)
 ├── prd.example.json           # Example PRD template
 ├── run-state.json             # Run state tracking (gitignored)
@@ -557,7 +557,7 @@ brave-core-bot/
 
 ### "Git user not configured"
 
-Run `setup.sh` again or manually configure:
+Run `make setup` again or manually configure:
 ```bash
 cd brave-browser/src/brave
 git config user.name "netzenbot"
@@ -570,7 +570,7 @@ If the `netzenbot` account is trying to modify dependencies — this is intentio
 
 ### "Org members cache missing"
 
-Run `setup.sh` to regenerate `.ignore/org-members.txt`, or manually:
+Run `make setup` to regenerate `.ignore/org-members.txt`, or manually:
 ```bash
 gh api /orgs/brave/members --paginate --jq '.[].login' > .ignore/org-members.txt
 ```
@@ -601,5 +601,5 @@ This project is licensed under the Mozilla Public License 2.0 (MPL-2.0). See the
 For issues or questions:
 - Check `progress.txt` for detailed logs
 - Review `CLAUDE.md` for agent behavior
-- Verify configuration with `./setup.sh`
+- Verify configuration with `make setup`
 - Run `./tests/test-suite.sh` to validate setup
