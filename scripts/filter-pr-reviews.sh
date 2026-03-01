@@ -140,7 +140,7 @@ LATEST_REVIEWER_TIMESTAMP=""
 
 # Check reviews
 if [ "$(echo "$REVIEWS" | jq 'length')" -gt 0 ]; then
-  LATEST_REVIEW_TIME=$(echo "$REVIEWS" | jq -r '.[] | select(.user.login as $u | "'$(cat "$CACHE_FILE" | tr '\n' ' ')'" | split(" ") | index($u)) | .submitted_at' | sort -r | head -1)
+  LATEST_REVIEW_TIME=$(echo "$REVIEWS" | jq -r --arg cache "$(cat "$CACHE_FILE")" '.[] | select(.user.login as $u | ($cache | split("\n") | index($u))) | .submitted_at' | sort -r | head -1)
   if [ -n "$LATEST_REVIEW_TIME" ]; then
     LATEST_REVIEWER_TIMESTAMP="$LATEST_REVIEW_TIME"
   fi
@@ -148,7 +148,7 @@ fi
 
 # Check review comments
 if [ "$(echo "$REVIEW_COMMENTS" | jq 'length')" -gt 0 ]; then
-  LATEST_COMMENT_TIME=$(echo "$REVIEW_COMMENTS" | jq -r '.[] | select(.user.login as $u | "'$(cat "$CACHE_FILE" | tr '\n' ' ')'" | split(" ") | index($u)) | .created_at' | sort -r | head -1)
+  LATEST_COMMENT_TIME=$(echo "$REVIEW_COMMENTS" | jq -r --arg cache "$(cat "$CACHE_FILE")" '.[] | select(.user.login as $u | ($cache | split("\n") | index($u))) | .created_at' | sort -r | head -1)
   if [ -n "$LATEST_COMMENT_TIME" ] && [ "$LATEST_COMMENT_TIME" \> "$LATEST_REVIEWER_TIMESTAMP" ]; then
     LATEST_REVIEWER_TIMESTAMP="$LATEST_COMMENT_TIME"
   fi
@@ -156,7 +156,7 @@ fi
 
 # Check issue comments
 if [ "$(echo "$ISSUE_COMMENTS" | jq 'length')" -gt 0 ]; then
-  LATEST_ISSUE_TIME=$(echo "$ISSUE_COMMENTS" | jq -r '.[] | select(.user.login as $u | "'$(cat "$CACHE_FILE" | tr '\n' ' ')'" | split(" ") | index($u)) | .created_at' | sort -r | head -1)
+  LATEST_ISSUE_TIME=$(echo "$ISSUE_COMMENTS" | jq -r --arg cache "$(cat "$CACHE_FILE")" '.[] | select(.user.login as $u | ($cache | split("\n") | index($u))) | .created_at' | sort -r | head -1)
   if [ -n "$LATEST_ISSUE_TIME" ] && [ "$LATEST_ISSUE_TIME" \> "$LATEST_REVIEWER_TIMESTAMP" ]; then
     LATEST_REVIEWER_TIMESTAMP="$LATEST_ISSUE_TIME"
   fi
