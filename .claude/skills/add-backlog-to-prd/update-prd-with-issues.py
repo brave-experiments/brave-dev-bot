@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-import json
-import sys
-import re
 import copy
-import subprocess
+import json
 import os
+import re
+import subprocess
+import sys
+
 
 def find_test_location(test_class_name):
     """
@@ -12,113 +13,121 @@ def find_test_location(test_class_name):
     Returns 'brave' if found in src/brave, 'chromium' if found in src only, or 'unknown'.
     """
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    brave_dir = os.path.join(script_dir, '..', '..', '..', '..', 'src', 'brave')
-    chromium_dir = os.path.join(script_dir, '..', '..', '..', '..', 'src')
+    brave_dir = os.path.join(script_dir, "..", "..", "..", "..", "src", "brave")
+    chromium_dir = os.path.join(script_dir, "..", "..", "..", "..", "src")
 
     try:
         result = subprocess.run(
-            ['git', 'grep', '-l', test_class_name],
+            ["git", "grep", "-l", test_class_name],
             cwd=brave_dir,
             capture_output=True,
             text=True,
-            timeout=30
+            timeout=30,
         )
         if result.returncode == 0 and result.stdout.strip():
-            return 'brave'
+            return "brave"
     except (subprocess.TimeoutExpired, FileNotFoundError):
         pass
 
     try:
         result = subprocess.run(
-            ['git', 'grep', '-l', test_class_name, '--', '.', ':!brave'],
+            ["git", "grep", "-l", test_class_name, "--", ".", ":!brave"],
             cwd=chromium_dir,
             capture_output=True,
             text=True,
-            timeout=30
+            timeout=30,
         )
         if result.returncode == 0 and result.stdout.strip():
-            return 'chromium'
+            return "chromium"
     except (subprocess.TimeoutExpired, FileNotFoundError):
         pass
 
-    return 'unknown'
+    return "unknown"
+
 
 def has_label(issue, label_name):
     """Check if an issue has a specific label."""
-    labels = issue.get('labels', [])
+    labels = issue.get("labels", [])
     for label in labels:
-        name = label.get('name', '') if isinstance(label, dict) else str(label)
+        name = label.get("name", "") if isinstance(label, dict) else str(label)
         if name == label_name:
             return True
     return False
 
+
 def is_test_issue(issue):
     """Check if an issue is a test failure based on title or labels."""
-    if issue['title'].startswith('Test failure: '):
+    if issue["title"].startswith("Test failure: "):
         return True
-    if has_label(issue, 'bot/type/test'):
+    if has_label(issue, "bot/type/test"):
         return True
     return False
 
+
 def is_disabled_test_issue(issue):
     """Check if an issue is about a disabled test based on title or labels."""
-    title = issue['title'].lower()
-    if title.startswith('disabled test:'):
+    title = issue["title"].lower()
+    if title.startswith("disabled test:"):
         return True
-    if has_label(issue, 'disabled-brave-test'):
+    if has_label(issue, "disabled-brave-test"):
         return True
     return False
+
 
 def extract_disabled_test_name(title):
     """Extract test name from various disabled test issue title formats."""
     # "Disabled test: TestClass.TestMethod"
-    m = re.match(r'^Disabled test:\s*(.+)$', title, re.IGNORECASE)
+    m = re.match(r"^Disabled test:\s*(.+)$", title, re.IGNORECASE)
     if m:
         return m.group(1).strip()
 
     # Backtick-quoted test name: "... `TestClass/TestClass.Method/Param` ..."
-    m = re.search(r'`([^`]+)`', title)
+    m = re.search(r"`([^`]+)`", title)
     if m:
         return m.group(1).strip()
 
     # "Re-enable TestName test" or "Re-enable TestName"
-    m = re.search(r'[Rr]e-?enable\s+(\S+?)(?:\s+test)?\.?\s*$', title)
+    m = re.search(r"[Rr]e-?enable\s+(\S+?)(?:\s+test)?\.?\s*$", title)
     if m:
         return m.group(1).strip()
 
     # "Investigate failure of TestName"
-    m = re.search(r'failure of\s+(\S+)', title)
+    m = re.search(r"failure of\s+(\S+)", title)
     if m:
         return m.group(1).strip()
 
     # Fallback: return full title cleaned up
     return title.strip()
 
+
 def extract_disabled_search_term(test_name):
     """Extract the method name to search for DISABLED_ prefix.
     Handles parameterized tests like TestClass/TestClass.Method/1 by
     stripping the parameter suffix and extracting the method name."""
     # Strip trailing /N parameter suffix (e.g., /1, /0, /SomeParam)
-    name = re.sub(r'/\w+$', '', test_name) if '/' in test_name else test_name
+    name = re.sub(r"/\w+$", "", test_name) if "/" in test_name else test_name
     # Get the method part after the last dot
-    if '.' in name:
-        return name.split('.')[-1]
+    if "." in name:
+        return name.split(".")[-1]
     return name
+
 
 def build_test_story(story_id, priority, issue):
     """Build a user story for a test failure issue."""
-    issue_num = issue['number']
-    title = issue['title']
-    test_name = re.sub(r'^.*?failure:\s*', '', title, flags=re.IGNORECASE).strip()
-    test_class_name = test_name.split('.')[0]
+    issue_num = issue["number"]
+    title = issue["title"]
+    test_name = re.sub(r"^.*?failure:\s*", "", title, flags=re.IGNORECASE).strip()
+    test_class_name = test_name.split(".")[0]
     test_location = find_test_location(test_class_name)
 
     if "AlternateTestParams" in test_name or "PartitionAlloc" in test_name:
         test_type = "unit_test"
-        test_binary = "brave_unit_tests" if test_location == 'brave' else "unit_tests"
+        test_binary = "brave_unit_tests" if test_location == "brave" else "unit_tests"
     else:
         test_type = "browser_test"
-        test_binary = "brave_browser_tests" if test_location == 'brave' else "browser_tests"
+        test_binary = (
+            "brave_browser_tests" if test_location == "brave" else "browser_tests"
+        )
 
     acceptance_criteria = [
         "Read ./BEST-PRACTICES.md for async testing patterns and common pitfalls",
@@ -129,7 +138,7 @@ def build_test_story(story_id, priority, issue):
         "Run npm run format from src/brave (must pass)",
         "Run npm run gn_check from src/brave (must pass)",
         f"Run npm run test -- {test_binary} --gtest_filter={test_name} (must pass - run 5 times to verify consistency)",
-        "Commit changes, then run npm run presubmit from src/brave (must pass)"
+        "Commit changes, then run npm run presubmit from src/brave (must pass)",
     ]
 
     return {
@@ -145,26 +154,35 @@ def build_test_story(story_id, priority, issue):
         "prNumber": None,
         "lastActivityBy": None,
         "branchName": None,
-        "prUrl": None
+        "prUrl": None,
     }
+
 
 def build_disabled_test_story(story_id, priority, issue):
     """Build a user story for a disabled test issue."""
-    issue_num = issue['number']
-    title = issue['title']
+    issue_num = issue["number"]
+    title = issue["title"]
     test_name = extract_disabled_test_name(title)
 
     # For parameterized tests like TestClass/TestClass.Method/1, use the class part
-    class_part = test_name.split('/')[0] if '/' in test_name else test_name.split('.')[0]
+    class_part = (
+        test_name.split("/")[0] if "/" in test_name else test_name.split(".")[0]
+    )
     test_location = find_test_location(class_part)
 
     # Determine test type heuristic
-    if "UnitTest" in test_name or "AlternateTestParams" in test_name or "PartitionAlloc" in test_name:
+    if (
+        "UnitTest" in test_name
+        or "AlternateTestParams" in test_name
+        or "PartitionAlloc" in test_name
+    ):
         test_type = "unit_test"
-        test_binary = "brave_unit_tests" if test_location == 'brave' else "unit_tests"
+        test_binary = "brave_unit_tests" if test_location == "brave" else "unit_tests"
     else:
         test_type = "browser_test"
-        test_binary = "brave_browser_tests" if test_location == 'brave' else "browser_tests"
+        test_binary = (
+            "brave_browser_tests" if test_location == "brave" else "browser_tests"
+        )
 
     acceptance_criteria = [
         "Read ./BEST-PRACTICES.md for async testing patterns and common pitfalls",
@@ -177,7 +195,7 @@ def build_disabled_test_story(story_id, priority, issue):
         "Run npm run format from src/brave (must pass)",
         "Run npm run gn_check from src/brave (must pass)",
         f"Run npm run test -- {test_binary} --gtest_filter={test_name} (must pass - run 5 times to verify consistency)",
-        "Commit changes, then run npm run presubmit from src/brave (must pass)"
+        "Commit changes, then run npm run presubmit from src/brave (must pass)",
     ]
 
     return {
@@ -193,13 +211,14 @@ def build_disabled_test_story(story_id, priority, issue):
         "prNumber": None,
         "lastActivityBy": None,
         "branchName": None,
-        "prUrl": None
+        "prUrl": None,
     }
+
 
 def build_generic_story(story_id, priority, issue):
     """Build a user story for a non-test issue."""
-    issue_num = issue['number']
-    title = issue['title']
+    issue_num = issue["number"]
+    title = issue["title"]
 
     acceptance_criteria = [
         f"Fetch issue #{issue_num} details from brave/brave-browser GitHub API",
@@ -222,12 +241,16 @@ def build_generic_story(story_id, priority, issue):
         "prNumber": None,
         "lastActivityBy": None,
         "branchName": None,
-        "prUrl": None
+        "prUrl": None,
     }
+
 
 # Read GitHub issues and existing PRD
 if len(sys.argv) < 2:
-    print("Usage: cat github_issues.json | python3 update-prd-with-issues.py path/to/prd.json", file=sys.stderr)
+    print(
+        "Usage: cat github_issues.json | python3 update-prd-with-issues.py path/to/prd.json",
+        file=sys.stderr,
+    )
     sys.exit(1)
 
 prd_path = sys.argv[1]
@@ -237,44 +260,42 @@ github_issues = json.loads(sys.stdin.read())
 
 # Read existing PRD or create empty structure
 if os.path.exists(prd_path):
-    with open(prd_path, 'r') as f:
+    with open(prd_path, "r") as f:
         prd = json.load(f)
 else:
     prd = {
         "projectName": "Brave Core Bot Backlog",
         "description": "Issues from brave/brave-browser repository to be resolved",
-        "config": {
-            "workingDirectory": "../src/brave"
-        },
-        "userStories": []
+        "config": {"workingDirectory": "../src/brave"},
+        "userStories": [],
     }
 
 # Create a deep copy of existing stories for verification
-original_stories = copy.deepcopy(prd['userStories'])
-existing_story_count = len(prd['userStories'])
+original_stories = copy.deepcopy(prd["userStories"])
+existing_story_count = len(prd["userStories"])
 
 # Extract existing issue numbers from PRD
 existing_issues = set()
-for story in prd['userStories']:
-    desc = story['description']
-    matches = re.findall(r'issue #(\d+)', desc)
+for story in prd["userStories"]:
+    desc = story["description"]
+    matches = re.findall(r"issue #(\d+)", desc)
     for match in matches:
         existing_issues.add(int(match))
 
 # Find the highest existing ID number and priority
 max_id = 0
 max_priority = 0
-for story in prd['userStories']:
-    id_num = int(story['id'].split('-')[1])
+for story in prd["userStories"]:
+    id_num = int(story["id"].split("-")[1])
     if id_num > max_id:
         max_id = id_num
-    if story['priority'] > max_priority:
-        max_priority = story['priority']
+    if story["priority"] > max_priority:
+        max_priority = story["priority"]
 
 # Process each GitHub issue and add if missing
 new_stories = []
 for issue in github_issues:
-    issue_num = issue['number']
+    issue_num = issue["number"]
 
     # Skip if already in PRD
     if issue_num in existing_issues:
@@ -294,13 +315,18 @@ for issue in github_issues:
 
 # SAFETY CHECK: Verify existing stories were not modified
 for i in range(existing_story_count):
-    if prd['userStories'][i] != original_stories[i]:
-        print(f"ERROR: Existing story {prd['userStories'][i]['id']} was modified!", file=sys.stderr)
-        print("This is a bug - existing stories should never be changed.", file=sys.stderr)
+    if prd["userStories"][i] != original_stories[i]:
+        print(
+            f"ERROR: Existing story {prd['userStories'][i]['id']} was modified!",
+            file=sys.stderr,
+        )
+        print(
+            "This is a bug - existing stories should never be changed.", file=sys.stderr
+        )
         sys.exit(1)
 
 # Add new stories to PRD (appends to end, doesn't modify existing)
-prd['userStories'].extend(new_stories)
+prd["userStories"].extend(new_stories)
 
 # Output updated PRD
 print(json.dumps(prd, indent=2))
@@ -308,7 +334,7 @@ print(json.dumps(prd, indent=2))
 # Print summary to stderr
 print(f"\nAdded {len(new_stories)} new issues to PRD", file=sys.stderr)
 for story in new_stories:
-    issue_match = re.search(r'issue #(\d+)', story['description'])
+    issue_match = re.search(r"issue #(\d+)", story["description"])
     issue_num = issue_match.group(1) if issue_match else "unknown"
-    title = story.get('testFilter', story['title'])
+    title = story.get("testFilter", story["title"])
     print(f"  {story['id']}: {title} (#{issue_num})", file=sys.stderr)

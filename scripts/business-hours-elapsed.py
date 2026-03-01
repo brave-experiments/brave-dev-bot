@@ -10,7 +10,7 @@ Exit code 0 if >= 24 business hours, 1 if not, 2 on error.
 """
 
 import sys
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
 
 
 def business_hours_between(ref, now):
@@ -35,7 +35,7 @@ def business_hours_between(ref, now):
     return total_seconds / 3600
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     if len(sys.argv) < 2:
         print("Usage: business-hours-elapsed.py <iso-timestamp>", file=sys.stderr)
         print("Prints business hours elapsed (weekdays only).", file=sys.stderr)
@@ -43,7 +43,7 @@ if __name__ == '__main__':
         sys.exit(2)
 
     try:
-        ref = datetime.fromisoformat(sys.argv[1].replace('Z', '+00:00'))
+        ref = datetime.fromisoformat(sys.argv[1].replace("Z", "+00:00"))
     except ValueError as e:
         print(f"Error: Invalid timestamp: {e}", file=sys.stderr)
         sys.exit(2)

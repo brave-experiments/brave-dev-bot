@@ -9,9 +9,7 @@ import pytest
 
 SCRIPTS_DIR = os.path.join(os.path.dirname(__file__), os.pardir, "scripts")
 ROOT_DIR = os.path.join(os.path.dirname(__file__), os.pardir)
-SKILLS_DIR = os.path.join(
-    os.path.dirname(__file__), os.pardir, ".claude", "skills"
-)
+SKILLS_DIR = os.path.join(os.path.dirname(__file__), os.pardir, ".claude", "skills")
 
 
 def _load_module(name, path):
@@ -23,6 +21,7 @@ def _load_module(name, path):
 
 
 # Lazy-load script modules so tests can import their functions directly.
+
 
 @pytest.fixture
 def update_prd_status():
@@ -66,6 +65,7 @@ def chunk_best_practices():
 
 # --- Temp file helpers ---
 
+
 @pytest.fixture
 def tmp_dir():
     """Provide a temporary directory that's cleaned up after test."""
@@ -76,19 +76,23 @@ def tmp_dir():
 @pytest.fixture
 def write_json(tmp_dir):
     """Helper to write a JSON file in tmp_dir and return its path."""
+
     def _write(filename, data):
         path = os.path.join(tmp_dir, filename)
         with open(path, "w") as f:
             json.dump(data, f, indent=2)
             f.write("\n")
         return path
+
     return _write
 
 
 @pytest.fixture
 def read_json():
     """Helper to read a JSON file back."""
+
     def _read(path):
         with open(path) as f:
             return json.load(f)
+
     return _read

@@ -19,7 +19,9 @@ args = [a for a in sys.argv[1:] if not a.startswith("--")]
 flags = [a for a in sys.argv[1:] if a.startswith("--")]
 
 if len(args) != 2:
-    print(f"Usage: {sys.argv[0]} <pr_number> <head_ref_oid> [--approve]", file=sys.stderr)
+    print(
+        f"Usage: {sys.argv[0]} <pr_number> <head_ref_oid> [--approve]", file=sys.stderr
+    )
     sys.exit(1)
 
 pr_number = args[0]
@@ -48,4 +50,6 @@ with open(cache_path, "w") as f:
     f.write("\n")
 
 status = "approved + cached" if approve else "cached"
-print(f"Cache updated ({status}): [PR #{pr_number}](https://github.com/brave/brave-core/pull/{pr_number}) -> {head_ref_oid}")
+print(
+    f"Cache updated ({status}): [PR #{pr_number}](https://github.com/brave/brave-core/pull/{pr_number}) -> {head_ref_oid}"
+)

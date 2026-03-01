@@ -5,10 +5,10 @@ Keeps only active work in the main PRD. Writes cleaned prd.json in-place
 (via temp file) and outputs a full recap to stdout.
 """
 
-import json
-import sys
-import os
 import copy
+import json
+import os
+import sys
 import tempfile
 
 
@@ -18,12 +18,12 @@ def main():
         sys.exit(1)
 
     prd_path = sys.argv[1]
-    prd_dir = os.path.dirname(prd_path) or '.'
+    prd_dir = os.path.dirname(prd_path) or "."
     archive_path = os.path.join(prd_dir, "prd.archived.json")
 
     # Read existing PRD
     try:
-        with open(prd_path, 'r') as f:
+        with open(prd_path, "r") as f:
             prd = json.load(f)
     except FileNotFoundError:
         print(f"ERROR: PRD file not found at {prd_path}", file=sys.stderr)
@@ -36,20 +36,19 @@ def main():
     old_stories = []
     if os.path.exists(archive_path):
         try:
-            with open(archive_path, 'r') as f:
+            with open(archive_path, "r") as f:
                 old_prd = json.load(f)
-                old_stories = old_prd.get('userStories', [])
+                old_stories = old_prd.get("userStories", [])
         except (FileNotFoundError, json.JSONDecodeError) as e:
-            print(f"WARNING: Could not read {archive_path}: {e}",
-                  file=sys.stderr)
+            print(f"WARNING: Could not read {archive_path}: {e}", file=sys.stderr)
             print("Starting with empty archive.", file=sys.stderr)
 
     # Split stories into active and to-archive
     active_stories = []
     archived_stories = []
 
-    for story in prd.get('userStories', []):
-        if story.get('status') in ('merged', 'invalid'):
+    for story in prd.get("userStories", []):
+        if story.get("status") in ("merged", "invalid"):
             archived_stories.append(story)
         else:
             active_stories.append(story)
@@ -59,37 +58,37 @@ def main():
         sys.exit(0)
 
     # Merge with existing archived stories (dedup by ID, latest wins)
-    archive_map = {s['id']: s for s in old_stories}
+    archive_map = {s["id"]: s for s in old_stories}
     for story in archived_stories:
-        archive_map[story['id']] = story
+        archive_map[story["id"]] = story
 
-    all_archived = sorted(archive_map.values(), key=lambda s: s['id'])
+    all_archived = sorted(archive_map.values(), key=lambda s: s["id"])
 
     # Build output structures
     new_prd = copy.deepcopy(prd)
-    new_prd['userStories'] = active_stories
+    new_prd["userStories"] = active_stories
 
     archive_data = {
-        "projectName": prd.get('projectName', 'Unknown'),
-        "config": prd.get('config', {}),
+        "projectName": prd.get("projectName", "Unknown"),
+        "config": prd.get("config", {}),
         "userStories": all_archived,
     }
 
     # Write archive file
     try:
-        with open(archive_path, 'w') as f:
+        with open(archive_path, "w") as f:
             json.dump(archive_data, f, indent=2)
-            f.write('\n')
+            f.write("\n")
     except IOError as e:
         print(f"ERROR: Could not write {archive_path}: {e}", file=sys.stderr)
         sys.exit(1)
 
     # Write cleaned PRD atomically via temp file
     try:
-        fd, tmp_path = tempfile.mkstemp(dir=prd_dir, suffix='.json')
-        with os.fdopen(fd, 'w') as f:
+        fd, tmp_path = tempfile.mkstemp(dir=prd_dir, suffix=".json")
+        with os.fdopen(fd, "w") as f:
             json.dump(new_prd, f, indent=2)
-            f.write('\n')
+            f.write("\n")
         os.replace(tmp_path, prd_path)
     except IOError as e:
         print(f"ERROR: Could not write {prd_path}: {e}", file=sys.stderr)
@@ -99,13 +98,15 @@ def main():
         sys.exit(1)
 
     # Print recap
-    merged = [s for s in archived_stories if s.get('status') == 'merged']
-    invalid = [s for s in archived_stories if s.get('status') == 'invalid']
+    merged = [s for s in archived_stories if s.get("status") == "merged"]
+    invalid = [s for s in archived_stories if s.get("status") == "invalid"]
 
     print("# PRD Cleaning Recap\n")
     print("## Summary")
-    print(f"Archived {len(archived_stories)} completed stories from "
-          f"prd.json to prd.archived.json.\n")
+    print(
+        f"Archived {len(archived_stories)} completed stories from "
+        f"prd.json to prd.archived.json.\n"
+    )
 
     print(f"## Archived Stories ({len(archived_stories)} total)\n")
 
@@ -124,21 +125,23 @@ def main():
     # Count active stories by status
     status_counts = {}
     for s in active_stories:
-        st = s.get('status', 'unknown')
+        st = s.get("status", "unknown")
         status_counts[st] = status_counts.get(st, 0) + 1
 
     print(f"## Active Stories Remaining ({len(active_stories)} total)\n")
-    for st in ('pending', 'committed', 'pushed', 'skipped'):
+    for st in ("pending", "committed", "pushed", "skipped"):
         count = status_counts.get(st, 0)
         if count:
             print(f"- {st.capitalize()}: {count}")
 
-    print(f"\n## Statistics")
-    print(f"- Stories archived this run: {len(archived_stories)} "
-          f"({len(merged)} merged, {len(invalid)} invalid)")
+    print("\n## Statistics")
+    print(
+        f"- Stories archived this run: {len(archived_stories)} "
+        f"({len(merged)} merged, {len(invalid)} invalid)"
+    )
     print(f"- Total stories in prd.archived.json: {len(all_archived)}")
     print(f"- Active stories in prd.json: {len(active_stories)}")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

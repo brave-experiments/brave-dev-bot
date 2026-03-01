@@ -20,11 +20,9 @@ Output: JSON with "prs" array and "summary" stats.
 """
 
 import json
-import os
 import subprocess
 import sys
 from datetime import datetime, timedelta, timezone
-
 
 CACHE_PATH = ".ignore/review-prs-cache.json"
 ORG_MEMBERS_PATH = ".ignore/org-members.txt"
@@ -86,11 +84,18 @@ def fetch_single_pr(pr_number):
     fields = "number,title,updatedAt,author,isDraft,headRefOid,reviewDecision,latestReviews,reviewRequests"
     result = subprocess.run(
         [
-            "gh", "pr", "view", str(pr_number),
-            "--repo", "brave/brave-core",
-            "--json", fields,
+            "gh",
+            "pr",
+            "view",
+            str(pr_number),
+            "--repo",
+            "brave/brave-core",
+            "--json",
+            fields,
         ],
-        capture_output=True, text=True, check=True,
+        capture_output=True,
+        text=True,
+        check=True,
     )
     return [json.loads(result.stdout)]
 
@@ -114,24 +119,35 @@ def fetch_prs(mode, days, page, pr_number, state):
 
     fields = "number,title,updatedAt,author,isDraft,headRefOid,reviewDecision,latestReviews,reviewRequests"
     base_cmd = [
-        "gh", "pr", "list", "--repo", "brave/brave-core",
-        "--state", state, "--json", fields,
+        "gh",
+        "pr",
+        "list",
+        "--repo",
+        "brave/brave-core",
+        "--state",
+        state,
+        "--json",
+        fields,
     ]
 
     if mode == "page":
         limit = page * 20
         result = subprocess.run(
             base_cmd + ["--limit", str(limit)],
-            capture_output=True, text=True, check=True,
+            capture_output=True,
+            text=True,
+            check=True,
         )
         prs = json.loads(result.stdout)
         prs.sort(key=lambda p: p.get("updatedAt", ""), reverse=True)
         start = (page - 1) * 20
-        return prs[start:start + 20]
+        return prs[start : start + 20]
     else:
         result = subprocess.run(
             base_cmd + ["--limit", "200"],
-            capture_output=True, text=True, check=True,
+            capture_output=True,
+            text=True,
+            check=True,
         )
         prs = json.loads(result.stdout)
         # Sort by updatedAt descending (newest first) since --sort is
@@ -154,7 +170,10 @@ def load_org_members():
         with open(ORG_MEMBERS_PATH) as f:
             return set(line.strip() for line in f if line.strip())
     except FileNotFoundError:
-        print(f"WARNING: org members file not found at {ORG_MEMBERS_PATH}", file=sys.stderr)
+        print(
+            f"WARNING: org members file not found at {ORG_MEMBERS_PATH}",
+            file=sys.stderr,
+        )
         return set()
 
 
@@ -215,9 +234,7 @@ def filter_prs(prs, mode, days, cache, org_members, reviewer_priority=None):
                 continue
 
         if cutoff and mode == "days":
-            updated = datetime.fromisoformat(
-                pr["updatedAt"].replace("Z", "+00:00")
-            )
+            updated = datetime.fromisoformat(pr["updatedAt"].replace("Z", "+00:00"))
             if updated < cutoff:
                 skipped_filtered += 1
                 continue
@@ -237,7 +254,14 @@ def filter_prs(prs, mode, days, cache, org_members, reviewer_priority=None):
 
         to_review.append(pr)
 
-    return to_review, cached_prs, skipped_filtered, skipped_cached, skipped_approved, skipped_external
+    return (
+        to_review,
+        cached_prs,
+        skipped_filtered,
+        skipped_cached,
+        skipped_approved,
+        skipped_external,
+    )
 
 
 def main():
@@ -256,17 +280,22 @@ def main():
         skipped_external = 0
     else:
         cache = load_cache()
-        to_review, cached_prs, skipped_filtered, skipped_cached, skipped_approved, skipped_external = (
-            filter_prs(prs, mode, days, cache, org_members, reviewer_priority)
-        )
+        (
+            to_review,
+            cached_prs,
+            skipped_filtered,
+            skipped_cached,
+            skipped_approved,
+            skipped_external,
+        ) = filter_prs(prs, mode, days, cache, org_members, reviewer_priority)
 
     # Sort PRs so those requesting review from the priority user come first
     if reviewer_priority:
         to_review.sort(
-            key=lambda pr: (0 if is_requested_reviewer(pr, reviewer_priority) else 1)
+            key=lambda pr: 0 if is_requested_reviewer(pr, reviewer_priority) else 1
         )
         cached_prs.sort(
-            key=lambda pr: (0 if is_requested_reviewer(pr, reviewer_priority) else 1)
+            key=lambda pr: 0 if is_requested_reviewer(pr, reviewer_priority) else 1
         )
 
     def pr_entry(pr):
@@ -279,9 +308,7 @@ def main():
             "hasApproval": has_any_approval(pr),
         }
         if reviewer_priority:
-            entry["isRequestedReviewer"] = is_requested_reviewer(
-                pr, reviewer_priority
-            )
+            entry["isRequestedReviewer"] = is_requested_reviewer(pr, reviewer_priority)
         if org_members and author not in org_members:
             entry["isExternalContributor"] = True
         return entry

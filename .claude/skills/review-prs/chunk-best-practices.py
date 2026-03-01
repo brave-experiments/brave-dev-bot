@@ -136,8 +136,8 @@ def process_doc(doc_path, chunk_size=DEFAULT_CHUNK_SIZE):
 
     result = []
     for i, chunk in enumerate(chunks):
-        chunk_content = header.rstrip("\n") + "\n\n" + "\n".join(
-            r["text"] for r in chunk
+        chunk_content = (
+            header.rstrip("\n") + "\n\n" + "\n".join(r["text"] for r in chunk)
         )
         headings = [r["heading"] for r in chunk]
         result.append(

@@ -32,6 +32,7 @@ BP_DIR = os.path.join(
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
 
+
 def make_doc(num_rules, prefix="R", title="# Test Doc", include_subsections=False):
     """Build a synthetic best-practice document with N ## rules."""
     parts = [title, ""]
@@ -65,6 +66,7 @@ def write_doc(tmp_dir, content, name="test-bp.md"):
 # ═══════════════════════════════════════════════════════════════════════════
 # split_into_rules
 # ═══════════════════════════════════════════════════════════════════════════
+
 
 class TestSplitIntoRules:
     def test_basic_split(self, chunk_best_practices):
@@ -146,12 +148,13 @@ class TestSplitIntoRules:
             # Each rule should only contain its own description.
             for j in range(len(rules)):
                 if j != i:
-                    assert f"Description for rule R-{j+1:03d}" not in rule["text"]
+                    assert f"Description for rule R-{j + 1:03d}" not in rule["text"]
 
 
 # ═══════════════════════════════════════════════════════════════════════════
 # chunk_rules
 # ═══════════════════════════════════════════════════════════════════════════
+
 
 class TestChunkRules:
     def test_small_list_single_chunk(self, chunk_best_practices):
@@ -214,6 +217,7 @@ class TestChunkRules:
 # ═══════════════════════════════════════════════════════════════════════════
 # process_doc (integration)
 # ═══════════════════════════════════════════════════════════════════════════
+
 
 class TestProcessDoc:
     def test_small_doc_single_chunk(self, chunk_best_practices, tmp_dir):
@@ -281,9 +285,7 @@ class TestRealDocs:
 
     def _all_docs(self):
         return sorted(
-            os.path.join(BP_DIR, f)
-            for f in os.listdir(BP_DIR)
-            if f.endswith(".md")
+            os.path.join(BP_DIR, f) for f in os.listdir(BP_DIR) if f.endswith(".md")
         )
 
     def test_all_docs_parse_without_error(self, chunk_best_practices):
@@ -329,12 +331,14 @@ class TestRealDocs:
 # CLI
 # ═══════════════════════════════════════════════════════════════════════════
 
+
 class TestCLI:
     def test_outputs_valid_json(self, tmp_dir):
         path = write_doc(tmp_dir, make_doc(5))
         result = subprocess.run(
             [sys.executable, SCRIPT_PATH, path],
-            capture_output=True, text=True,
+            capture_output=True,
+            text=True,
         )
         assert result.returncode == 0
         data = json.loads(result.stdout)
@@ -345,7 +349,8 @@ class TestCLI:
         path = write_doc(tmp_dir, make_doc(30))
         result = subprocess.run(
             [sys.executable, SCRIPT_PATH, path, "--chunk-size", "10"],
-            capture_output=True, text=True,
+            capture_output=True,
+            text=True,
         )
         assert result.returncode == 0
         data = json.loads(result.stdout)
@@ -354,6 +359,7 @@ class TestCLI:
     def test_missing_file_exits_nonzero(self):
         result = subprocess.run(
             [sys.executable, SCRIPT_PATH, "/nonexistent/doc.md"],
-            capture_output=True, text=True,
+            capture_output=True,
+            text=True,
         )
         assert result.returncode != 0

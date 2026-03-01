@@ -81,19 +81,25 @@ def validate_transition(subcommand, story):
     if allowed is None:
         # skipped/invalid: allowed from any non-terminal status
         if current_status in TERMINAL_STATUSES:
-            return (f"Cannot transition {story_id} to '{subcommand}': "
-                    f"current status '{current_status}' is already terminal")
+            return (
+                f"Cannot transition {story_id} to '{subcommand}': "
+                f"current status '{current_status}' is already terminal"
+            )
         return None
 
     if current_status not in allowed:
-        return (f"Cannot apply '{subcommand}' to {story_id}: "
-                f"current status is '{current_status}', "
-                f"expected one of {sorted(allowed)}")
+        return (
+            f"Cannot apply '{subcommand}' to {story_id}: "
+            f"current status is '{current_status}', "
+            f"expected one of {sorted(allowed)}"
+        )
 
     if subcommand == "merged-check":
         if story.get("mergedCheckFinalState") is True:
-            return (f"Cannot run merged-check on {story_id}: "
-                    f"mergedCheckFinalState is already true")
+            return (
+                f"Cannot run merged-check on {story_id}: "
+                f"mergedCheckFinalState is already true"
+            )
 
     return None
 
@@ -119,6 +125,7 @@ def is_state_change(subcommand, args):
 
 # --- Subcommand handlers ---
 # Each returns a dict of {field: new_value} and mutates story in-place.
+
 
 def handle_committed(story, args):
     changes = {}
@@ -310,8 +317,7 @@ def main():
     # Find story
     story = find_story(prd, args.story_id)
     if story is None:
-        print(f"Error: Story '{args.story_id}' not found in prd.json",
-              file=sys.stderr)
+        print(f"Error: Story '{args.story_id}' not found in prd.json", file=sys.stderr)
         return 1
 
     # Validate transition

@@ -37,7 +37,9 @@ def main():
     active = [s for s in stories if s.get("status", "pending") not in TERMINAL_STATUSES]
 
     if not active:
-        print(f"All {len(stories)} stories are complete (merged/skipped/invalid) — nothing to work on.")
+        print(
+            f"All {len(stories)} stories are complete (merged/skipped/invalid) — nothing to work on."
+        )
         return 1
 
     # Summarize what's active

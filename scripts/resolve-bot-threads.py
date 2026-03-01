@@ -37,8 +37,12 @@ def gh_rest(endpoint, method="GET", data=None):
 def gh_rest_paginated(endpoint, jq_filter=".[]"):
     """Call a GitHub REST API endpoint with pagination via gh CLI."""
     cmd = [
-        "gh", "api", endpoint, "--paginate",
-        "--jq", jq_filter,
+        "gh",
+        "api",
+        endpoint,
+        "--paginate",
+        "--jq",
+        jq_filter,
     ]
     result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
     if result.returncode != 0:
@@ -101,11 +105,14 @@ def fetch_review_threads(pr_number):
       }
     }
     """
-    data = gh_graphql(query, {
-        "owner": "brave",
-        "name": "brave-core",
-        "number": pr_number,
-    })
+    data = gh_graphql(
+        query,
+        {
+            "owner": "brave",
+            "name": "brave-core",
+            "number": pr_number,
+        },
+    )
     if not data:
         return []
     try:
@@ -153,7 +160,8 @@ def main():
     parser.add_argument("pr_number", type=int, help="PR number")
     parser.add_argument("bot_username", help="Bot's GitHub username")
     parser.add_argument(
-        "--dry-run", action="store_true",
+        "--dry-run",
+        action="store_true",
         help="Show what would be done without making changes",
     )
     args = parser.parse_args()
@@ -161,25 +169,33 @@ def main():
     # 1. Fetch all review comments
     comments = fetch_review_comments(args.pr_number)
     if not comments:
-        print(json.dumps({
-            "resolved": [],
-            "already_resolved": [],
-            "no_reply": [],
-            "unresolved_bot_threads": 0,
-            "total_bot_threads": 0,
-        }))
+        print(
+            json.dumps(
+                {
+                    "resolved": [],
+                    "already_resolved": [],
+                    "no_reply": [],
+                    "unresolved_bot_threads": 0,
+                    "total_bot_threads": 0,
+                }
+            )
+        )
         return
 
     # 2. Fetch review threads (GraphQL)
     threads = fetch_review_threads(args.pr_number)
     if not threads:
-        print(json.dumps({
-            "resolved": [],
-            "already_resolved": [],
-            "no_reply": [],
-            "unresolved_bot_threads": 0,
-            "total_bot_threads": 0,
-        }))
+        print(
+            json.dumps(
+                {
+                    "resolved": [],
+                    "already_resolved": [],
+                    "no_reply": [],
+                    "unresolved_bot_threads": 0,
+                    "total_bot_threads": 0,
+                }
+            )
+        )
         return
 
     # 3. Build mappings
@@ -229,17 +245,21 @@ def main():
         reply = replies_to_bot.get(bot_comment_id)
 
         if is_resolved:
-            already_resolved.append({
-                "botCommentId": bot_comment_id,
-                "threadId": thread_id,
-            })
+            already_resolved.append(
+                {
+                    "botCommentId": bot_comment_id,
+                    "threadId": thread_id,
+                }
+            )
             continue
 
         if not reply:
-            no_reply.append({
-                "botCommentId": bot_comment_id,
-                "threadId": thread_id,
-            })
+            no_reply.append(
+                {
+                    "botCommentId": bot_comment_id,
+                    "threadId": thread_id,
+                }
+            )
             continue
 
         # Resolve first, then react — both must succeed or neither is visible.
@@ -249,20 +269,24 @@ def main():
         reaction_ok = add_reaction(reply["id"], args.dry_run) if resolve_ok else False
 
         if resolve_ok and reaction_ok:
-            resolved.append({
-                "botCommentId": bot_comment_id,
-                "threadId": thread_id,
-                "replyId": reply["id"],
-                "replyUser": reply["user"],
-            })
+            resolved.append(
+                {
+                    "botCommentId": bot_comment_id,
+                    "threadId": thread_id,
+                    "replyId": reply["id"],
+                    "replyUser": reply["user"],
+                }
+            )
         else:
-            errors.append({
-                "botCommentId": bot_comment_id,
-                "threadId": thread_id,
-                "replyId": reply["id"],
-                "reactionOk": reaction_ok,
-                "resolveOk": resolve_ok,
-            })
+            errors.append(
+                {
+                    "botCommentId": bot_comment_id,
+                    "threadId": thread_id,
+                    "replyId": reply["id"],
+                    "reactionOk": reaction_ok,
+                    "resolveOk": resolve_ok,
+                }
+            )
 
     # Count remaining unresolved bot threads after our actions
     unresolved = len(no_reply) + len(errors)

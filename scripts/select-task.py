@@ -18,12 +18,11 @@ import subprocess
 import sys
 from datetime import datetime, timezone
 
-
-TIER_URGENT = 1    # pushed + lastActivityBy == "reviewer"
-TIER_HIGH = 2      # committed
-TIER_MEDIUM = 3    # pushed + lastActivityBy != "reviewer"
-TIER_NORMAL = 4    # pending
-TIER_LOW = 5       # merged (needs recheck)
+TIER_URGENT = 1  # pushed + lastActivityBy == "reviewer"
+TIER_HIGH = 2  # committed
+TIER_MEDIUM = 3  # pushed + lastActivityBy != "reviewer"
+TIER_NORMAL = 4  # pending
+TIER_LOW = 5  # merged (needs recheck)
 
 TIER_NAMES = {
     TIER_URGENT: "URGENT",
@@ -140,7 +139,7 @@ def llm_select(candidates, extra_prompt):
     summary_lines = []
     for s in candidates:
         summary_lines.append(
-            f"- {s.get('id')}: \"{s.get('title')}\" "
+            f'- {s.get("id")}: "{s.get("title")}" '
             f"(status: {s.get('status')}, priority: {s.get('priority')})"
         )
     summary = "\n".join(summary_lines)
@@ -155,7 +154,9 @@ def llm_select(candidates, extra_prompt):
     try:
         result = subprocess.run(
             ["claude", "--print", "--model", "haiku", prompt],
-            capture_output=True, text=True, timeout=30
+            capture_output=True,
+            text=True,
+            timeout=30,
         )
         response = result.stdout.strip()
         # Extract US-XXX pattern from response
@@ -205,7 +206,9 @@ def main():
     parser.add_argument("--prd", help="Path to prd.json")
     parser.add_argument("--run-state", help="Path to run-state.json")
     parser.add_argument("--iteration-log", help="Log path to record in story")
-    parser.add_argument("--extra-prompt", default="", help="Extra prompt for LLM selection")
+    parser.add_argument(
+        "--extra-prompt", default="", help="Extra prompt for LLM selection"
+    )
     args = parser.parse_args()
 
     script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -239,7 +242,11 @@ def main():
     candidates = filter_stories(stories, run_state)
 
     if not candidates:
-        print(json.dumps({"selected": False, "reason": "No candidates remain after filtering"}))
+        print(
+            json.dumps(
+                {"selected": False, "reason": "No candidates remain after filtering"}
+            )
+        )
         return 1
 
     # Selection

@@ -10,13 +10,12 @@ import sys
 from argparse import Namespace
 from datetime import datetime, timedelta, timezone
 
-import pytest
-
 SCRIPT_DIR = os.path.join(os.path.dirname(__file__), os.pardir, "scripts")
 UPDATE_PRD_SCRIPT = os.path.join(SCRIPT_DIR, "update-prd-status.py")
 
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
+
 
 def make_story(status="pending", id="US-001", priority=1, **overrides):
     base = {
@@ -42,9 +41,12 @@ def empty_run_state(**overrides):
 def run_update_script(prd_path, run_state_path, *args):
     """Run update-prd-status.py as a subprocess."""
     cmd = [
-        sys.executable, UPDATE_PRD_SCRIPT,
-        "--prd", prd_path,
-        "--run-state", run_state_path,
+        sys.executable,
+        UPDATE_PRD_SCRIPT,
+        "--prd",
+        prd_path,
+        "--run-state",
+        run_state_path,
         *args,
     ]
     result = subprocess.run(cmd, capture_output=True, text=True)
@@ -55,38 +57,81 @@ def run_update_script(prd_path, run_state_path, *args):
 # update-prd-status.py
 # ═══════════════════════════════════════════════════════════════════════════
 
+
 class TestUpdatePrdValidation:
     def test_committed_requires_pending(self, update_prd_status):
-        assert update_prd_status.validate_transition("committed", make_story("pending")) is None
-        assert update_prd_status.validate_transition("committed", make_story("pushed")) is not None
+        assert (
+            update_prd_status.validate_transition("committed", make_story("pending"))
+            is None
+        )
+        assert (
+            update_prd_status.validate_transition("committed", make_story("pushed"))
+            is not None
+        )
 
     def test_pushed_requires_committed(self, update_prd_status):
-        assert update_prd_status.validate_transition("pushed", make_story("committed")) is None
-        assert update_prd_status.validate_transition("pushed", make_story("pending")) is not None
+        assert (
+            update_prd_status.validate_transition("pushed", make_story("committed"))
+            is None
+        )
+        assert (
+            update_prd_status.validate_transition("pushed", make_story("pending"))
+            is not None
+        )
 
     def test_merged_requires_pushed(self, update_prd_status):
-        assert update_prd_status.validate_transition("merged", make_story("pushed")) is None
-        assert update_prd_status.validate_transition("merged", make_story("pending")) is not None
+        assert (
+            update_prd_status.validate_transition("merged", make_story("pushed"))
+            is None
+        )
+        assert (
+            update_prd_status.validate_transition("merged", make_story("pending"))
+            is not None
+        )
 
     def test_skipped_allowed_from_any_active(self, update_prd_status):
         for status in ("pending", "committed", "pushed", "merged"):
-            assert update_prd_status.validate_transition("skipped", make_story(status)) is None
+            assert (
+                update_prd_status.validate_transition("skipped", make_story(status))
+                is None
+            )
 
     def test_skipped_rejected_from_terminal(self, update_prd_status):
         for status in ("skipped", "invalid"):
-            assert update_prd_status.validate_transition("skipped", make_story(status)) is not None
+            assert (
+                update_prd_status.validate_transition("skipped", make_story(status))
+                is not None
+            )
 
     def test_invalid_rejected_from_terminal(self, update_prd_status):
-        assert update_prd_status.validate_transition("invalid", make_story("invalid")) is not None
+        assert (
+            update_prd_status.validate_transition("invalid", make_story("invalid"))
+            is not None
+        )
 
     def test_set_activity_requires_pushed(self, update_prd_status):
-        assert update_prd_status.validate_transition("set-activity", make_story("pushed")) is None
-        assert update_prd_status.validate_transition("set-activity", make_story("pending")) is not None
+        assert (
+            update_prd_status.validate_transition("set-activity", make_story("pushed"))
+            is None
+        )
+        assert (
+            update_prd_status.validate_transition("set-activity", make_story("pending"))
+            is not None
+        )
 
     def test_set_branch_allows_pending_or_committed(self, update_prd_status):
-        assert update_prd_status.validate_transition("set-branch", make_story("pending")) is None
-        assert update_prd_status.validate_transition("set-branch", make_story("committed")) is None
-        assert update_prd_status.validate_transition("set-branch", make_story("pushed")) is not None
+        assert (
+            update_prd_status.validate_transition("set-branch", make_story("pending"))
+            is None
+        )
+        assert (
+            update_prd_status.validate_transition("set-branch", make_story("committed"))
+            is None
+        )
+        assert (
+            update_prd_status.validate_transition("set-branch", make_story("pushed"))
+            is not None
+        )
 
     def test_merged_check_rejects_final_state(self, update_prd_status):
         story = make_story("merged", mergedCheckFinalState=True)
@@ -168,10 +213,16 @@ class TestUpdatePrdStateChange:
             assert update_prd_status.is_state_change(cmd, Namespace()) is True
 
     def test_set_activity_bot_is_state_change(self, update_prd_status):
-        assert update_prd_status.is_state_change("set-activity", Namespace(who="bot")) is True
+        assert (
+            update_prd_status.is_state_change("set-activity", Namespace(who="bot"))
+            is True
+        )
 
     def test_set_activity_reviewer_not_state_change(self, update_prd_status):
-        assert update_prd_status.is_state_change("set-activity", Namespace(who="reviewer")) is False
+        assert (
+            update_prd_status.is_state_change("set-activity", Namespace(who="reviewer"))
+            is False
+        )
 
     def test_non_status_commands_not_state_changes(self, update_prd_status):
         for cmd in ("set-ping", "set-branch", "merged-check"):
@@ -183,11 +234,15 @@ class TestUpdatePrdIntegration:
         prd_path = write_json("prd.json", {"userStories": [make_story("pending")]})
         rs_path = write_json("run-state.json", {"lastIterationHadStateChange": False})
 
-        rc, _, _ = run_update_script(prd_path, rs_path, "committed", "US-001", "--branch", "fix-x")
+        rc, _, _ = run_update_script(
+            prd_path, rs_path, "committed", "US-001", "--branch", "fix-x"
+        )
         assert rc == 0
         assert read_json(prd_path)["userStories"][0]["status"] == "committed"
 
-        rc, _, _ = run_update_script(prd_path, rs_path, "pushed", "US-001", "--pr-number", "123")
+        rc, _, _ = run_update_script(
+            prd_path, rs_path, "pushed", "US-001", "--pr-number", "123"
+        )
         assert rc == 0
         assert read_json(prd_path)["userStories"][0]["prNumber"] == 123
 
@@ -206,7 +261,9 @@ class TestUpdatePrdIntegration:
     def test_story_not_found_exits_1(self, write_json, tmp_dir):
         prd_path = write_json("prd.json", {"userStories": [make_story("pending")]})
         rs_path = write_json("run-state.json", {})
-        rc, _, err = run_update_script(prd_path, rs_path, "committed", "US-999", "--branch", "x")
+        rc, _, err = run_update_script(
+            prd_path, rs_path, "committed", "US-999", "--branch", "x"
+        )
         assert rc == 1
         assert "not found" in err
 
@@ -214,7 +271,10 @@ class TestUpdatePrdIntegration:
         rc, _, _ = run_update_script(
             os.path.join(tmp_dir, "nope.json"),
             os.path.join(tmp_dir, "rs.json"),
-            "committed", "US-001", "--branch", "x",
+            "committed",
+            "US-001",
+            "--branch",
+            "x",
         )
         assert rc == 2
 
@@ -222,17 +282,22 @@ class TestUpdatePrdIntegration:
         prd_path = write_json("prd.json", {"userStories": [make_story("pending")]})
         rs_path = write_json("run-state.json", {})
         reason = 'PR #123 already exists for "this issue"'
-        rc, _, _ = run_update_script(prd_path, rs_path, "skipped", "US-001", "--reason", reason)
+        rc, _, _ = run_update_script(
+            prd_path, rs_path, "skipped", "US-001", "--reason", reason
+        )
         assert rc == 0
         assert read_json(prd_path)["userStories"][0]["skipReason"] == reason
 
     def test_other_stories_untouched(self, write_json, read_json, tmp_dir):
-        prd_path = write_json("prd.json", {
-            "userStories": [
-                make_story("pending", id="US-001"),
-                make_story("pushed", id="US-002"),
-            ],
-        })
+        prd_path = write_json(
+            "prd.json",
+            {
+                "userStories": [
+                    make_story("pending", id="US-001"),
+                    make_story("pushed", id="US-002"),
+                ],
+            },
+        )
         rs_path = write_json("run-state.json", {})
         run_update_script(prd_path, rs_path, "committed", "US-001", "--branch", "fix-a")
         prd = read_json(prd_path)
@@ -242,8 +307,12 @@ class TestUpdatePrdIntegration:
     def test_missing_run_state_still_succeeds(self, write_json, read_json, tmp_dir):
         prd_path = write_json("prd.json", {"userStories": [make_story("pending")]})
         rc, _, _ = run_update_script(
-            prd_path, os.path.join(tmp_dir, "nope-rs.json"),
-            "committed", "US-001", "--branch", "fix-x",
+            prd_path,
+            os.path.join(tmp_dir, "nope-rs.json"),
+            "committed",
+            "US-001",
+            "--branch",
+            "fix-x",
         )
         assert rc == 0
         assert read_json(prd_path)["userStories"][0]["status"] == "committed"
@@ -252,6 +321,7 @@ class TestUpdatePrdIntegration:
 # ═══════════════════════════════════════════════════════════════════════════
 # select-task.py
 # ═══════════════════════════════════════════════════════════════════════════
+
 
 class TestSelectTaskParseIso:
     def test_valid_z_suffix(self, select_task):
@@ -270,10 +340,16 @@ class TestSelectTaskParseIso:
 
 class TestSelectTaskTiers:
     def test_pushed_reviewer_is_urgent(self, select_task):
-        assert select_task.assign_tier(make_story("pushed", lastActivityBy="reviewer")) == select_task.TIER_URGENT
+        assert (
+            select_task.assign_tier(make_story("pushed", lastActivityBy="reviewer"))
+            == select_task.TIER_URGENT
+        )
 
     def test_pushed_bot_is_medium(self, select_task):
-        assert select_task.assign_tier(make_story("pushed", lastActivityBy="bot")) == select_task.TIER_MEDIUM
+        assert (
+            select_task.assign_tier(make_story("pushed", lastActivityBy="bot"))
+            == select_task.TIER_MEDIUM
+        )
 
     def test_committed_is_high(self, select_task):
         assert select_task.assign_tier(make_story("committed")) == select_task.TIER_HIGH
@@ -287,49 +363,90 @@ class TestSelectTaskTiers:
 
 class TestSelectTaskFilter:
     def test_excludes_skipped_and_invalid(self, select_task):
-        stories = [make_story("skipped", id="US-001"), make_story("invalid", id="US-002"), make_story("pending", id="US-003")]
+        stories = [
+            make_story("skipped", id="US-001"),
+            make_story("invalid", id="US-002"),
+            make_story("pending", id="US-003"),
+        ]
         result = select_task.filter_stories(stories, empty_run_state())
         assert [s["id"] for s in result] == ["US-003"]
 
     def test_excludes_merged_final_state(self, select_task):
-        stories = [make_story("merged", id="US-001", mergedCheckFinalState=True), make_story("pending", id="US-002")]
+        stories = [
+            make_story("merged", id="US-001", mergedCheckFinalState=True),
+            make_story("pending", id="US-002"),
+        ]
         result = select_task.filter_stories(stories, empty_run_state())
         assert [s["id"] for s in result] == ["US-002"]
 
     def test_excludes_already_checked(self, select_task):
-        stories = [make_story("pending", id="US-001"), make_story("pending", id="US-002")]
-        result = select_task.filter_stories(stories, empty_run_state(storiesCheckedThisRun=["US-001"]))
+        stories = [
+            make_story("pending", id="US-001"),
+            make_story("pending", id="US-002"),
+        ]
+        result = select_task.filter_stories(
+            stories, empty_run_state(storiesCheckedThisRun=["US-001"])
+        )
         assert [s["id"] for s in result] == ["US-002"]
 
     def test_skip_pushed_flag(self, select_task):
-        stories = [make_story("pushed", id="US-001"), make_story("pending", id="US-002")]
-        result = select_task.filter_stories(stories, empty_run_state(skipPushedTasks=True))
+        stories = [
+            make_story("pushed", id="US-001"),
+            make_story("pending", id="US-002"),
+        ]
+        result = select_task.filter_stories(
+            stories, empty_run_state(skipPushedTasks=True)
+        )
         assert [s["id"] for s in result] == ["US-002"]
 
     def test_merged_excluded_when_backoff_disabled(self, select_task):
-        stories = [make_story("merged", id="US-001", mergedCheckFinalState=False), make_story("pending", id="US-002")]
-        result = select_task.filter_stories(stories, empty_run_state(enableMergeBackoff=False))
+        stories = [
+            make_story("merged", id="US-001", mergedCheckFinalState=False),
+            make_story("pending", id="US-002"),
+        ]
+        result = select_task.filter_stories(
+            stories, empty_run_state(enableMergeBackoff=False)
+        )
         assert [s["id"] for s in result] == ["US-002"]
 
     def test_merged_backoff_not_due(self, select_task):
         future = (datetime.now(timezone.utc) + timedelta(days=1)).isoformat()
-        stories = [make_story("merged", id="US-001", mergedCheckFinalState=False, nextMergedCheck=future)]
+        stories = [
+            make_story(
+                "merged",
+                id="US-001",
+                mergedCheckFinalState=False,
+                nextMergedCheck=future,
+            )
+        ]
         assert select_task.filter_stories(stories, empty_run_state()) == []
 
     def test_merged_backoff_due(self, select_task):
         past = (datetime.now(timezone.utc) - timedelta(hours=1)).isoformat()
-        stories = [make_story("merged", id="US-001", mergedCheckFinalState=False, nextMergedCheck=past)]
-        assert [s["id"] for s in select_task.filter_stories(stories, empty_run_state())] == ["US-001"]
+        stories = [
+            make_story(
+                "merged", id="US-001", mergedCheckFinalState=False, nextMergedCheck=past
+            )
+        ]
+        assert [
+            s["id"] for s in select_task.filter_stories(stories, empty_run_state())
+        ] == ["US-001"]
 
 
 class TestSelectTaskSortKey:
     def test_urgent_before_normal(self, select_task):
-        stories = [make_story("pending", id="US-002"), make_story("pushed", id="US-001", lastActivityBy="reviewer")]
+        stories = [
+            make_story("pending", id="US-002"),
+            make_story("pushed", id="US-001", lastActivityBy="reviewer"),
+        ]
         stories.sort(key=select_task.sort_key)
         assert stories[0]["id"] == "US-001"
 
     def test_priority_breaks_ties(self, select_task):
-        stories = [make_story("pending", id="US-001", priority=10), make_story("pending", id="US-002", priority=1)]
+        stories = [
+            make_story("pending", id="US-001", priority=10),
+            make_story("pending", id="US-002", priority=1),
+        ]
         stories.sort(key=select_task.sort_key)
         assert stories[0]["id"] == "US-002"
 
@@ -363,12 +480,16 @@ class TestSelectTaskUpdatePrd:
         path = write_json("prd.json", prd)
         select_task.update_prd(path, prd, story, "/tmp/log1.txt")
         select_task.update_prd(path, prd, story, "/tmp/log2.txt")
-        assert read_json(path)["userStories"][0]["iterationLogs"] == ["/tmp/log1.txt", "/tmp/log2.txt"]
+        assert read_json(path)["userStories"][0]["iterationLogs"] == [
+            "/tmp/log1.txt",
+            "/tmp/log2.txt",
+        ]
 
 
 # ═══════════════════════════════════════════════════════════════════════════
 # business-hours-elapsed.py
 # ═══════════════════════════════════════════════════════════════════════════
+
 
 class TestBusinessHours:
     def test_same_time_is_zero(self, business_hours):
@@ -414,6 +535,7 @@ class TestBusinessHours:
 # ═══════════════════════════════════════════════════════════════════════════
 # check-prd-has-work.py
 # ═══════════════════════════════════════════════════════════════════════════
+
 
 class TestCheckPrdHasWork:
     TERMINAL = {"merged", "skipped", "invalid"}

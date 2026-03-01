@@ -88,11 +88,14 @@ def fetch_pr_data(pr_number, bot_username):
       }
     }
     """
-    data = gh_graphql(query, {
-        "owner": "brave",
-        "name": "brave-core",
-        "number": pr_number,
-    })
+    data = gh_graphql(
+        query,
+        {
+            "owner": "brave",
+            "name": "brave-core",
+            "number": pr_number,
+        },
+    )
     if not data:
         return None, None, None, None
 
@@ -136,13 +139,14 @@ def fetch_pr_data(pr_number, bot_username):
         state = review.get("state", "")
         # Body-level comments: any COMMENTED review with non-empty body
         if state == "COMMENTED" and review.get("body", "").strip():
-            body_comments.append({
-                "review_id": review.get("id"),
-                "body_preview": review["body"].strip()[:120],
-            })
+            body_comments.append(
+                {
+                    "review_id": review.get("id"),
+                    "body_preview": review["body"].strip()[:120],
+                }
+            )
         # Already approved at current SHA
-        if (state == "APPROVED"
-                and review.get("commit_id") == head_sha):
+        if state == "APPROVED" and review.get("commit_id") == head_sha:
             already_approved = True
 
     return head_sha, threads_info, body_comments, already_approved
@@ -170,7 +174,6 @@ def main():
         fail("Failed to fetch PR data from GitHub API")
 
     # How much feedback has the bot left on this PR?
-    has_threads = threads_info["total_bot_threads"] > 0
     has_body_comments = len(body_comments) > 0
 
     # Bot must have NO outstanding body-level comments.
@@ -182,7 +185,8 @@ def main():
             f"cannot be resolved. The bot must not approve while it has "
             f"unresolved comments of any kind",
             body_comments=body_comments,
-            head_sha=head_sha, **threads_info,
+            head_sha=head_sha,
+            **threads_info,
         )
 
     # Bot must have NO unresolved inline threads.
@@ -191,20 +195,22 @@ def main():
             f"{threads_info['unresolved_bot_threads']} of "
             f"{threads_info['total_bot_threads']} bot review threads "
             f"are still unresolved",
-            head_sha=head_sha, **threads_info,
+            head_sha=head_sha,
+            **threads_info,
         )
 
     # Bot must not have already approved at this SHA.
     if already_approved:
         fail(
             "Bot already approved at this SHA",
-            head_sha=head_sha, **threads_info,
+            head_sha=head_sha,
+            **threads_info,
         )
 
     # All clear — no outstanding comments of any kind.
     # This covers both: all prior threads resolved, or clean first
     # review with no comments.
-    total = threads_info['total_bot_threads']
+    total = threads_info["total_bot_threads"]
     if total > 0:
         reason = f"All {total} bot threads resolved, no outstanding comments"
     else:
