@@ -297,7 +297,6 @@ Only read the docs relevant to your story — don't load all of them every time.
    - Keep `status: "pending"`
    - Keep `branchName` (so we can continue on same branch next iteration)
    - Document failure in `./brave-core-bot/progress.txt`
-   - **Mark story as checked:** Add story ID to `run-state.json`'s `storiesCheckedThisRun` array (don't retry same story endlessly)
    - **END THE ITERATION** - Stop processing
 
 ## Retry Policy for Persistent Failures

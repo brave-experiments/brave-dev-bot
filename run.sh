@@ -186,6 +186,35 @@ while [ $loop_count -lt $MAX_ITERATIONS ]; do
 
   echo "Logging to: $ITERATION_LOG"
 
+  # Select next task deterministically
+  TASK_JSON=""
+  if [ -n "$EXTRA_PROMPT" ]; then
+    TASK_JSON=$(python3 "$SCRIPT_DIR/scripts/select-task.py" \
+      --prd "$PRD_FILE" \
+      --run-state "$RUN_STATE_FILE" \
+      --iteration-log "$ITERATION_LOG" \
+      --extra-prompt "$EXTRA_PROMPT") || true
+  else
+    TASK_JSON=$(python3 "$SCRIPT_DIR/scripts/select-task.py" \
+      --prd "$PRD_FILE" \
+      --run-state "$RUN_STATE_FILE" \
+      --iteration-log "$ITERATION_LOG") || true
+  fi
+
+  # Check if task was selected
+  TASK_SELECTED=$(echo "$TASK_JSON" | jq -r '.selected // false' 2>/dev/null || echo "false")
+  if [ "$TASK_SELECTED" != "true" ]; then
+    REASON=$(echo "$TASK_JSON" | jq -r '.reason // "unknown"' 2>/dev/null || echo "unknown")
+    echo "No more tasks to process: $REASON"
+    break
+  fi
+
+  STORY_ID=$(echo "$TASK_JSON" | jq -r '.storyId')
+  STORY_STATUS=$(echo "$TASK_JSON" | jq -r '.status')
+  TIER_NAME=$(echo "$TASK_JSON" | jq -r '.tierName')
+  STORY_TITLE=$(echo "$TASK_JSON" | jq -r '.title')
+  echo "Selected: $STORY_ID - $STORY_TITLE (status: $STORY_STATUS, tier: $TIER_NAME)"
+
   # Run Claude Code with the agent prompt
   # Use a temp file to capture output while allowing real-time streaming
   TEMP_OUTPUT=$(mktemp)
@@ -204,7 +233,11 @@ while [ $loop_count -lt $MAX_ITERATIONS ]; do
   # Always use opus model (which has extended thinking built-in)
   # In print mode: use stream-json output format with verbose flag to capture detailed execution logs
   # In TUI mode: omit --print to show the interactive TUI
-  CLAUDE_PROMPT="Follow the instructions in ./brave-core-bot/CLAUDE.md to execute one iteration of the autonomous agent workflow. The CLAUDE.md file contains the complete workflow and task selection algorithm."
+  CLAUDE_PROMPT="You are working on story $STORY_ID (current status: $STORY_STATUS).
+Read ./brave-core-bot/prd.json for full story details.
+Read ./brave-core-bot/progress.txt (check Codebase Patterns section).
+Follow ./brave-core-bot/docs/workflow-${STORY_STATUS}.md for the workflow.
+Follow the general instructions in ./brave-core-bot/CLAUDE.md."
   if [ -n "$EXTRA_PROMPT" ]; then
     CLAUDE_PROMPT="$CLAUDE_PROMPT
 

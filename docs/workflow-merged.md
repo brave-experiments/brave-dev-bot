@@ -295,10 +295,6 @@ gh pr comment <pr-number> --body "[same body as above]"
 
 See [progress-reporting.md](./progress-reporting.md) for the post-merge check format.
 
-### 8. Mark Story as Checked
-
-- Add story ID to `run-state.json`'s `storiesCheckedThisRun` array
-
 ## Important Notes
 
 - Post-merge rechecking does NOT require GitHub API calls during task selection - the decision is based purely on timestamps in prd.json

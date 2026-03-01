@@ -33,13 +33,10 @@ This documentation is split into focused files for better performance. Read only
 
 **CRITICAL: One Story Per Iteration**
 
-Each iteration:
-1. Pick ONE story based on priority (see workflow-state-machine.md)
-2. Execute the workflow for that story's status
-3. Update the PRD and progress.txt
-4. **END THE ITERATION** - Run `/exit` to end the session so the next iteration can start
-
-The next iteration will pick the next highest-priority story.
+Each iteration, the story to work on is pre-selected by `scripts/select-task.py` and provided in the prompt. Your job:
+1. Execute the workflow for that story's status
+2. Update the PRD and progress.txt
+3. **END THE ITERATION** - Run `/exit` to end the session so the next iteration can start
 
 ## Stop Condition
 
@@ -62,9 +59,9 @@ If ALL stories are merged, skipped, or invalid (no active stories remain), reply
 
 **Determine the brave-core-bot directory:** This CLAUDE.md file lives inside the `brave-core-bot/` directory. Use this file's path to derive the absolute path to that directory, and use it for all `./brave-core-bot/` references below. Do NOT assume your current working directory contains `brave-core-bot/` — you may be cd'd into `src/brave/` or another location.
 
+**The story to work on is provided in the prompt** — task selection is handled by `scripts/select-task.py` before this session starts. The prompt tells you the story ID and its current status.
+
 1. Sync brave-core-bot repo: `cd <absolute-path-to-brave-core-bot> && git fetch upstream && git reset upstream/master --hard` (if upstream doesn't exist, use origin instead). Then `cd -` to return to your previous directory.
-2. Read `<brave-core-bot>/prd.json` for stories
+2. Read `<brave-core-bot>/prd.json` to get the full details for the assigned story
 3. Read `<brave-core-bot>/progress.txt` (check Codebase Patterns section)
-4. Read `<brave-core-bot>/run-state.json` for current run state
-5. Follow **[docs/workflow-state-machine.md](./docs/workflow-state-machine.md)** for task selection
-6. Execute the workflow for the selected story's status (see status workflow docs above)
+4. Execute the workflow for the story's status (see status workflow docs above)

@@ -24,7 +24,6 @@ If a story has `status: "pushed"` with `prUrl` and `prNumber` already defined, t
      - Set `skipReason: "PR was closed without merging"`
    - Append to `./brave-core-bot/progress.txt`:
      - Document that PR was closed externally
-   - **Mark story as checked:** Add story ID to `run-state.json`'s `storiesCheckedThisRun` array
    - **END THE ITERATION** - Story is marked as invalid
 
    **If the PR state is "MERGED":**
@@ -110,7 +109,6 @@ Before merging, verify ALL of the following:
      - Set `mergedCheckCount` to `0`
      - Set `mergedCheckFinalState` to `false`
    - Append to `./brave-core-bot/progress.txt` (see [progress-reporting.md](./progress-reporting.md))
-   - **Mark story as checked:** Add story ID to `run-state.json`'s `storiesCheckedThisRun` array
 
 **IMPORTANT**: Always use `--squash` merge strategy to keep git history clean.
 
@@ -191,7 +189,6 @@ python3 ./brave-core-bot/scripts/business-hours-elapsed.py <reference-timestamp>
    - Skip the reminder (normal status check)
 
 - Append to `./brave-core-bot/progress.txt` documenting the status check (no new comments, and whether reminder was sent)
-- **Mark story as checked:** Add story ID to `run-state.json`'s `storiesCheckedThisRun` array (prevents checking same story repeatedly)
 - **END THE ITERATION** - Stop processing, don't continue to the next story
 - This story will be checked again in the next iteration for merge readiness or new review comments
 
@@ -258,10 +255,7 @@ Before implementing changes, analyze review comments to detect if the reviewer i
    - Document that reviewer indicated task is already complete
    - Include the skip reason
 
-5. **Mark story as checked:**
-   - Add story ID to `run-state.json`'s `storiesCheckedThisRun` array
-
-6. **END THE ITERATION** - Story is complete (marked as invalid)
+5. **END THE ITERATION** - Story is complete (marked as invalid)
 
 **If reviewer requests actual changes (not indicating task is already done), continue below:**
 
@@ -313,8 +307,6 @@ Before implementing changes, analyze review comments to detect if the reviewer i
   ```bash
   <brave-core-bot>/scripts/signal-notify.sh "Review addressed: PR #<pr-number> - <description of changes> https://github.com/brave/brave-core/pull/<pr-number>"
   ```
-- **Mark story as checked:** Add story ID to `run-state.json`'s `storiesCheckedThisRun` array
-
 **Learnable Pattern Evaluation Checklist** (do this after pushing):
 
 Follow **[docs/learnable-patterns.md](./learnable-patterns.md)** to evaluate whether the review feedback contains a learnable pattern and, if so, capture it.
@@ -325,7 +317,6 @@ Follow **[docs/learnable-patterns.md](./learnable-patterns.md)** to evaluate whe
 - Keep `status: "pushed"` (stays in review state)
 - Keep `lastActivityBy: "reviewer"` (still needs our response)
 - Document failure in `./brave-core-bot/progress.txt`
-- **Mark story as checked:** Add story ID to `run-state.json`'s `storiesCheckedThisRun` array (don't retry endlessly)
 - **END THE ITERATION** - Stop processing
 
 ## Retry Policy for Review Response Failures

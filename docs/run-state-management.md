@@ -24,9 +24,10 @@ To prioritize specific stories, pass the information as extra arguments to `run.
 
 ```bash
 ./run.sh 10 tui Prioritize US-012 first
+./run.sh 10 tui Work on the socket test fix
 ```
 
-Any text after `tui` (or after the iteration count if not using TUI mode) is passed as additional context to the agent prompt. The agent will read this and prioritize accordingly. This replaces any need for a dedicated configuration field — just tell the agent what to work on first via the run.sh argument.
+Any text after `tui` (or after the iteration count if not using TUI mode) is passed as `--extra-prompt` to `scripts/select-task.py`. The script calls `claude --model haiku` with the candidate story list and your prompt to select the best match (e.g., "work on the socket test" → US-002). If the LLM response is unparseable, selection falls back to the deterministic tier/priority algorithm.
 
 ## Skip Pushed Tasks Mode
 

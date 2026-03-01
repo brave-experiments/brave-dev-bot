@@ -108,11 +108,9 @@ EOF
      ```bash
      <brave-core-bot>/scripts/signal-notify.sh "PR created: #<number> - <title> https://github.com/brave/brave-core/pull/<number>"
      ```
-   - **Mark story as checked:** Add story ID to `run-state.json`'s `storiesCheckedThisRun` array
    - **END THE ITERATION** - Stop processing
 
 8. **If push or PR creation fails:**
    - DO NOT update status in prd.json (keep as "committed")
    - Document failure in `./brave-core-bot/progress.txt`
-   - **Mark story as checked:** Add story ID to `run-state.json`'s `storiesCheckedThisRun` array (don't retry endlessly)
    - **END THE ITERATION** - Stop processing
