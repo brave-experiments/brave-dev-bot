@@ -507,7 +507,6 @@ brave-core-bot/
 ├── LICENSE                    # MPL-2.0 license
 ├── setup.sh                   # Install hooks, validate config, create caches
 ├── run.sh                     # Main entry point (iterations, TUI mode)
-├── check-should-continue.sh   # Check if bot should continue iterating
 ├── reset-run-state.sh         # Reset run state between runs
 ├── prd.json                   # Product requirements (gitignored)
 ├── prd.example.json           # Example PRD template

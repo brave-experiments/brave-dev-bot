@@ -12,7 +12,7 @@ After any story status change to `"merged"`, the agent MUST:
 2. Update `progress.txt` with merge details
 3. **IMMEDIATELY run the stop condition check**:
    ```bash
-   ./brave-core-bot/check-should-continue.sh story-completed
+   ./brave-core-bot/scripts/check-should-continue.sh story-completed
    ```
 
 4. **Act on the exit code**:
@@ -35,7 +35,7 @@ Without this check, the agent may start working on the next story within the sam
 2. Find it's merged
 3. Update prd.json: US-003 status = "merged"
 4. Update progress.txt
-5. Run: ./check-should-continue.sh story-completed
+5. Run: ./scripts/check-should-continue.sh story-completed
 6. Script returns exit code 1 (STOP)
 7. END RESPONSE ← STOP HERE!
 
