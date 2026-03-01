@@ -1,4 +1,4 @@
-.PHONY: test lint format setup schedules
+.PHONY: test lint format setup schedules clean
 
 # Run the test suite
 test:
@@ -22,3 +22,7 @@ setup:
 # Install/update cron schedules
 schedules:
 	./scripts/sync-schedules.sh
+
+# Clean up generated/temporary files
+clean:
+	rm -f .run.lock

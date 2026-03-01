@@ -4,6 +4,11 @@
 
 set -e
 
+# Prevent concurrent runs — acquire an exclusive lock or exit immediately
+LOCKFILE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/.run.lock"
+exec 200>"$LOCKFILE"
+flock -n 200 || { echo "Another run.sh is already running. Exiting."; exit 0; }
+
 # Parse arguments
 MAX_ITERATIONS=10
 
