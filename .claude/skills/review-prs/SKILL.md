@@ -45,9 +45,9 @@ When invoked with `/review-prs [days|page<N>|#<PR>] [open|closed|all] [auto] [re
    PRs to review: [PR #12345](https://github.com/brave/brave-core/pull/12345) (title), [PR #12346](https://github.com/brave/brave-core/pull/12346) (title), ...
    Cached PRs for thread resolution: [PR #12347](https://github.com/brave/brave-core/pull/12347), ...
    ```
-3. **Review each PR** (from the `prs` array) one at a time using per-document parallel subagents (see Per-Document Review Workflow below)
-4. **Aggregate and present findings** from all document subagents
-5. **Update the cache for EVERY reviewed PR** — this is mandatory regardless of whether violations were found, comments were posted, or comments were skipped. See Step 6 in Per-Category Review Workflow.
+3. **Review each PR** (from the `prs` array) one at a time using parallel chunk subagents (see Per-Document Review Workflow below)
+4. **Aggregate and present findings** from all chunk subagents
+5. **Update the cache for EVERY reviewed PR** — this is mandatory regardless of whether violations were found, comments were posted, or comments were skipped. See Step 6 in Per-Document Review Workflow.
 6. **If AUTO_MODE**: post all violations immediately and log each result (see Auto Posting below — the per-PR logging and final summary are MANDATORY). **Otherwise**: draft each comment and ask user to approve before posting
 7. **Process cached PRs for thread resolution** — for each PR in the `cached_prs` array, run ONLY Step 1.6 (Acknowledge and Resolve) and Step 1.7 (Approve if settled). Do NOT launch subagents or do full reviews — these PRs have already been reviewed at the current SHA
 
@@ -57,7 +57,7 @@ When invoked with `/review-prs [days|page<N>|#<PR>] [open|closed|all] [auto] [re
 
 ## Per-Document Review Workflow
 
-**IMPORTANT:** The main context does NOT load best practices docs or PR diffs. Each PR is reviewed by multiple focused subagents — one per best-practice document — running in parallel. This ensures every rule is systematically checked rather than relying on a single subagent to hold many rules in mind.
+**IMPORTANT:** The main context does NOT load best practices docs or PR diffs. Each PR is reviewed by multiple focused subagents — one per chunk of ~20 rules — running in parallel. Large best-practice documents are split into evenly-sized chunks by a preprocessing script, so each subagent handles a focused set of rules. This ensures every rule is systematically checked rather than relying on a single subagent to hold many rules in mind.
 
 ### Step 0: Resolve Bot Username
 
@@ -208,30 +208,45 @@ python3 .claude/skills/review-prs/update-cache.py <PR_NUMBER> <HEAD_REF_OID> --a
 APPROVE: [PR #<number>](https://github.com/brave/brave-core/pull/<number>) (<title>) - all threads resolved, approved
 ```
 
-### Step 2: Launch Document Subagents in Parallel
+### Step 2: Chunk Documents and Launch Subagents in Parallel
 
-Launch one **Task subagent** (subagent_type: "general-purpose") per applicable best-practice document. **Use multiple Task tool calls in a single message** so they run in parallel. Pass the `PR_DIFF` content (fetched in Step 1) directly in each subagent's prompt so they don't need to fetch it again.
+For each applicable best-practice document, run the chunking script to split it into groups of ~20 rules, then launch one **Task subagent** (subagent_type: "general-purpose") per chunk. **Use multiple Task tool calls in a single message** so they run in parallel. Pass the `PR_DIFF` content (fetched in Step 1) directly in each subagent's prompt so they don't need to fetch it again.
 
-| Document | Doc to read | Condition |
-|----------|-------------|-----------|
-| **coding-standards** | `coding-standards.md` | has_cpp_files |
-| **coding-standards-memory** | `coding-standards-memory.md` | has_cpp_files |
-| **coding-standards-apis** | `coding-standards-apis.md` | has_cpp_files |
-| **architecture** | `architecture.md` | Always |
-| **documentation** | `documentation.md` | Always |
-| **build-system** | `build-system.md` | has_build_files |
-| **testing-async** | `testing-async.md` | has_test_files |
-| **testing-javascript** | `testing-javascript.md` | has_test_files |
-| **testing-navigation** | `testing-navigation.md` | has_test_files |
-| **testing-isolation** | `testing-isolation.md` | has_test_files |
-| **chromium-src** | `chromium-src-overrides.md` | has_chromium_src |
-| **frontend** | `frontend.md` | has_frontend_files |
-| **android** | `android.md` | has_android_files |
-| **ios** | `ios.md` | has_ios_files |
-| **patches** | `patches.md` | has_patch_files |
-| **nala** | `nala.md` | has_nala_files |
+**Chunking step:** For each applicable document, run:
+```bash
+python3 <brave-core-bot>/.claude/skills/review-prs/chunk-best-practices.py \
+  <brave-core-bot>/brave-core-tools/docs/best-practices/<doc>.md
+```
 
-All doc paths are under `./brave-core-tools/docs/best-practices/`.
+This outputs JSON with one or more chunks per document. Each chunk contains:
+- `doc`: the source document filename
+- `chunk_index` / `total_chunks`: position within the document
+- `rule_count`: number of `##` rules in this chunk
+- `headings`: list of rule heading texts (for the audit trail)
+- `content`: the full text to pass to the subagent (includes the doc header + the chunk's rules)
+
+Small documents (≤20 rules) produce 1 chunk. Large documents are split evenly (e.g., 65 rules → 3 chunks of 22+22+21). Launch one subagent per chunk.
+
+**Document applicability table:**
+
+| Document | Condition |
+|----------|-----------|
+| `coding-standards.md` | has_cpp_files |
+| `coding-standards-memory.md` | has_cpp_files |
+| `coding-standards-apis.md` | has_cpp_files |
+| `architecture.md` | Always |
+| `documentation.md` | Always |
+| `build-system.md` | has_build_files |
+| `testing-async.md` | has_test_files |
+| `testing-javascript.md` | has_test_files |
+| `testing-navigation.md` | has_test_files |
+| `testing-isolation.md` | has_test_files |
+| `chromium-src-overrides.md` | has_chromium_src |
+| `frontend.md` | has_frontend_files |
+| `android.md` | has_android_files |
+| `ios.md` | has_ios_files |
+| `patches.md` | has_patch_files |
+| `nala.md` | has_nala_files |
 
 **Always launch at minimum:** architecture and documentation (apply to all PRs — layering, dependency injection, factory patterns, and documentation standards affect every change).
 
@@ -240,7 +255,13 @@ All doc paths are under `./brave-core-tools/docs/best-practices/`.
 Each subagent prompt MUST include:
 
 1. **The PR number and repo** (`brave/brave-core`)
-2. **Which best practice doc to read** — only the one for this subagent (paths above)
+2. **The chunk content** — embed the `content` field from the chunking script output directly in the prompt. The subagent does NOT read any files — all rules are provided inline. Include it like:
+   ````
+   Here are the best practice rules to check:
+   ```markdown
+   <chunk content>
+   ```
+   ````
 3. **The PR diff content** — include the full diff text (fetched once in Step 1) directly in the prompt. The subagent MUST NOT call `gh pr diff` — the diff is already provided. Embed it in the prompt like:
    ````
    Here is the PR diff:
@@ -265,9 +286,9 @@ Each subagent prompt MUST include:
    ```
    For example, if the heading has `<a id="CS-042"></a>` above it, the link is `...coding-standards.md#CS-042`.
 
-   **CRITICAL: The `rule_link` fragment MUST be an exact `<a id="...">` value from the document you read.** Look for the `<a id="..."></a>` tag on the line before the heading you're referencing and use that ID verbatim. Do NOT invent IDs, guess ID numbers, or construct anchors from heading text. If no `<a id>` tag exists for the rule, or if your observation is a general bug/correctness issue that doesn't map to any specific heading, omit the `rule_link` field entirely.
+   **CRITICAL: The `rule_link` fragment MUST be an exact `<a id="...">` value from the rules provided in your chunk.** Look for the `<a id="..."></a>` tag on the line before the heading you're referencing and use that ID verbatim. Do NOT invent IDs, guess ID numbers, or construct anchors from heading text. If no `<a id>` tag exists for the rule, or if your observation is a general bug/correctness issue that doesn't map to any specific heading, omit the `rule_link` field entirely.
 
-   **CRITICAL: Do NOT invent rules or claim things are deprecated/banned without verification.** Every best-practice violation you flag MUST correspond to an actual rule you read in the best practices document assigned to you. If you cannot point to the specific heading in the document that contains the rule, do not flag it. Do not rely on general knowledge about Chromium conventions — only flag what is explicitly documented. A hallucinated rule (e.g., claiming an API is "deprecated" when the docs say nothing about it) erodes developer trust and is worse than no comment at all.
+   **CRITICAL: Do NOT invent rules or claim things are deprecated/banned without verification.** Every best-practice violation you flag MUST correspond to an actual rule provided in your chunk. If you cannot point to the specific heading in the provided rules that contains the rule, do not flag it. Do not rely on general knowledge about Chromium conventions — only flag what is explicitly documented. A hallucinated rule (e.g., claiming an API is "deprecated" when the rules say nothing about it) erodes developer trust and is worse than no comment at all.
 6. **Prior comments context (re-review awareness)** — if prior comments exist from Step 1.5, include them in the subagent prompt with these rules:
    - **Do NOT re-raise issues that the author or a reviewer has already explained or justified.** If a prior comment thread shows the author explaining why a design choice was made (e.g., "only two subclasses will ever use this, both pass constants"), accept that explanation and do not flag the same issue again.
    - **Do NOT repeat your own previous comments.** If a comment from the bot (identified by `$BOT_USERNAME` from Step 0) already raised the same point, skip it — even if the code hasn't changed. The author has already seen it.
@@ -281,7 +302,7 @@ Each subagent prompt MUST include:
 
 **CRITICAL — this is what prevents the subagent from stopping after finding a few violations.**
 
-The subagent MUST work through its best practice doc **heading by heading**, checking every `##` rule against the diff. It must output an audit trail listing EVERY `##` heading with a verdict:
+The subagent MUST work through its chunk **heading by heading**, checking every `##` rule against the diff. It must output an audit trail listing EVERY `##` heading in the chunk with a verdict:
 
 ```
 AUDIT:
@@ -290,7 +311,7 @@ PASS: ✅ Use Positive Form for Booleans and Methods
 N/A: ✅ Consistent Naming Across Layers
 FAIL: ❌ Don't Use rapidjson
 PASS: ✅ Use CHECK for Impossible Conditions
-... (one entry per ## heading in the doc)
+... (one entry per ## heading in the chunk)
 ```
 
 Verdicts:
@@ -305,14 +326,14 @@ This forces the model to explicitly consider every rule rather than satisficing 
 Each subagent MUST return this structured format:
 
 ```
-DOCUMENT: <document name>
+DOCUMENT: <document name> (chunk <chunk_index+1>/<total_chunks>)
 [PR #<number>](https://github.com/brave/brave-core/pull/<number>): <title>
 
 AUDIT:
 PASS: <rule heading>
 N/A: <rule heading>
 FAIL: <rule heading>
-... (one line per ## heading in the doc)
+... (one line per ## heading in the chunk)
 
 SKIPPED_PRIOR:
 - file: <path>, issue: <brief description>, reason: <why not re-raised — e.g., "author explained in prior comment that only constant strings are passed", "already flagged in previous review">
@@ -333,20 +354,20 @@ The `SKIPPED_PRIOR` section provides transparency about issues that were intenti
 
 ### Step 6: Aggregate and Process Results
 
-Process PRs **one at a time** (sequentially). After ALL document subagents return for a PR:
+Process PRs **one at a time** (sequentially). After ALL chunk subagents return for a PR:
 
 1. **Update the cache immediately** — run the cache update script right now, before doing anything else:
    ```bash
    python3 .claude/skills/review-prs/update-cache.py <PR_NUMBER> <HEAD_REF_OID>
    ```
    **This step is MANDATORY after every single PR review — regardless of outcome.** Update the cache even when:
-   - No violations were found (all categories returned NO_VIOLATIONS)
+   - No violations were found (all chunks returned NO_VIOLATIONS)
    - All violations were skipped due to re-review restraint (all SKIPPED_PRIOR)
    - The user rejects all comments in interactive mode
    - Comments fail to post due to API errors
 
    The cache tracks "we reviewed this SHA", not "we posted comments". Skipping this causes the same PR to be re-reviewed on the next run, wasting time and risking duplicate comments.
-2. **Aggregate and prioritize violations** from all document subagents into a single list for the PR. **CRITICAL: Only extract the VIOLATIONS entries from subagent output.** The AUDIT trail, SKIPPED_PRIOR section, DOCUMENT header, and any other subagent working output are internal-only — they must NEVER appear in any GitHub review body, inline comment, or PR comment. Only the `draft_comment` text from each violation is posted.
+2. **Aggregate and prioritize violations** from all chunk subagents into a single list for the PR. **CRITICAL: Only extract the VIOLATIONS entries from subagent output.** The AUDIT trail, SKIPPED_PRIOR section, DOCUMENT header, and any other subagent working output are internal-only — they must NEVER appear in any GitHub review body, inline comment, or PR comment. Only the `draft_comment` text from each violation is posted.
 
    **Prioritization and cap (IMPORTANT):** Sort violations by severity: high → medium → low. Then apply these rules:
    - **Post at most 5 comments per PR.** Developers get overwhelmed by walls of review comments. Focus on what matters most.
@@ -362,7 +383,7 @@ Process PRs **one at a time** (sequentially). After ALL document subagents retur
    ```
    If the ID is invalid (exit code 1), strip the `[best practice](...)` link from the `draft_comment` text before posting. Log: `INVALID_LINK: stripped broken link #<ID> from <file>:<line>`. The comment text itself is still posted — only the broken link is removed.
 
-   **Violations missing `rule_link` must be recovered or dropped — unless they are genuine bug/correctness/security findings.** Best-practice-style comments (style, conventions, patterns) must cite a specific rule so developers can understand the basis and push back. If a subagent returns such a violation without a `rule_link`, search the subagent's best practice document for a heading that matches the violation's subject. If a matching rule with an `<a id>` anchor exists, add the `rule_link` and post. If no matching rule exists, drop it — log: `DROPPED: no rule_link for <file>:<line> — "<draft_comment snippet>"`. However, high-severity findings (real bugs, correctness issues, security vulnerabilities, logic errors) may be posted without a `rule_link` since they don't need a style guide to justify them.
+   **Violations missing `rule_link` must be recovered or dropped — unless they are genuine bug/correctness/security findings.** Best-practice-style comments (style, conventions, patterns) must cite a specific rule so developers can understand the basis and push back. If a subagent returns such a violation without a `rule_link`, search the chunk content for a heading that matches the violation's subject. If a matching rule with an `<a id>` anchor exists, add the `rule_link` and post. If no matching rule exists, drop it — log: `DROPPED: no rule_link for <file>:<line> — "<draft_comment snippet>"`. However, high-severity findings (real bugs, correctness issues, security vulnerabilities, logic errors) may be posted without a `rule_link` since they don't need a style guide to justify them.
 4. **Deep-dive validation and enhancement** — before posting, you MUST validate and enhance every remaining violation (typically 1–8 comments at this point) by reading the actual source code. This is a mandatory phase that ensures accuracy and improves comment quality.
 
    **Source code paths:** The brave-core source tree is at `src/brave/` relative to the brave-browser root (the parent of the `brave-core-bot/` directory). Chromium source is at `src/`. Use the absolute path derived from the brave-core-bot directory (e.g., if brave-core-bot is at `/path/to/brave-browser/brave-core-bot`, then source files are at `/path/to/brave-browser/src/brave/<file>` and `/path/to/brave-browser/src/<file>`). File paths in violations are relative to the `src/brave/` root (e.g., a violation at `components/foo/bar.cc` means `src/brave/components/foo/bar.cc`).
@@ -555,9 +576,9 @@ REVIEW_URL=$(echo "$REVIEW_RESPONSE" | python3 -c "import sys,json; print(json.l
 
 ### Posting Flow
 
-**Before any posting logic**, update the cache for this PR (see Step 6 in Per-Category Review Workflow). The cache must be updated even if there are no violations or all violations were skipped.
+**Before any posting logic**, update the cache for this PR (see Step 6 in Per-Document Review Workflow). The cache must be updated even if there are no violations or all violations were skipped.
 
-1. Collect all violations from all document subagents for the PR
+1. Collect all violations from all chunk subagents for the PR
 2. **Deduplicate against existing bot comments (MANDATORY)** — before posting, fetch all existing bot comments on the PR and drop any violation that the bot already commented on:
    ```bash
    gh api "repos/brave/brave-core/pulls/{number}/comments" --paginate \

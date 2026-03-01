@@ -9,6 +9,9 @@ import pytest
 
 SCRIPTS_DIR = os.path.join(os.path.dirname(__file__), os.pardir, "scripts")
 ROOT_DIR = os.path.join(os.path.dirname(__file__), os.pardir)
+SKILLS_DIR = os.path.join(
+    os.path.dirname(__file__), os.pardir, ".claude", "skills"
+)
 
 
 def _load_module(name, path):
@@ -50,6 +53,14 @@ def check_prd_has_work():
     return _load_module(
         "check_prd_has_work",
         os.path.join(ROOT_DIR, "check-prd-has-work.py"),
+    )
+
+
+@pytest.fixture
+def chunk_best_practices():
+    return _load_module(
+        "chunk_best_practices",
+        os.path.join(SKILLS_DIR, "review-prs", "chunk-best-practices.py"),
     )
 
 
