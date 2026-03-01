@@ -4,12 +4,19 @@ Automated tests for brave-core-bot with proper exit codes.
 
 ## Running Tests
 
+**Python unit tests** (pure logic, fast, no network):
+```bash
+cd brave-core-bot
+python3 -m pytest tests/
+```
+
+**Bash integration tests** (GitHub API, file structure, hooks):
 ```bash
 cd brave-core-bot
 ./tests/test-suite.sh
 ```
 
-**Exit codes:**
+**Exit codes (test-suite.sh):**
 - `0` = All tests passed
 - `1` = One or more tests failed
 
