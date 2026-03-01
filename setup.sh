@@ -119,17 +119,16 @@ echo "✓ Pre-commit hook installed to $BOT_HOOK_DEST"
 echo "  (Prevents committing prd.json, progress.txt, run-state.json)"
 echo ""
 
-# Create org members cache for prompt injection protection
-ORG_MEMBERS_DIR="$SCRIPT_DIR/.ignore"
-ORG_MEMBERS_FILE="$ORG_MEMBERS_DIR/org-members.txt"
-mkdir -p "$ORG_MEMBERS_DIR"
+# Check org members cache exists (manually maintained, never auto-generated)
+ORG_MEMBERS_FILE="$SCRIPT_DIR/.ignore/org-members.txt"
+mkdir -p "$SCRIPT_DIR/.ignore"
 
-echo "Fetching Brave org members list..."
-if gh api "orgs/brave/members" --paginate 2>/dev/null | jq -r '.[].login' > "$ORG_MEMBERS_FILE"; then
-  echo "✓ Org members cached: $(wc -l < "$ORG_MEMBERS_FILE") members → $ORG_MEMBERS_FILE"
+if [ -f "$ORG_MEMBERS_FILE" ]; then
+  echo "✓ Org members file found: $(wc -l < "$ORG_MEMBERS_FILE") members"
 else
-  echo "⚠️  Warning: Could not fetch org members. You may need to create it manually:"
-  echo "  gh api 'orgs/brave/members' --paginate | jq -r '.[].login' > $ORG_MEMBERS_FILE"
+  echo "⚠️  Warning: Org members file not found at $ORG_MEMBERS_FILE"
+  echo "   This file must be created manually. It is never auto-generated."
+  echo "   Create it with one GitHub username per line."
 fi
 echo ""
 
