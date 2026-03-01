@@ -172,11 +172,10 @@ The script checks programmatically and returns:
 - **Exit code 0** + `"can_approve": true` → safe to approve
 - **Exit code 1** + `"can_approve": false` + `"reason"` → do NOT approve, log the reason
 
-The principle is simple: **only approve if the bot has reviewed the PR AND has zero outstanding comments of any kind.** The script checks:
-1. The bot has left some feedback (threads or comments) — i.e., it actually reviewed
-2. No body-level review comments exist (these have no resolution mechanism and always block)
-3. All inline review threads are resolved
-4. The bot hasn't already approved at the current SHA
+The principle is simple: **only approve if the bot has zero outstanding comments of any kind.** A clean first review with no violations (zero prior comments) is a valid approval. The script checks:
+1. No body-level review comments exist (these have no resolution mechanism and always block)
+2. All inline review threads are resolved
+3. The bot hasn't already approved at the current SHA
 
 **CRITICAL: If the script returns exit code 1, you MUST NOT submit an APPROVE review. No exceptions. No overrides. No reinterpretation of the reason text. The script is the single source of truth. ANY non-zero exit code means DO NOT APPROVE — regardless of what the "reason" field says.**
 
@@ -199,7 +198,6 @@ python3 .claude/skills/review-prs/update-cache.py <PR_NUMBER> <HEAD_REF_OID> --a
 
 **When NOT to approve (enforced by the gate script):**
 - If the bot has ANY outstanding comments — inline threads or body-level review comments. If the bot raised a concern, it must not approve until that concern is resolved.
-- If the bot never left any comments on this PR (hasn't reviewed — don't approve something you haven't reviewed)
 - If the bot already approved at this SHA
 - If Step 2 (full review) is about to run and may find new violations — for full reviews, defer approval to Step 6 after aggregation
 
@@ -383,11 +381,7 @@ Process PRs **one at a time** (sequentially). After ALL document subagents retur
 
 5. **If AUTO_MODE**: post the prioritized violations using the inline review API (see Auto Posting below), then move to the next PR
 6. **If interactive mode**: present the prioritized violations to the user for approval before moving to the next PR
-7. **If no violations across all categories**: run the approval gate script to verify all prior bot threads are resolved before approving:
-   ```bash
-   python3 ./brave-core-bot/scripts/check-can-approve.py {number} "$BOT_USERNAME"
-   ```
-   **Only if exit code is 0** (`"can_approve": true`): submit an APPROVE review and mark as settled using `--approve` (see Step 1.7). This completes the bot's engagement with this PR — future runs will skip it entirely. Log: `APPROVE: [PR #<number>](...) - no violations, approved`. **If exit code is 1: do NOT approve** — log the reason and move on. The bot will re-check on the next run.
+7. **If no violations across all categories**: run the approval gate script (see Step 1.7). A clean review with no violations is a valid reason to approve, even on first review with zero prior comments. **Only if exit code is 0**: submit an APPROVE review and mark as settled using `--approve`. This completes the bot's engagement with this PR — future runs will skip it entirely. Log: `APPROVE: [PR #<number>](...) - no violations, approved`. **If exit code is 1: do NOT approve** — log the reason and move on.
 8. **If violations were posted**: do NOT approve. The bot will re-check this PR on the next run after the developer addresses the feedback
 
 **PR Link Format (CRITICAL):** When displaying PR numbers to the user, ALWAYS use a full markdown link with the `brave/brave-core` URL: `[PR #<number>](https://github.com/brave/brave-core/pull/<number>) - <title>`. **NEVER use bare `#<number>` references** — the TUI auto-links them against the current repo's git remote (`brave-experiments/brave-core-bot`), sending users to the wrong repository. Every single PR number shown to the user must be a full `https://github.com/brave/brave-core/pull/` link.

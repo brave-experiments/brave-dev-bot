@@ -2,8 +2,9 @@
 """
 Gate check before the bot approves a PR.
 
-The bot should ONLY approve when it has reviewed the PR AND has
-zero outstanding comments of any kind — inline threads or body-level.
+The bot should ONLY approve when it has zero outstanding comments
+of any kind — inline threads or body-level. A clean first review
+with no violations (zero prior comments) is a valid approval.
 
 Exit code 0 + "can_approve": true  → safe to approve
 Exit code 1 + "can_approve": false → do NOT approve
@@ -172,13 +173,6 @@ def main():
     has_threads = threads_info["total_bot_threads"] > 0
     has_body_comments = len(body_comments) > 0
 
-    # Bot must have reviewed the PR (left some form of feedback)
-    if not has_threads and not has_body_comments:
-        fail(
-            "Bot has not left any comments on this PR",
-            head_sha=head_sha, **threads_info,
-        )
-
     # Bot must have NO outstanding body-level comments.
     # These have no resolution mechanism — they always block.
     if has_body_comments:
@@ -207,14 +201,17 @@ def main():
             head_sha=head_sha, **threads_info,
         )
 
-    # All clear — bot has reviewed, all feedback is resolved, no
-    # outstanding comments of any kind.
+    # All clear — no outstanding comments of any kind.
+    # This covers both: all prior threads resolved, or clean first
+    # review with no comments.
+    total = threads_info['total_bot_threads']
+    if total > 0:
+        reason = f"All {total} bot threads resolved, no outstanding comments"
+    else:
+        reason = "Clean review — no prior comments, no outstanding issues"
     result = {
         "can_approve": True,
-        "reason": (
-            f"All {threads_info['total_bot_threads']} bot threads resolved, "
-            f"no outstanding comments"
-        ),
+        "reason": reason,
         "head_sha": head_sha,
         **threads_info,
     }
