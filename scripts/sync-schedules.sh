@@ -25,7 +25,7 @@ PATH=/home/bbondy/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/
 0 4,13 * * * cd $PROJECT_ROOT && git fetch origin && git checkout master && git reset --hard origin/master && git submodule update --init --recursive && source .envrc && ./run.sh 3 >> $LOG_DIR/run-cron.log 2>&1
 
 # Review PRs — skip if no recent open PRs
-0 5,8,10,12,14,16,18,20 * * * cd $PROJECT_ROOT && git fetch origin && git checkout master && git reset --hard origin/master && git submodule update --init --recursive && source .envrc && ./scripts/check-new-prs.sh && $CLAUDE_BIN -p '/review-prs 1d open auto reviewer-priority' --allowedTools '$CLAUDE_TOOLS' >> $LOG_DIR/review-prs-cron.log 2>&1
+0 2,5,8-20,23 * * * cd $PROJECT_ROOT && git fetch origin && git checkout master && git reset --hard origin/master && git submodule update --init --recursive && source .envrc && ./scripts/check-new-prs.sh && $CLAUDE_BIN -p '/review-prs 1d open auto reviewer-priority' --allowedTools '$CLAUDE_TOOLS' >> $LOG_DIR/review-prs-cron.log 2>&1
 
 # Learnable pattern search — skip if no recent merged PRs
 0 6 * * * cd $PROJECT_ROOT && git fetch origin && git checkout master && git reset --hard origin/master && git submodule update --init --recursive && source .envrc && ./scripts/check-bot-prs.sh && $CLAUDE_BIN -p '/learnable-pattern-search 2d' --allowedTools '$CLAUDE_TOOLS' >> $LOG_DIR/learnable-pattern-search-cron.log 2>&1
@@ -59,7 +59,7 @@ echo "  00:01 - sync src/brave origin/master from upstream"
 echo "  Every hour at :05 - /check-signal (only if messages pending)"
 echo "  03:00 - /add-backlog-to-prd"
 echo "  04:00 - run.sh (3 iterations)"
-echo "  05:00, 08-20 (even) - /review-prs"
+echo "  08:00-20:00 (hourly), 23:00, 02:00, 05:00 - /review-prs"
 echo "  06:00 - /learnable-pattern-search"
 echo "  11:00 - /add-backlog-to-prd"
 echo "  13:00 - run.sh (3 iterations)"
