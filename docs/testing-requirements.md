@@ -13,6 +13,16 @@
 - DO NOT commit code unless ALL acceptance criteria tests pass
 - DO NOT rationalize skipping tests for any reason
 
+## Headless / SSH Environments (Linux)
+
+On Linux without a display server, browser tests will crash with errors like `kElementOffscreen`, X display errors, or `message_pump` DCHECKs. Use `xvfb-run` to provide a virtual display:
+
+```bash
+xvfb-run ./browser_tests --gtest_filter=YourTest.*
+```
+
+If `xvfb-run` is not available, install it with `sudo apt-get install xvfb`. On macOS, browser tests run natively without a virtual display.
+
 ## Test Scope: Run ALL Tests in File
 
 **CRITICAL: When running tests, run ALL tests within the entire test file, not just a single test fixture.**

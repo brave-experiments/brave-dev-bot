@@ -132,6 +132,19 @@ else
 fi
 echo ""
 
+# Check for xvfb on Linux (needed for browser tests in headless/SSH environments)
+if [[ "$(uname)" == "Linux" ]]; then
+  if ! command -v xvfb-run &> /dev/null; then
+    echo "⚠️  Warning: xvfb-run not found"
+    echo "   Browser tests require a display server. On headless Linux (SSH, CI), install xvfb:"
+    echo "   sudo apt-get install xvfb"
+    echo ""
+  else
+    echo "✓ xvfb-run found (needed for browser tests in headless environments)"
+    echo ""
+  fi
+fi
+
 echo "==================================="
 echo "  Setup Complete!"
 echo "==================================="
