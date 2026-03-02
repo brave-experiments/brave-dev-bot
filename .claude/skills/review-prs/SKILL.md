@@ -620,13 +620,20 @@ RESULTS:
 
 ### Signal Notification (after final summary)
 
-After printing the final summary, send a Signal notification with a concise summary:
+After printing the final summary, send a Signal notification. The message MUST include a link to every PR processed, so the recipient can navigate directly to each one. Format:
 
 ```bash
-<brave-core-bot>/scripts/signal-notify.sh "Review complete: <N> PRs reviewed, <M> with violations, <T> comments posted. Violations: <list of PR links with violations, e.g. https://github.com/brave/brave-core/pull/12345, https://github.com/brave/brave-core/pull/12346>"
+<brave-core-bot>/scripts/signal-notify.sh "Review complete: <N> PRs reviewed, <M> with violations, <T> comments posted.
+✅ Approved: https://github.com/brave/brave-core/pull/111, https://github.com/brave/brave-core/pull/222
+❌ Violations: https://github.com/brave/brave-core/pull/333
+⏭️ Skipped: https://github.com/brave/brave-core/pull/444"
 ```
 
-This is a no-op if Signal is not configured.
+Rules:
+- **Always include links to ALL PRs** — approved, violations, skipped, cached, blocked — grouped by outcome
+- Omit a category line if it has zero PRs (e.g., omit "Violations:" if none)
+- For cached PRs, append "(cached)" after the link
+- This is a no-op if Signal is not configured
 
 ---
 
