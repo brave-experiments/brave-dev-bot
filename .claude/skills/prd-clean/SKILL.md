@@ -8,7 +8,7 @@ description: "Archive merged and invalid stories from prd.json to prd.archived.j
 Run the following command and display its output to the user:
 
 ```bash
-python3 .claude/skills/prd-clean/clean-prd.py ./data/prd.json
+python3 scripts/archive-prd.py ./data/prd.json
 ```
 
 The script handles everything: reading prd.json, archiving merged/invalid stories to prd.archived.json, updating prd.json in-place, and printing a full recap. If there are errors they will be printed to stderr.
