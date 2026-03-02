@@ -5,6 +5,7 @@
 data/prd.json
 data/prd.archived.json
 data/progress.txt
+data/progress.archived.txt
 data/run-state.json
 .last-branch
 

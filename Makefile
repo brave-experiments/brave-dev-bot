@@ -1,4 +1,4 @@
-.PHONY: test lint format setup schedules clean
+.PHONY: test lint format setup schedules clean archive archive-progress archive-prd
 
 # Run the test suite
 test:
@@ -22,6 +22,24 @@ setup:
 # Install/update cron schedules
 schedules:
 	./scripts/sync-schedules.sh
+
+# Archive progress.txt (append to progress.archived.txt, reset progress.txt)
+archive-progress:
+	@if [ ! -f data/progress.txt ]; then echo "No progress.txt to archive."; exit 0; fi
+	@echo "Archiving progress.txt..."
+	@cat data/progress.txt >> data/progress.archived.txt
+	@echo "" >> data/progress.archived.txt
+	@echo "# Progress Log" > data/progress.txt
+	@echo "Started: $$(date)" >> data/progress.txt
+	@echo "---" >> data/progress.txt
+	@echo "Archived $$(wc -l < data/progress.archived.txt) lines to progress.archived.txt"
+
+# Archive completed PRD stories (merged/invalid → prd.archived.json)
+archive-prd:
+	python3 scripts/archive-prd.py data/prd.json
+
+# Archive both progress.txt and completed PRD stories
+archive: archive-progress archive-prd
 
 # Clean up generated/temporary files
 clean:
