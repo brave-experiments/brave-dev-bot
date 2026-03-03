@@ -148,14 +148,6 @@ work_iteration=0
 while [ $loop_count -lt $MAX_ITERATIONS ]; do
   ((++loop_count))
 
-  # Sync brave-core-bot repo to latest upstream master before each iteration
-  echo "Syncing brave-core-bot to upstream/master..."
-  cd "$SCRIPT_DIR"
-  git fetch upstream 2>/dev/null || git fetch origin
-  git checkout master 2>/dev/null
-  git reset --hard upstream/master 2>/dev/null || git reset --hard origin/master
-  cd - > /dev/null
-
   # Check if PRD still has active stories before each iteration
   if ! python3 "$SCRIPT_DIR/scripts/check-prd-has-work.py" > /dev/null 2>&1; then
     echo ""

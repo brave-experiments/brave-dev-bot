@@ -73,6 +73,5 @@ If ALL stories are merged, skipped, or invalid (no active stories remain), reply
 
 **The story to work on is provided in the prompt** — task selection is handled by `scripts/select-task.py` before this session starts. The prompt includes the story ID, status, full story details JSON, and PRD config JSON. Do NOT read prd.json to get story details — use the JSON provided in the prompt.
 
-1. Sync brave-core-bot repo: `cd <absolute-path-to-brave-core-bot> && git fetch upstream && git reset upstream/master --hard` (if upstream doesn't exist, use origin instead). Then `cd -` to return to your previous directory.
-2. Parse the story details and config from the prompt (already provided — no need to read prd.json)
-3. Execute the workflow for the story's status (see status workflow docs above)
+1. Parse the story details and config from the prompt (already provided — no need to read prd.json)
+2. Execute the workflow for the story's status (see status workflow docs above)
