@@ -40,6 +40,13 @@ If a story has `status: "pushed"` with `prUrl` and `prNumber` already defined, t
    ```
    Example: `<brave-core-bot>/scripts/filter-pr-reviews.sh 33512 markdown brave/brave-core`
 
+## PR Merge Policy
+
+- **NEVER** ask for admin privileges to force merge PRs on GitHub
+- **NEVER** merge PRs yourself — wait for the maintainer/reviewer to merge
+- PRs should go through the normal review and merge process
+- Only merge when the PR has proper approvals and all CI checks pass
+
 ## Step 1: Check if PR is Ready to Merge (ALWAYS DO THIS FIRST)
 
 Even if `lastActivityBy: "bot"`, always check merge readiness to prevent stuck states.
