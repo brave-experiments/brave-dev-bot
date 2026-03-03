@@ -19,11 +19,11 @@ CRON_JOBS=$(cat <<EOF
 SHELL=/bin/bash
 PATH=/home/bbondy/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin
 
-# Add backlog to PRD (1 hour before each run.sh) — skip if no prd.json
-0 3,11 * * * cd $PROJECT_ROOT && git fetch origin && git checkout master && git reset --hard origin/master && git submodule update --init --recursive && source .envrc && ./scripts/check-has-prd.sh && $CLAUDE_BIN -p '/add-backlog-to-prd' --allowedTools '$CLAUDE_TOOLS' >> $LOG_DIR/add-backlog-cron.log 2>&1
+# Add backlog to PRD (15 min before each run.sh) — skip if no prd.json
+45 3,7,11,15,19,23 * * * cd $PROJECT_ROOT && git fetch origin && git checkout master && git reset --hard origin/master && git submodule update --init --recursive && source .envrc && ./scripts/check-has-prd.sh && $CLAUDE_BIN -p '/add-backlog-to-prd' --allowedTools '$CLAUDE_TOOLS' >> $LOG_DIR/add-backlog-cron.log 2>&1
 
 # Main agent run — run.sh has its own prd check built in
-0 4,13 * * * cd $PROJECT_ROOT && git fetch origin && git checkout master && git reset --hard origin/master && git submodule update --init --recursive && source .envrc && ./run.sh 3 >> $LOG_DIR/run-cron.log 2>&1
+10 0,4,8,12,16,20 * * * cd $PROJECT_ROOT && git fetch origin && git checkout master && git reset --hard origin/master && git submodule update --init --recursive && source .envrc && ./run.sh 3 >> $LOG_DIR/run-cron.log 2>&1
 
 # Review PRs — skip if no recent open PRs
 0 2,5,8-20,23 * * * cd $PROJECT_ROOT && git fetch origin && git checkout master && git reset --hard origin/master && git submodule update --init --recursive && source .envrc && ./scripts/check-new-prs.sh && $CLAUDE_BIN -p '/review-prs 1d open auto reviewer-priority' --allowedTools '$CLAUDE_TOOLS' >> $LOG_DIR/review-prs-cron.log 2>&1
@@ -57,12 +57,11 @@ echo "Cron jobs installed successfully."
 echo ""
 echo "Current schedule:"
 echo "  00:01 - sync src/brave origin/master from upstream"
+echo "  00:10 - run.sh (3 iterations)"
 echo "  Every hour at :05 - /check-signal (only if messages pending)"
-echo "  03:00 - /add-backlog-to-prd"
-echo "  04:00 - run.sh (3 iterations)"
+echo "  03:45, 07:45, 11:45, 15:45, 19:45, 23:45 - /add-backlog-to-prd"
+echo "  04:00, 08:00, 12:00, 16:00, 20:00 - run.sh (3 iterations)"
 echo "  08:00-20:00 (hourly), 23:00, 02:00, 05:00 - /review-prs"
 echo "  06:00 - /learnable-pattern-search"
-echo "  11:00 - /add-backlog-to-prd"
-echo "  13:00 - run.sh (3 iterations)"
 echo ""
 crontab -l
