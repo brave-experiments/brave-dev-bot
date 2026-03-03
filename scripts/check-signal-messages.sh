@@ -2,6 +2,7 @@
 # Pre-check script for Signal message processing cron job.
 # Receives pending Signal messages, filters for the configured recipient,
 # deduplicates against a cache, and writes pending messages to a file.
+# Supports text messages and audio voice messages (transcribed via faster-whisper).
 #
 # Exit codes:
 #   0 - New messages found, written to .ignore/signal-pending-messages.json
@@ -15,6 +16,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 CACHE_FILE="$BOT_DIR/.ignore/signal-messages-cache.json"
 PENDING_FILE="$BOT_DIR/.ignore/signal-pending-messages.json"
+TRANSCRIBE_SCRIPT="$SCRIPT_DIR/transcribe-audio.py"
 
 # --- Pre-checks (exit silently if not configured) ---
 
@@ -40,10 +42,43 @@ python3 -c "
 import json
 import sys
 import os
+import subprocess
 
 signal_recipient = os.environ.get('SIGNAL_RECIPIENT', '')
 cache_file = '$CACHE_FILE'
 pending_file = '$PENDING_FILE'
+transcribe_script = '$TRANSCRIBE_SCRIPT'
+signal_attachments_dir = os.path.expanduser(
+    '~/.var/app/org.asamk.SignalCli/data/signal-cli/attachments'
+)
+
+AUDIO_CONTENT_TYPES = {'audio/aac', 'audio/mp4', 'audio/mpeg', 'audio/ogg',
+                       'audio/wav', 'audio/x-m4a', 'audio/mp4a-latm'}
+
+def transcribe_audio(attachment_id):
+    \"\"\"Transcribe an audio attachment to text. Returns text or None.\"\"\"
+    if not os.path.isdir(signal_attachments_dir):
+        return None
+    for fname in os.listdir(signal_attachments_dir):
+        if fname.startswith(attachment_id):
+            audio_path = os.path.join(signal_attachments_dir, fname)
+            break
+    else:
+        return None
+    try:
+        uv_path = os.path.expanduser('~/.local/bin/uv')
+        if not os.path.exists(uv_path):
+            uv_path = 'uv'
+        result = subprocess.run(
+            [uv_path, 'run', '--with', 'faster-whisper', 'python3',
+             transcribe_script, audio_path],
+            capture_output=True, text=True, timeout=120
+        )
+        if result.returncode == 0 and result.stdout.strip():
+            return result.stdout.strip()
+    except (subprocess.TimeoutExpired, FileNotFoundError):
+        pass
+    return None
 
 # Load cache (array of processed timestamps)
 cached_timestamps = set()
@@ -75,8 +110,7 @@ for line in raw_lines:
     if source != signal_recipient:
         continue
 
-    # Only data messages with text
-    if not data_message or not data_message.get('message'):
+    if not data_message:
         continue
 
     timestamp = data_message.get('timestamp', 0)
@@ -85,10 +119,26 @@ for line in raw_lines:
     if timestamp in cached_timestamps:
         continue
 
+    message_text = data_message.get('message', '')
+
+    # Check for audio attachments if no text message
+    if not message_text:
+        attachments = data_message.get('attachments', [])
+        for att in attachments:
+            content_type = att.get('contentType', '')
+            att_id = att.get('id', '')
+            if content_type in AUDIO_CONTENT_TYPES and att_id:
+                transcribed = transcribe_audio(att_id)
+                if transcribed:
+                    message_text = '[voice message] ' + transcribed
+                    break
+        if not message_text:
+            continue
+
     new_messages.append({
         'timestamp': timestamp,
         'source': source,
-        'message': data_message['message']
+        'message': message_text
     })
 
 if not new_messages:
