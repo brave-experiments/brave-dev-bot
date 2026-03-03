@@ -31,8 +31,8 @@ PATH=/home/bbondy/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/
 # Learnable pattern search — skip if no recent merged PRs
 0 6 * * * cd $PROJECT_ROOT && git fetch origin && git checkout master && git reset --hard origin/master && git submodule update --init --recursive && source .envrc && ./scripts/check-bot-prs.sh && $CLAUDE_BIN -p '/learnable-pattern-search 2d' --allowedTools '$CLAUDE_TOOLS' >> $LOG_DIR/learnable-pattern-search-cron.log 2>&1
 
-# Check Signal messages (every hour at :05, offset to avoid git lock contention with other jobs)
-5 * * * * cd $PROJECT_ROOT && git fetch origin && git checkout master && git reset --hard origin/master && git submodule update --init --recursive && source .envrc && ./scripts/check-signal-messages.sh && $CLAUDE_BIN -p '/check-signal' --allowedTools '$CLAUDE_TOOLS' >> $LOG_DIR/check-signal-cron.log 2>&1
+# Check Signal messages (every 15 min, offset to avoid git lock contention with other jobs)
+5,20,35,50 * * * * cd $PROJECT_ROOT && git fetch origin && git checkout master && git reset --hard origin/master && git submodule update --init --recursive && source .envrc && ./scripts/check-signal-messages.sh && $CLAUDE_BIN -p '/check-signal' --allowedTools '$CLAUDE_TOOLS' >> $LOG_DIR/check-signal-cron.log 2>&1
 
 # Sync src/brave origin/master from upstream/master (daily at 00:01)
 1 0 * * * cd /home/bbondy/projects/brave-browser/src/brave && git fetch upstream && git push origin upstream/master:master && git fetch origin >> $LOG_DIR/sync-brave-core-cron.log 2>&1
@@ -58,7 +58,7 @@ echo ""
 echo "Current schedule:"
 echo "  00:01 - sync src/brave origin/master from upstream"
 echo "  00:10 - run.sh (3 iterations)"
-echo "  Every hour at :05 - /check-signal (only if messages pending)"
+echo "  Every 15 min at :05,:20,:35,:50 - /check-signal (only if messages pending)"
 echo "  03:45, 07:45, 11:45, 15:45, 19:45, 23:45 - /add-backlog-to-prd"
 echo "  04:00, 08:00, 12:00, 16:00, 20:00 - run.sh (3 iterations)"
 echo "  08:00-20:00 (hourly), 23:00, 02:00, 05:00 - /review-prs"
