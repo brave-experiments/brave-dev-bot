@@ -195,3 +195,29 @@ Output a summary to the user with:
 - **Don't remove Brave-specific rules** - rules about Brave patterns (e.g., `Brave*` prefix convention) have no upstream equivalent and should be kept
 - **Do NOT include Co-Authored-By attribution in commits**
 - **Check for inter-rule conflicts** even if the user only asks about a specific URL
+
+---
+
+## Step 8: Signal Notification
+
+After the summary report, send a Signal notification. Each changed file goes on its own line.
+
+**If changes were made:**
+
+```bash
+<brave-core-bot>/scripts/signal-notify.sh "Best practices updated from <N> upstream URLs.
+Conflicts fixed: <C>, rules updated: <U>, new rules: <R>.
+Files changed:
+<file1>
+<file2>"
+```
+
+**If no changes were needed:**
+
+```bash
+<brave-core-bot>/scripts/signal-notify.sh "Best practices sync: <N> upstream URLs checked, all rules already up to date."
+```
+
+Do NOT send a notification without listing changed files when changes were made.
+
+This is a no-op if Signal is not configured.
