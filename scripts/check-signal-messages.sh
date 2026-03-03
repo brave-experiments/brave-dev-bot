@@ -2,7 +2,8 @@
 # Pre-check script for Signal message processing cron job.
 # Receives pending Signal messages, filters for the configured recipient,
 # deduplicates against a cache, and writes pending messages to a file.
-# Supports text messages and audio voice messages (transcribed via faster-whisper).
+# Supports text messages, audio voice messages (transcribed via faster-whisper),
+# and image attachments (copied to .ignore/signal-attachments/ for vision analysis).
 #
 # Exit codes:
 #   0 - New messages found, written to .ignore/signal-pending-messages.json
@@ -54,6 +55,33 @@ signal_attachments_dir = os.path.expanduser(
 
 AUDIO_CONTENT_TYPES = {'audio/aac', 'audio/mp4', 'audio/mpeg', 'audio/ogg',
                        'audio/wav', 'audio/x-m4a', 'audio/mp4a-latm'}
+IMAGE_CONTENT_TYPES = {'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+                       'image/bmp', 'image/tiff'}
+
+EXTENSION_MAP = {
+    'image/jpeg': '.jpg', 'image/png': '.png', 'image/gif': '.gif',
+    'image/webp': '.webp', 'image/bmp': '.bmp', 'image/tiff': '.tiff',
+}
+
+attachments_output_dir = os.path.join(os.path.dirname(pending_file), 'signal-attachments')
+
+def copy_image_attachment(attachment_id, content_type, timestamp):
+    \"\"\"Copy an image attachment to .ignore/signal-attachments/. Returns path or None.\"\"\"
+    if not os.path.isdir(signal_attachments_dir):
+        return None
+    for fname in os.listdir(signal_attachments_dir):
+        if fname.startswith(attachment_id):
+            src_path = os.path.join(signal_attachments_dir, fname)
+            break
+    else:
+        return None
+    os.makedirs(attachments_output_dir, exist_ok=True)
+    ext = EXTENSION_MAP.get(content_type, '.bin')
+    dest_name = f'{timestamp}_{attachment_id}{ext}'
+    dest_path = os.path.join(attachments_output_dir, dest_name)
+    import shutil
+    shutil.copy2(src_path, dest_path)
+    return dest_path
 
 def transcribe_audio(attachment_id):
     \"\"\"Transcribe an audio attachment to text. Returns text or None.\"\"\"
@@ -120,26 +148,36 @@ for line in raw_lines:
         continue
 
     message_text = data_message.get('message', '')
+    image_paths = []
 
-    # Check for audio attachments if no text message
-    if not message_text:
-        attachments = data_message.get('attachments', [])
-        for att in attachments:
-            content_type = att.get('contentType', '')
-            att_id = att.get('id', '')
-            if content_type in AUDIO_CONTENT_TYPES and att_id:
-                transcribed = transcribe_audio(att_id)
-                if transcribed:
-                    message_text = '[voice message] ' + transcribed
-                    break
-        if not message_text:
+    # Process attachments
+    attachments = data_message.get('attachments', [])
+    for att in attachments:
+        content_type = att.get('contentType', '')
+        att_id = att.get('id', '')
+        if not att_id:
             continue
+        if content_type in IMAGE_CONTENT_TYPES:
+            img_path = copy_image_attachment(att_id, content_type, timestamp)
+            if img_path:
+                image_paths.append(img_path)
+        elif content_type in AUDIO_CONTENT_TYPES and not message_text:
+            transcribed = transcribe_audio(att_id)
+            if transcribed:
+                message_text = '[voice message] ' + transcribed
 
-    new_messages.append({
+    # Skip messages with no text and no images
+    if not message_text and not image_paths:
+        continue
+
+    msg_entry = {
         'timestamp': timestamp,
         'source': source,
-        'message': message_text
-    })
+        'message': message_text or '[image]'
+    }
+    if image_paths:
+        msg_entry['attachments'] = image_paths
+    new_messages.append(msg_entry)
 
 if not new_messages:
     sys.exit(1)

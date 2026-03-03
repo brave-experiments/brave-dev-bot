@@ -18,11 +18,19 @@ Process incoming Signal messages and execute the requested commands. Messages ar
        "timestamp": 1708905600000,
        "source": "+14155559876",
        "message": "What PRs are open right now?"
+     },
+     {
+       "timestamp": 1708905700000,
+       "source": "+14155559876",
+       "message": "What is this image of?",
+       "attachments": ["/path/to/.ignore/signal-attachments/1708905700000_abc123.jpg"]
      }
    ]
    ```
 
    If the file doesn't exist or is empty, reply "No pending Signal messages" and stop.
+
+   **Image attachments:** If a message has an `attachments` array, use the **Read** tool to view each image file path. Claude's vision capabilities will analyze the image content. Include your image analysis in the response to the user.
 
 2. **Process each message sequentially.** For each message:
 
