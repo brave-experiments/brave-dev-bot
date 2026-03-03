@@ -281,7 +281,10 @@ Additional context: $EXTRA_PROMPT"
   # Check for completion signal (print mode only — TUI mode skips this since user is watching)
   COMPLETION_CHECK=0
   if [ "$USE_TUI" != true ]; then
-    COMPLETION_CHECK=$(jq -r 'select(.type == "assistant") | .message.content[]? | select(.type == "text") | .text' "$TEMP_OUTPUT" 2>/dev/null | grep -c "<promise>COMPLETE</promise>" || true)
+    # Extract text from stream-json, check for completion signal.
+    # Use tail -1 to guarantee a single integer (jq on mixed stderr/json can produce multiline output).
+    COMPLETION_CHECK=$(jq -r 'select(.type == "assistant") | .message.content[]? | select(.type == "text") | .text' "$TEMP_OUTPUT" 2>/dev/null | grep -c "<promise>COMPLETE</promise>" 2>/dev/null | tail -1)
+    COMPLETION_CHECK=$((COMPLETION_CHECK + 0))
   fi
   if [ "$COMPLETION_CHECK" -gt 0 ]; then
     echo ""
