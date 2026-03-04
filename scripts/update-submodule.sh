@@ -6,7 +6,7 @@ cd "$(dirname "$0")/.."
 echo "Updating brave-core-tools submodule..."
 cd brave-core-tools
 git fetch origin
-git checkout origin/main
+git checkout origin/master
 cd ..
 
 git add brave-core-tools

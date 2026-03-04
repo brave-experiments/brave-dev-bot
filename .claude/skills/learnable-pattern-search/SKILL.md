@@ -195,7 +195,7 @@ When a best practice needs adjustment based on pushback analysis:
 ```bash
 cd ./brave-core-tools
 git fetch origin
-git checkout -b docs/adjust-<brief-description> origin/main
+git checkout -b docs/adjust-<brief-description> origin/master
 
 # Make the documentation change
 # ... edit the appropriate best-practices file ...
