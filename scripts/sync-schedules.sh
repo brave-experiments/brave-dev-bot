@@ -21,11 +21,11 @@ PATH=/home/bbondy/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/
 
 # Add backlog to PRD (15 min before each run.sh) — skip if no prd.json
 # Gate check runs before git sync to avoid wasted fetches
-45 3,7,11,15,19,23 * * * cd $PROJECT_ROOT && source .envrc && ./scripts/check-has-prd.sh && git fetch origin && git checkout master && git reset --hard origin/master && git submodule update --init --recursive && $CLAUDE_BIN -p '/add-backlog-to-prd' --allowedTools '$CLAUDE_TOOLS' >> $LOG_DIR/add-backlog-cron.log 2>&1
+45 3,7,15,19 * * * cd $PROJECT_ROOT && source .envrc && ./scripts/check-has-prd.sh && git fetch origin && git checkout master && git reset --hard origin/master && git submodule update --init --recursive && $CLAUDE_BIN -p '/add-backlog-to-prd' --allowedTools '$CLAUDE_TOOLS' >> $LOG_DIR/add-backlog-cron.log 2>&1
 
 # Main agent run — skip if no actionable stories
 # Gate check runs before git sync to avoid wasted fetches
-10 0,4,8,12,16,20 * * * cd $PROJECT_ROOT && source .envrc && ./scripts/check-has-work.sh && git fetch origin && git checkout master && git reset --hard origin/master && git submodule update --init --recursive && ./run.sh 3 >> $LOG_DIR/run-cron.log 2>&1
+10 0,8,12,16 * * * cd $PROJECT_ROOT && source .envrc && ./scripts/check-has-work.sh && git fetch origin && git checkout master && git reset --hard origin/master && git submodule update --init --recursive && ./run.sh 3 >> $LOG_DIR/run-cron.log 2>&1
 
 # Review PRs — skip if no recent open PRs
 # Gate check runs before git sync to avoid wasted fetches
@@ -39,8 +39,8 @@ PATH=/home/bbondy/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/
 # Gate check runs before git sync to avoid wasted fetches (288 runs/day, most exit early)
 1,6,11,16,21,26,31,36,41,46,51,56 * * * * cd $PROJECT_ROOT && source .envrc && ./scripts/check-signal-messages.sh && git fetch origin && git checkout master && git reset --hard origin/master && git submodule update --init --recursive && $CLAUDE_BIN -p '/check-signal' --allowedTools '$CLAUDE_TOOLS' >> $LOG_DIR/check-signal-cron.log 2>&1
 
-# Update best practices from upstream Chromium docs (twice daily)
-15 4,14 * * * cd $PROJECT_ROOT && git fetch origin && git checkout master && git reset --hard origin/master && git submodule update --init --recursive && source .envrc && $CLAUDE_BIN -p '/update-best-practices' --allowedTools '$CLAUDE_TOOLS' >> $LOG_DIR/update-best-practices-cron.log 2>&1
+# Update best practices from upstream Chromium docs (monthly, 1st of each month)
+15 4 1 * * cd $PROJECT_ROOT && git fetch origin && git checkout master && git reset --hard origin/master && git submodule update --init --recursive && source .envrc && $CLAUDE_BIN -p '/update-best-practices' --allowedTools '$CLAUDE_TOOLS' >> $LOG_DIR/update-best-practices-cron.log 2>&1
 
 # Sync src/brave origin/master from upstream/master (daily at 00:01)
 1 0 * * * cd /home/bbondy/projects/brave-browser/src/brave && git fetch upstream && git push origin upstream/master:master && git fetch origin >> $LOG_DIR/sync-brave-core-cron.log 2>&1
@@ -67,10 +67,10 @@ echo "Current schedule:"
 echo "  00:01 - sync src/brave origin/master from upstream"
 echo "  00:10 - run.sh (3 iterations)"
 echo "  Every 5 min at :01,:06,:11,...,:56 - /check-signal (only if messages pending)"
-echo "  03:45, 07:45, 11:45, 15:45, 19:45, 23:45 - /add-backlog-to-prd"
-echo "  04:00, 08:00, 12:00, 16:00, 20:00 - run.sh (3 iterations)"
+echo "  03:45, 07:45, 15:45, 19:45 - /add-backlog-to-prd"
+echo "  00:10, 08:00, 12:00, 16:00 - run.sh (3 iterations)"
 echo "  08:00-20:00 (every 2h), 00:00, 04:00 - /review-prs"
-echo "  04:15, 14:15 - /update-best-practices"
+echo "  1st of month, 04:15 - /update-best-practices"
 echo "  06:00 - /learnable-pattern-search"
 echo ""
 crontab -l
