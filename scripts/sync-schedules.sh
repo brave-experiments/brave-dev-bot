@@ -23,9 +23,9 @@ PATH=/home/bbondy/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/
 # Gate check runs before git sync to avoid wasted fetches
 45 3,7,11,15,19,23 * * * cd $PROJECT_ROOT && source .envrc && ./scripts/check-has-prd.sh && git fetch origin && git checkout master && git reset --hard origin/master && git submodule update --init --recursive && $CLAUDE_BIN -p '/add-backlog-to-prd' --allowedTools '$CLAUDE_TOOLS' >> $LOG_DIR/add-backlog-cron.log 2>&1
 
-# Main agent run — skip if no prd.json
+# Main agent run — skip if no actionable stories
 # Gate check runs before git sync to avoid wasted fetches
-10 0,4,8,12,16,20 * * * cd $PROJECT_ROOT && source .envrc && ./scripts/check-has-prd.sh && git fetch origin && git checkout master && git reset --hard origin/master && git submodule update --init --recursive && ./run.sh 3 >> $LOG_DIR/run-cron.log 2>&1
+10 0,4,8,12,16,20 * * * cd $PROJECT_ROOT && source .envrc && ./scripts/check-has-work.sh && git fetch origin && git checkout master && git reset --hard origin/master && git submodule update --init --recursive && ./run.sh 3 >> $LOG_DIR/run-cron.log 2>&1
 
 # Review PRs — skip if no recent open PRs
 # Gate check runs before git sync to avoid wasted fetches
