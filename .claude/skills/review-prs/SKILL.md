@@ -422,6 +422,7 @@ Process PRs **one at a time** (sequentially). After ALL chunk subagents return f
    **For each violation, do the following:**
    - **Read the actual source file** at and around the flagged line. Use the Read tool (not the diff) to see the full file context — surrounding functions, class definitions, includes, namespace scope, and nearby code patterns.
    - **Verify the claim is true.** If the violation says "this should use X instead of Y", confirm that X is actually available, appropriate, and consistent with how the rest of the file/module works. If the violation claims something is missing (e.g., a missing include, a missing null check), verify it's actually missing in the full file, not just absent from the diff.
+   - **Deprecation claims require header verification.** If the violation claims an API is deprecated, you MUST read the actual header file that declares the API (in the chromium or brave source tree) and confirm that a deprecation notice, `DEPRECATED` macro, or removal exists. Do NOT rely on training data or general knowledge to determine deprecation status — APIs change across chromium upgrades and your training data may be stale or wrong. If you cannot find the header or cannot confirm the deprecation in the source, drop the violation.
    - **Check surrounding context for justification.** Look for comments, TODOs, or patterns in the surrounding code that might explain why the author wrote the code a certain way. If the surrounding code uses the same pattern the violation is flagging, the comment may be invalid or should acknowledge the existing pattern.
    - **Enhance the comment with concrete context.** If the violation is valid, improve the `draft_comment` with specific details from the source — e.g., reference the specific function/class that provides the better alternative, mention the existing pattern in the file that the new code should follow, or cite a concrete example from nearby code.
    - **Sanitize @mentions in draft_comment.** Subagents may hallucinate GitHub usernames (e.g., adding wrong prefixes like "anthropic-simonhong" instead of "simonhong"). Before posting, scan each `draft_comment` for `@username` mentions and validate them against the PR's actual participants (author, reviewers, assignees) from the GitHub API data. If a mention doesn't match any real participant, fix it to the closest matching participant username. If no match can be determined, strip the `@mention` entirely. Do NOT drop the violation — only fix or remove the bad username. Log: `SANITIZED_MENTION: <file>:<line> — replaced @<hallucinated> with @<correct>` or `SANITIZED_MENTION: <file>:<line> — stripped invalid @<hallucinated>`.
@@ -546,7 +547,7 @@ After processing all full reviews (the `prs` array), process each PR in the `cac
 **Do NOT launch subagents or run a full review** — the code hasn't changed since the last review. The only purpose is housekeeping: resolving addressed threads and approving when the developer has addressed all feedback.
 
 **Skip a cached PR entirely if:**
-- No bot comments exist on the PR (nothing to resolve)
+- No bot comments exist on the PR (nothing to resolve). **IMPORTANT:** If `resolve-bot-threads.py` returns `total_bot_threads: 0`, there are no bot comments — skip this PR. Do NOT report it as having violations.
 - No new replies or issue comments since the last review
 
 **Auto mode logging for cached PRs:**
@@ -649,6 +650,8 @@ RESULTS:
 
 **This summary block is CRITICAL for cron log readability.** Do not skip it. Do not summarize with vague language like "All done" — list every PR explicitly.
 
+**CRITICAL: What counts as a "violation" for reporting purposes.** A PR has violations ONLY if the bot successfully posted review comments on it (❌ category) OR `resolve-bot-threads.py` returned `unresolved_bot_threads > 0` (⚠️ category). If the bot found issues during review but failed to post comments, or if the bot has zero threads on the PR, it does NOT count as having violations. Never report a PR as having violations based on your own analysis alone — only based on actually-posted bot comments tracked by the scripts.
+
 ### Signal Notification (after final summary)
 
 After printing the final summary, send a Signal notification. Only include PRs where the bot took action this run (posted comments, approved, resolved threads). Do NOT include PRs that were already approved with no new action. Format:
@@ -673,7 +676,7 @@ https://github.com/brave/brave-core/pull/777"
 
 Rules:
 - Only include PRs where the bot took action (approved, posted comments, resolved threads) in the main sections
-- **"Still containing violations"** — list PRs that have unresolved bot violations but no new action was taken this run (e.g., previously commented, still unresolved). This gives visibility without cluttering the main results
+- **"Still containing violations"** — ONLY list a PR here if `resolve-bot-threads.py` returned `unresolved_bot_threads > 0` for that PR during this run. Do NOT list PRs based on your own review findings or memory — the script output is the single source of truth. If `unresolved_bot_threads` is 0 (or the script was not run for a PR), that PR must NOT appear in this section.
 - **Do NOT include** PRs that were already approved or skipped with no action — they are noise
 - Omit a category line if it has zero PRs (e.g., omit "Violations:" if none)
 - For cached PRs, append "(cached)" after the link
