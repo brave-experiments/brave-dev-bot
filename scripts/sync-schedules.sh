@@ -29,7 +29,7 @@ PATH=/home/bbondy/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/
 
 # Review PRs — skip if no recent open PRs
 # Gate check runs before git sync to avoid wasted fetches
-0 2,5,8-20,23 * * * cd $PROJECT_ROOT && source .envrc && ./scripts/check-new-prs.sh && git fetch origin && git checkout master && git reset --hard origin/master && git submodule update --init --recursive && $CLAUDE_BIN -p '/review-prs 1d open auto reviewer-priority' --allowedTools '$CLAUDE_TOOLS' >> $LOG_DIR/review-prs-cron.log 2>&1
+0 0,4,8,10,12,14,16,18,20 * * * cd $PROJECT_ROOT && source .envrc && ./scripts/check-new-prs.sh && git fetch origin && git checkout master && git reset --hard origin/master && git submodule update --init --recursive && $CLAUDE_BIN -p '/review-prs 1d open auto reviewer-priority' --allowedTools '$CLAUDE_TOOLS' >> $LOG_DIR/review-prs-cron.log 2>&1
 
 # Learnable pattern search — skip if no recent merged PRs
 # Gate check runs before git sync to avoid wasted fetches
@@ -69,7 +69,7 @@ echo "  00:10 - run.sh (3 iterations)"
 echo "  Every 5 min at :01,:06,:11,...,:56 - /check-signal (only if messages pending)"
 echo "  03:45, 07:45, 11:45, 15:45, 19:45, 23:45 - /add-backlog-to-prd"
 echo "  04:00, 08:00, 12:00, 16:00, 20:00 - run.sh (3 iterations)"
-echo "  08:00-20:00 (hourly), 23:00, 02:00, 05:00 - /review-prs"
+echo "  08:00-20:00 (every 2h), 00:00, 04:00 - /review-prs"
 echo "  04:15, 14:15 - /update-best-practices"
 echo "  06:00 - /learnable-pattern-search"
 echo ""
