@@ -44,9 +44,20 @@ If `xvfb-run` is not available, install it with `sudo apt-get install xvfb`. On 
 
 ## Build Failure Recovery
 
-**If `npm run build` fails**, run these steps in order from `[workingDirectory from prd.json config]`:
+**If `npm run build` fails**, first determine whether the failure is related to your changes or not.
+
+### Failure unrelated to your changes
+If the build error is in code you did not modify, run from `src/brave`:
 ```bash
-cd [workingDirectory from prd.json config]
+cd src/brave
+npm run sync -- --no-history
+```
+Then retry the build. **Only attempt this recovery once** — if the build still fails after syncing, do not repeat it. Investigate or report the issue.
+
+### Failure related to your changes or unknown cause
+Run these steps in order from `src/brave`:
+```bash
+cd src/brave
 git fetch
 git rebase origin/master
 npm run sync -- --no-history
