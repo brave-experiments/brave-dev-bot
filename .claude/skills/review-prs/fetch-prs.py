@@ -248,9 +248,14 @@ def filter_prs(prs, mode, days, cache, org_members, reviewer_priority=None):
 
         head_sha = pr.get("headRefOid", "")
         if cache.get(pr_num) == head_sha:
-            skipped_cached += 1
-            cached_prs.append(pr)
-            continue
+            # If the bot is a requested reviewer, force a full re-review
+            # even if the SHA hasn't changed (explicit re-request)
+            if reviewer_priority and is_requested_reviewer(pr, reviewer_priority):
+                pass  # Fall through to to_review
+            else:
+                skipped_cached += 1
+                cached_prs.append(pr)
+                continue
 
         to_review.append(pr)
 
