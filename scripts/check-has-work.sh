@@ -15,7 +15,7 @@ if [ ! -f "$PRD_FILE" ]; then
 fi
 
 # Count stories with actionable statuses (anything not merged/skipped/invalid)
-ACTIONABLE=$(jq '[.stories[] | select(.status != "merged" and .status != "skipped" and .status != "invalid")] | length' "$PRD_FILE" 2>/dev/null || echo "0")
+ACTIONABLE=$(jq '[.userStories[] | select(.status | IN("merged","skipped","invalid") | not)] | length' "$PRD_FILE" 2>/dev/null || echo "0")
 
 if [ "$ACTIONABLE" -eq 0 ]; then
   echo "No actionable stories in prd.json — skipping run."
