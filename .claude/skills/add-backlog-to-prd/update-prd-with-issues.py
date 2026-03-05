@@ -6,6 +6,15 @@ import re
 import subprocess
 import sys
 
+_script_dir = os.path.dirname(os.path.abspath(__file__))
+_bot_dir = os.path.join(_script_dir, "..", "..", "..")
+sys.path.insert(0, os.path.join(_bot_dir, "scripts"))
+from lib.load_config import get_config, load_config
+
+_config = load_config()
+_issue_repo = get_config(_config, "project.issueRepository", "brave/brave-browser")
+_project_name = get_config(_config, "project.name", "Bot Backlog")
+
 
 def find_test_location(test_class_name):
     """
@@ -131,14 +140,13 @@ def build_test_story(story_id, priority, issue):
 
     acceptance_criteria = [
         "Read ./BEST-PRACTICES.md for async testing patterns and common pitfalls",
-        f"Fetch issue #{issue_num} details from brave/brave-browser GitHub API",
+        f"Fetch issue #{issue_num} details from {_issue_repo} GitHub API",
         "Analyze stack trace and identify root cause - determine whether this is a real bug in production code, a test-only issue, or both. Read the production code being tested, not just the test. If the test is catching a genuine bug, fix the production code",
         "Implement fix targeting the correct layer (production code, test code, or both)",
-        "Run npm run build from src/brave (must pass)",
-        "Run npm run format from src/brave (must pass)",
-        "Run npm run gn_check from src/brave (must pass)",
-        f"Run npm run test -- {test_binary} --gtest_filter={test_name} (must pass - run 5 times to verify consistency)",
-        "Commit changes, then run npm run presubmit from src/brave (must pass)",
+        "Build the project (must pass)",
+        "Format the code (must pass)",
+        f"Run the test: {test_binary} --gtest_filter={test_name} (must pass - run 5 times to verify consistency)",
+        "Run presubmit checks (must pass)",
     ]
 
     return {
@@ -186,16 +194,15 @@ def build_disabled_test_story(story_id, priority, issue):
 
     acceptance_criteria = [
         "Read ./BEST-PRACTICES.md for async testing patterns and common pitfalls",
-        f"Fetch issue #{issue_num} details from brave/brave-browser GitHub API",
-        f"Find where the test is disabled by searching for DISABLED_{extract_disabled_search_term(test_name)} in the source code using git grep in both src/brave and src directories",
+        f"Fetch issue #{issue_num} details from {_issue_repo} GitHub API",
+        f"Find where the test is disabled by searching for DISABLED_{extract_disabled_search_term(test_name)} in the source code using git grep",
         "Use git blame on the line that disables the test to find the commit that disabled it, and read the commit message to understand WHY it was disabled",
         "Investigate whether the original reason for disabling has been resolved (e.g., upstream fix landed, dependency updated, flaky infrastructure fixed)",
         "If the underlying issue is fixed: re-enable the test by removing the DISABLED_ prefix. If the issue is NOT yet fixed: fix the root cause first, then re-enable the test",
-        "Run npm run build from src/brave (must pass)",
-        "Run npm run format from src/brave (must pass)",
-        "Run npm run gn_check from src/brave (must pass)",
-        f"Run npm run test -- {test_binary} --gtest_filter={test_name} (must pass - run 5 times to verify consistency)",
-        "Commit changes, then run npm run presubmit from src/brave (must pass)",
+        "Build the project (must pass)",
+        "Format the code (must pass)",
+        f"Run the test: {test_binary} --gtest_filter={test_name} (must pass - run 5 times to verify consistency)",
+        "Run presubmit checks (must pass)",
     ]
 
     return {
@@ -221,14 +228,13 @@ def build_generic_story(story_id, priority, issue):
     title = issue["title"]
 
     acceptance_criteria = [
-        f"Fetch issue #{issue_num} details from brave/brave-browser GitHub API",
+        f"Fetch issue #{issue_num} details from {_issue_repo} GitHub API",
         "Analyze the issue and identify what needs to change",
         "Implement the fix or feature",
-        "Run npm run build from src/brave (must pass)",
-        "Run npm run format from src/brave (must pass)",
-        "Run npm run gn_check from src/brave (must pass)",
+        "Build the project (must pass)",
+        "Format the code (must pass)",
         "Find and run relevant tests to verify the change (must pass)",
-        "Commit changes, then run npm run presubmit from src/brave (must pass)",
+        "Run presubmit checks (must pass)",
     ]
 
     return {
@@ -264,10 +270,10 @@ if os.path.exists(prd_path):
         prd = json.load(f)
 else:
     prd = {
-        "projectName": "Brave Core Bot Backlog",
-        "description": "Issues from brave/brave-browser repository to be resolved",
-        "config": {"workingDirectory": "../src/brave"},
-        "stories": [],
+        "projectName": f"{_project_name} Backlog",
+        "description": f"Issues from {_issue_repo} repository to be resolved",
+        "config": {},
+        "userStories": [],
     }
 
 # Detect which key the PRD uses for stories

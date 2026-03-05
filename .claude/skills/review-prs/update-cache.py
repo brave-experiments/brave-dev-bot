@@ -15,6 +15,11 @@ import os
 import sys
 from datetime import datetime, timezone
 
+_script_dir = os.path.dirname(os.path.abspath(__file__))
+_bot_dir = os.path.join(_script_dir, "..", "..", "..")
+sys.path.insert(0, os.path.join(_bot_dir, "scripts"))
+from lib.load_config import get_config, load_config
+
 args = [a for a in sys.argv[1:] if not a.startswith("--")]
 flags = [a for a in sys.argv[1:] if a.startswith("--")]
 
@@ -49,7 +54,10 @@ with open(cache_path, "w") as f:
     json.dump(cache, f, indent=2)
     f.write("\n")
 
+_config = load_config()
+_pr_repo = get_config(_config, "project.prRepository", "brave/brave-core")
+
 status = "approved + cached" if approve else "cached"
 print(
-    f"Cache updated ({status}): [PR #{pr_number}](https://github.com/brave/brave-core/pull/{pr_number}) -> {head_ref_oid}"
+    f"Cache updated ({status}): [PR #{pr_number}](https://github.com/{_pr_repo}/pull/{pr_number}) -> {head_ref_oid}"
 )

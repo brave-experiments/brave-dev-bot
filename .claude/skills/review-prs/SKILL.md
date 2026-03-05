@@ -1,13 +1,13 @@
 ---
 name: review-prs
-description: "Review PRs in brave/brave-core for best practices violations. Supports single PR (#12345), state filter (open/closed/all), and auto mode for cron. Triggers on: review prs, review recent prs, /review-prs, check prs for best practices."
+description: "Review PRs in the configured PR repository for best practices violations. Supports single PR (#12345), state filter (open/closed/all), and auto mode for cron. Triggers on: review prs, review recent prs, /review-prs, check prs for best practices."
 argument-hint: "[days|page<N>|#<PR>] [open|closed|all] [auto] [reviewer-priority]"
 allowed-tools: Bash(gh pr diff:*)
 ---
 
 # Review PRs for Best Practices
 
-Scan recent open PRs in `brave/brave-core` for violations of documented best practices.
+Scan recent open PRs in the configured PR repository (from `config.json` → `project.prRepository`) for violations of documented best practices.
 
 - **Interactive mode** (default): drafts comments and asks for user approval before posting.
 - **Auto mode** (`auto` argument): posts all violations automatically without approval. Designed for cron/headless use.
@@ -42,8 +42,8 @@ When invoked with `/review-prs [days|page<N>|#<PR>] [open|closed|all] [auto] [re
 2. **Print progress summary** from the summary stats (this goes to stdout and will appear in cron logs):
    ```
    Found N PRs to review, C cached PRs to check for thread resolution (M skipped: X drafts/filtered, Y cached, Z approved)
-   PRs to review: [PR #12345](https://github.com/brave/brave-core/pull/12345) (title), [PR #12346](https://github.com/brave/brave-core/pull/12346) (title), ...
-   Cached PRs for thread resolution: [PR #12347](https://github.com/brave/brave-core/pull/12347), ...
+   PRs to review: [PR #12345](https://github.com/$PR_REPO/pull/12345) (title), [PR #12346](https://github.com/$PR_REPO/pull/12346) (title), ...
+   Cached PRs for thread resolution: [PR #12347](https://github.com/$PR_REPO/pull/12347), ...
    ```
 3. **Review each PR** (from the `prs` array) one at a time using parallel chunk subagents (see Per-Document Review Workflow below)
 4. **Aggregate and present findings** from all chunk subagents
@@ -59,15 +59,16 @@ When invoked with `/review-prs [days|page<N>|#<PR>] [open|closed|all] [auto] [re
 
 **IMPORTANT:** The main context does NOT load best practices docs or PR diffs. Each PR is reviewed by multiple focused subagents — one per chunk of ~20 rules — running in parallel. Large best-practice documents are split into evenly-sized chunks by a preprocessing script, so each subagent handles a focused set of rules. This ensures every rule is systematically checked rather than relying on a single subagent to hold many rules in mind.
 
-### Step 0: Resolve Bot Username
+### Step 0: Resolve Bot Username and PR Repository
 
-Before processing any PRs, resolve the bot's GitHub username dynamically. Do NOT hardcode a username — different operators may run this skill under different GitHub accounts.
+Before processing any PRs, resolve the bot's GitHub username and the target PR repository dynamically.
 
 ```bash
 BOT_USERNAME=$(gh api user --jq '.login')
+PR_REPO=$(jq -r '.project.prRepository' <bot-dir>/config.json 2>/dev/null || echo "brave/brave-core")
 ```
 
-Use `$BOT_USERNAME` in ALL subsequent jq queries and comparisons that need to identify the bot's own comments. This variable is referenced throughout Steps 1.5, 1.6, 1.7, and the deduplication logic.
+Use `$BOT_USERNAME` in ALL subsequent jq queries and comparisons that need to identify the bot's own comments. Use `$PR_REPO` in ALL `gh` commands and GitHub URL construction instead of hardcoding a repo name. These variables are referenced throughout all subsequent steps.
 
 ### Step 1: Fetch Diff and Classify Changed Files
 
@@ -75,7 +76,7 @@ Before launching subagents, fetch the full diff once. This diff will be reused b
 
 ```bash
 # Fetch the full diff once — save to a variable to pass to subagents
-PR_DIFF=$(gh pr diff --repo brave/brave-core {number})
+PR_DIFF=$(gh pr diff --repo $PR_REPO {number})
 ```
 
 Extract the file list from the diff for classification:
@@ -99,12 +100,12 @@ Classify the changed files:
 Before launching subagents, fetch all existing review comments and discussion on the PR using the filter script:
 
 ```bash
-<brave-core-bot>/scripts/filter-pr-reviews.sh {number} markdown
+$BOT_DIR/scripts/filter-pr-reviews.sh {number} markdown
 ```
 
 **External contributor PRs:** If the PR has `isExternalContributor: true` in the fetch output (allowed through because the bot is a requested reviewer), pass the PR author as a 4th argument to include their PR description unfiltered:
 ```bash
-<brave-core-bot>/scripts/filter-pr-reviews.sh {number} markdown brave/brave-core {author}
+<bot-dir>/scripts/filter-pr-reviews.sh {number} markdown $PR_REPO {author}
 ```
 This includes the PR body/description from the external contributor so reviewers understand the PR's intent. Other comments from non-org members are still filtered for security.
 
@@ -122,7 +123,7 @@ If there are no prior comments (first review), skip this step and omit the prior
 After fetching comments, extract and download any screenshots or images from the PR description and org-member comments. These give subagents visual context about UI changes, which improves review quality.
 
 ```bash
-python3 <brave-core-bot>/scripts/extract-pr-images.py {number}
+python3 $BOT_DIR/scripts/extract-pr-images.py {number}
 ```
 
 The script outputs JSON with downloaded image paths:
@@ -150,7 +151,7 @@ Resolve bot review threads where the developer has replied. This is a lightweigh
 **MANDATORY: Run the resolve script. Do NOT manually add reactions or resolve threads — the script handles both atomically.**
 
 ```bash
-python3 <brave-core-bot>/scripts/resolve-bot-threads.py {number} "$BOT_USERNAME"
+python3 $BOT_DIR/scripts/resolve-bot-threads.py {number} "$BOT_USERNAME"
 ```
 
 The script finds developer replies to bot review threads, resolves the thread via GraphQL, and adds a 👍 reaction — both or neither. It outputs JSON:
@@ -173,14 +174,14 @@ Use `--dry-run` to preview what would be done without making changes.
 
 **Issue comments (separate from review threads):** After running the script, check general PR issue comments (not review thread replies). If the PR author posted an issue comment acknowledging feedback (e.g., "Fixed", "Done", "Addressed") and new commits were pushed, thumbs-up that issue comment:
 ```bash
-gh api "repos/brave/brave-core/issues/comments/{comment_id}/reactions" \
+gh api "repos/$PR_REPO/issues/comments/{comment_id}/reactions" \
   --method POST -f content="+1"
 ```
 This is ONLY for general issue comments (the PR conversation tab), NOT for review thread replies.
 
 **Important rules:**
 - This step does NOT re-post any comments. It only reacts and resolves. **NEVER re-post the same feedback when resolving.**
-- In auto mode, log the script output: `ACK: [PR #<number>](https://github.com/brave/brave-core/pull/<number>) - resolved N threads, M remaining unresolved`
+- In auto mode, log the script output: `ACK: [PR #<number>](https://github.com/$PR_REPO/pull/<number>) - resolved N threads, M remaining unresolved`
 - Skip this step entirely if there are no prior bot comments or no new commits/replies since the last review.
 
 ### Step 1.7: Approve if Settled (No Remaining Unresolved Threads)
@@ -191,7 +192,7 @@ After Step 1.6 resolves addressed comments, check if the bot can approve this PR
 
 **MANDATORY: Run the gate script before ANY approval:**
 ```bash
-python3 <brave-core-bot>/scripts/check-can-approve.py {number} "$BOT_USERNAME"
+python3 $BOT_DIR/scripts/check-can-approve.py {number} "$BOT_USERNAME"
 ```
 
 The script checks programmatically and returns:
@@ -207,7 +208,7 @@ The principle is simple: **only approve if the bot has zero outstanding comments
 
 **Only if the script returns exit code 0**, submit the APPROVE review:
 ```bash
-gh api repos/brave/brave-core/pulls/{number}/reviews \
+gh api repos/$PR_REPO/pulls/{number}/reviews \
   --method POST \
   --input - <<'EOF'
 {
@@ -231,7 +232,7 @@ python3 .claude/skills/review-prs/update-cache.py <PR_NUMBER> <HEAD_REF_OID> --a
 
 **Auto mode logging:**
 ```
-APPROVE: [PR #<number>](https://github.com/brave/brave-core/pull/<number>) (<title>) - all threads resolved, approved
+APPROVE: [PR #<number>](https://github.com/$PR_REPO/pull/<number>) (<title>) - all threads resolved, approved
 ```
 
 ### Step 2: Chunk Documents and Launch Subagents in Parallel
@@ -240,8 +241,8 @@ For each applicable best-practice document, run the chunking script to split it 
 
 **Chunking step:** For each applicable document, run:
 ```bash
-python3 <brave-core-bot>/.claude/skills/review-prs/chunk-best-practices.py \
-  <brave-core-bot>/brave-core-tools/docs/best-practices/<doc>.md
+python3 $BOT_DIR/.claude/skills/review-prs/chunk-best-practices.py \
+  $BOT_DIR/$BP_SUBMODULE/docs/best-practices/<doc>.md
 ```
 
 This outputs JSON with one or more chunks per document. Each chunk contains:
@@ -280,7 +281,7 @@ Small documents (≤20 rules) produce 1 chunk. Large documents are split evenly 
 
 Each subagent prompt MUST include:
 
-1. **The PR number and repo** (`brave/brave-core`)
+1. **The PR number and repo** (from `$PR_REPO`)
 2. **The chunk content** — embed the `content` field from the chunking script output directly in the prompt. The subagent does NOT read any files — all rules are provided inline. Include it like:
    ````
    Here are the best practice rules to check:
@@ -360,7 +361,7 @@ Each subagent MUST return this structured format:
 
 ```
 DOCUMENT: <document name> (chunk <chunk_index+1>/<total_chunks>)
-[PR #<number>](https://github.com/brave/brave-core/pull/<number>): <title>
+[PR #<number>](https://github.com/$PR_REPO/pull/<number>): <title>
 
 AUDIT:
 PASS: <rule heading>
@@ -419,7 +420,7 @@ Process PRs **one at a time** (sequentially). After ALL chunk subagents return f
    **Violations missing `rule_link` must be recovered or dropped — unless they are genuine bug/correctness/security findings.** Best-practice-style comments (style, conventions, patterns) must cite a specific rule so developers can understand the basis and push back. If a subagent returns such a violation without a `rule_link`, search the chunk content for a heading that matches the violation's subject. If a matching rule with an `<a id>` anchor exists, add the `rule_link` and post. If no matching rule exists, drop it — log: `DROPPED: no rule_link for <file>:<line> — "<draft_comment snippet>"`. However, high-severity findings (real bugs, correctness issues, security vulnerabilities, logic errors) may be posted without a `rule_link` since they don't need a style guide to justify them.
 4. **Deep-dive validation and enhancement** — before posting, you MUST validate and enhance every remaining violation (typically 1–8 comments at this point) by reading the actual source code. This is a mandatory phase that ensures accuracy and improves comment quality.
 
-   **Source code paths:** The brave-core source tree is at `src/brave/` relative to the brave-browser root (the parent of the `brave-core-bot/` directory). Chromium source is at `src/`. Use the absolute path derived from the brave-core-bot directory (e.g., if brave-core-bot is at `/path/to/brave-browser/brave-core-bot`, then source files are at `/path/to/brave-browser/src/brave/<file>` and `/path/to/brave-browser/src/<file>`). File paths in violations are relative to the `src/brave/` root (e.g., a violation at `components/foo/bar.cc` means `src/brave/components/foo/bar.cc`).
+   **Source code paths:** The target source tree location is determined by the `workingDirectory` config in `prd.json` (relative to the bot's parent directory). Use the absolute path derived from the bot directory. File paths in violations are relative to the working directory root.
 
    **For each violation, do the following:**
    - **Read the actual source file** at and around the flagged line. Use the Read tool (not the diff) to see the full file context — surrounding functions, class definitions, includes, namespace scope, and nearby code patterns.
@@ -441,7 +442,7 @@ Process PRs **one at a time** (sequentially). After ALL chunk subagents return f
 7. **If no violations across all categories**: run the approval gate script (see Step 1.7). A clean review with no violations is a valid reason to approve, even on first review with zero prior comments. **Only if exit code is 0**: submit an APPROVE review and mark as settled using `--approve`. This completes the bot's engagement with this PR — future runs will skip it entirely. Log: `APPROVE: [PR #<number>](...) - no violations, approved`. **If exit code is 1: do NOT approve** — log the reason and move on.
 8. **If violations were posted**: do NOT approve. The bot will re-check this PR on the next run after the developer addresses the feedback
 
-**PR Link Format (CRITICAL):** When displaying PR numbers to the user, ALWAYS use a full markdown link with the `brave/brave-core` URL: `[PR #<number>](https://github.com/brave/brave-core/pull/<number>) - <title>`. **NEVER use bare `#<number>` references** — the TUI auto-links them against the current repo's git remote (`brave-experiments/brave-core-bot`), sending users to the wrong repository. Every single PR number shown to the user must be a full `https://github.com/brave/brave-core/pull/` link.
+**PR Link Format (CRITICAL):** When displaying PR numbers to the user, ALWAYS use a full markdown link with the `$PR_REPO` URL: `[PR #<number>](https://github.com/$PR_REPO/pull/<number>) - <title>`. **NEVER use bare `#<number>` references** — the TUI auto-links them against the current repo's git remote, sending users to the wrong repository. Every single PR number shown to the user must be a full `https://github.com/$PR_REPO/pull/` link.
 
 ---
 
@@ -462,7 +463,7 @@ Process PRs **one at a time** (sequentially). After ALL chunk subagents return f
 
 For each violation, present the draft and ask:
 
-> **[PR #12345](https://github.com/brave/brave-core/pull/12345)** - `file:line` - [violation description]
+> **[PR #12345](https://github.com/$PR_REPO/pull/12345)** - `file:line` - [violation description]
 > Draft: `[short comment]`
 > Post this comment?
 
@@ -473,7 +474,7 @@ Use "nit:" prefix for genuinely minor/stylistic issues (missing comments/documen
 Before presenting violations to the user (interactive) or posting them (auto), you MUST programmatically deduplicate against existing bot comments. This prevents the bot from re-posting the same comment when a PR is reviewed multiple times.
 
 ```bash
-gh api "repos/brave/brave-core/pulls/{number}/comments" --paginate \
+gh api "repos/$PR_REPO/pulls/{number}/comments" --paginate \
   --jq '[.[] | {path, line, body, user: .user.login}]'
 ```
 
@@ -490,7 +491,7 @@ This is a **hard programmatic check** — it overrides subagent output. Even if 
 After deduplication, collect the remaining approved violations (interactive) or all remaining violations (auto) and post them as a **single review with inline comments** using the GitHub API. This places comments directly on the relevant code lines instead of as a general review comment.
 
 ```bash
-gh api repos/brave/brave-core/pulls/{number}/reviews \
+gh api repos/$PR_REPO/pulls/{number}/reviews \
   --method POST \
   --input - <<'EOF'
 {
@@ -521,7 +522,7 @@ EOF
 - All approved violations for a single PR are batched into one review (one notification to the author)
 - If the API call fails (e.g., a line is outside the diff range), retry by splitting: post each inline comment individually via the single-comment API to create proper review threads:
   ```bash
-  gh api repos/brave/brave-core/pulls/{number}/comments \
+  gh api repos/$PR_REPO/pulls/{number}/comments \
     --method POST \
     -f body="comment text" \
     -f commit_id="<HEAD_SHA>" \
@@ -531,7 +532,7 @@ EOF
   ```
   If a specific comment still fails (line truly outside the diff), post it as a PR issue comment as a last resort, but log a warning — issue comments are NOT review threads and will block future approval via the gate check:
   ```bash
-  gh pr comment --repo brave/brave-core {number} --body "[file:line] comment text"
+  gh pr comment --repo $PR_REPO {number} --body "[file:line] comment text"
   ```
   **NEVER use `gh pr review --comment --body "..."` as a fallback** — this creates a COMMENT review with body text that is NOT a review thread, cannot be resolved, and will block approval permanently via `check-can-approve.py`.
 
@@ -554,18 +555,18 @@ After processing all full reviews (the `prs` array), process each PR in the `cac
 
 **Auto mode logging for cached PRs:**
 ```
-CACHED: [PR #<number>](https://github.com/brave/brave-core/pull/<number>) (<title>) - resolved N threads, M remaining
-APPROVE: [PR #<number>](https://github.com/brave/brave-core/pull/<number>) (<title>) - all threads resolved, approved
+CACHED: [PR #<number>](https://github.com/$PR_REPO/pull/<number>) (<title>) - resolved N threads, M remaining
+APPROVE: [PR #<number>](https://github.com/$PR_REPO/pull/<number>) (<title>) - all threads resolved, approved
 ```
 or if nothing to do:
 ```
-CACHED: [PR #<number>](https://github.com/brave/brave-core/pull/<number>) (<title>) - no unresolved bot threads
+CACHED: [PR #<number>](https://github.com/$PR_REPO/pull/<number>) (<title>) - no unresolved bot threads
 ```
 
 Include cached PRs in the final summary with a distinct marker:
 ```
-  🔄 [PR #<number>](https://github.com/brave/brave-core/pull/<number>) (<title>) - resolved N threads, approved
-  🔄 [PR #<number>](https://github.com/brave/brave-core/pull/<number>) (<title>) - M threads still unresolved
+  🔄 [PR #<number>](https://github.com/$PR_REPO/pull/<number>) (<title>) - resolved N threads, approved
+  🔄 [PR #<number>](https://github.com/$PR_REPO/pull/<number>) (<title>) - M threads still unresolved
 ```
 
 ---
@@ -582,26 +583,26 @@ After processing each PR, you MUST print a structured log line to stdout. This i
 
 **If violations were posted**, capture the review URL from the `gh api` response (the `html_url` field) and log:
 ```
-AUTO: [PR #<number>](https://github.com/brave/brave-core/pull/<number>) (<title>) - posted <N> comments - <review_url>
+AUTO: [PR #<number>](https://github.com/$PR_REPO/pull/<number>) (<title>) - posted <N> comments - <review_url>
   - <file>:<line> (<rule name>)
   - <file>:<line> (<rule name>)
 ```
 
 **If no violations found:**
 ```
-AUTO: [PR #<number>](https://github.com/brave/brave-core/pull/<number>) (<title>) - no violations
+AUTO: [PR #<number>](https://github.com/$PR_REPO/pull/<number>) (<title>) - no violations
 ```
 
 **If the PR was skipped (error fetching diff, etc.):**
 ```
-AUTO: [PR #<number>](https://github.com/brave/brave-core/pull/<number>) (<title>) - SKIPPED: <reason>
+AUTO: [PR #<number>](https://github.com/$PR_REPO/pull/<number>) (<title>) - SKIPPED: <reason>
 ```
 
 ### Capturing the Review URL
 
-When posting violations via `gh api repos/brave/brave-core/pulls/{number}/reviews`, the response JSON contains `html_url` — the direct link to the review on GitHub. You MUST capture this and include it in the log line. Example:
+When posting violations via `gh api repos/$PR_REPO/pulls/{number}/reviews`, the response JSON contains `html_url` — the direct link to the review on GitHub. You MUST capture this and include it in the log line. Example:
 ```bash
-REVIEW_RESPONSE=$(gh api repos/brave/brave-core/pulls/{number}/reviews \
+REVIEW_RESPONSE=$(gh api repos/$PR_REPO/pulls/{number}/reviews \
   --method POST --input - <<'EOF'
 { ... }
 EOF
@@ -616,7 +617,7 @@ REVIEW_URL=$(echo "$REVIEW_RESPONSE" | python3 -c "import sys,json; print(json.l
 1. Collect all violations from all chunk subagents for the PR
 2. **Deduplicate against existing bot comments (MANDATORY)** — before posting, fetch all existing bot comments on the PR and drop any violation that the bot already commented on:
    ```bash
-   gh api "repos/brave/brave-core/pulls/{number}/comments" --paginate \
+   gh api "repos/$PR_REPO/pulls/{number}/comments" --paginate \
      --jq '[.[] | select(.user.login == "$BOT_USERNAME") | {path, line, body}]'
    ```
    For each violation, check if an existing bot comment matches the **same file path AND same line number**. If a match exists, **drop the violation** — do not re-post it regardless of whether the wording differs. This is a hard programmatic check that cannot be overridden by subagent output.
@@ -642,11 +643,11 @@ Cached PRs processed: <N>
 PRs approved: <N>
 
 RESULTS:
-  ✅ [PR #<number>](https://github.com/brave/brave-core/pull/<number>) (<title>) - no violations, approved
-  ❌ [PR #<number>](https://github.com/brave/brave-core/pull/<number>) (<title>) - <N> comments - <review_url>
-  ⏭️ [PR #<number>](https://github.com/brave/brave-core/pull/<number>) (<title>) - SKIPPED: <reason>
-  🔄 [PR #<number>](https://github.com/brave/brave-core/pull/<number>) (<title>) - resolved N threads, approved
-  🔄 [PR #<number>](https://github.com/brave/brave-core/pull/<number>) (<title>) - M threads still unresolved
+  ✅ [PR #<number>](https://github.com/$PR_REPO/pull/<number>) (<title>) - no violations, approved
+  ❌ [PR #<number>](https://github.com/$PR_REPO/pull/<number>) (<title>) - <N> comments - <review_url>
+  ⏭️ [PR #<number>](https://github.com/$PR_REPO/pull/<number>) (<title>) - SKIPPED: <reason>
+  🔄 [PR #<number>](https://github.com/$PR_REPO/pull/<number>) (<title>) - resolved N threads, approved
+  🔄 [PR #<number>](https://github.com/$PR_REPO/pull/<number>) (<title>) - M threads still unresolved
 ========================================
 ```
 
@@ -659,21 +660,21 @@ RESULTS:
 After printing the final summary, send a Signal notification. Only include PRs where the bot took action this run (posted comments, approved, resolved threads). Do NOT include PRs that were already approved with no new action. Format:
 
 ```bash
-<brave-core-bot>/scripts/signal-notify.sh "Review complete: <N> PRs reviewed, <M> with violations, <T> comments posted.
+$BOT_DIR/scripts/signal-notify.sh "Review complete: <N> PRs reviewed, <M> with violations, <T> comments posted.
 
 ✅ Approved:
-https://github.com/brave/brave-core/pull/111
-https://github.com/brave/brave-core/pull/222
+https://github.com/$PR_REPO/pull/111
+https://github.com/$PR_REPO/pull/222
 
 ❌ Violations:
-https://github.com/brave/brave-core/pull/333
+https://github.com/$PR_REPO/pull/333
 
 🔄 Resolved threads:
-https://github.com/brave/brave-core/pull/555
+https://github.com/$PR_REPO/pull/555
 
 ⚠️ Still containing violations:
-https://github.com/brave/brave-core/pull/666
-https://github.com/brave/brave-core/pull/777"
+https://github.com/$PR_REPO/pull/666
+https://github.com/$PR_REPO/pull/777"
 ```
 
 Rules:
@@ -693,22 +694,22 @@ When reviewing closed or merged PRs and a violation is found:
 1. **Present the finding** to the user as usual (draft comment + ask for approval)
 2. **If approved**, try to post inline review comments using the same `gh api` approach as open PRs. If the inline API fails (some merged PRs may not support it), fall back to a general comment:
    ```bash
-   gh pr comment --repo brave/brave-core {number} --body "[file:line] comment text"
+   gh pr comment --repo $PR_REPO {number} --body "[file:line] comment text"
    ```
-3. **Create a follow-up issue** in `brave/brave-core` to track the fix:
+3. **Create a follow-up issue** in `$PR_REPO` to track the fix:
    ```bash
-   gh issue create --repo brave/brave-core --title "Fix: <brief description of violation>" --body "$(cat <<'EOF'
-   Found during post-merge review of [PR #<PR_NUMBER>](https://github.com/brave/brave-core/pull/<PR_NUMBER>).
+   gh issue create --repo $PR_REPO --title "Fix: <brief description of violation>" --body "$(cat <<'EOF'
+   Found during post-merge review of [PR #<PR_NUMBER>](https://github.com/$PR_REPO/pull/<PR_NUMBER>).
 
    <description of the violation and what needs to change>
 
-   See: https://github.com/brave/brave-core/pull/<PR_NUMBER>
+   See: https://github.com/$PR_REPO/pull/<PR_NUMBER>
    EOF
    )"
    ```
 4. **Reference the new issue** back in the PR comment so the PR author can find it:
    ```bash
-   gh pr comment --repo brave/brave-core <PR_NUMBER> --body "Created follow-up issue https://github.com/brave/brave-core/issues/<ISSUE_NUMBER> to track this."
+   gh pr comment --repo $PR_REPO <PR_NUMBER> --body "Created follow-up issue https://github.com/$PR_REPO/issues/<ISSUE_NUMBER> to track this."
    ```
 
 This ensures violations on already-merged code don't get lost — they get tracked as actionable issues.

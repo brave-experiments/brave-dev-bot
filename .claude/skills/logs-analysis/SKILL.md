@@ -7,22 +7,22 @@ description: "Analyze iteration logs in ./logs for errors, schedule gaps, and pr
 
 Analyze iteration log files in `./logs/` (top-level only, **never** look in `processed/`) and cron logs in `./.ignore/*-cron.log` to identify problems and assess schedule health.
 
-**Determine the brave-core-bot directory:** This SKILL.md file lives inside `brave-core-bot/.claude/skills/logs-analysis/`. Use this file's path to derive the absolute path to the `brave-core-bot/` directory.
+**Determine the bot directory:** This SKILL.md file lives inside the bot's `.claude/skills/logs-analysis/` directory. Use this file's path to derive the absolute path to the bot directory (referred to as `$BOT_DIR` below).
 
 ---
 
 ## Step 1: Gather Log Inventory
 
-List all `.log` files in `<brave-core-bot>/logs/` (top-level only, exclude `processed/` subdirectory):
+List all `.log` files in `$BOT_DIR/logs/` (top-level only, exclude `processed/` subdirectory):
 
 ```bash
-find <brave-core-bot>/logs -maxdepth 1 -name '*.log' -type f | sort
+find $BOT_DIR/logs -maxdepth 1 -name '*.log' -type f | sort
 ```
 
 Also list the cron logs:
 
 ```bash
-ls -la <brave-core-bot>/.ignore/*-cron.log 2>/dev/null
+ls -la $BOT_DIR/.ignore/*-cron.log 2>/dev/null
 ```
 
 If there are **no log files** in the top-level logs directory, report "No unprocessed logs found" and stop.
@@ -107,7 +107,7 @@ After presenting the report, ask the user:
 If the user agrees, move all analyzed log files (from the top-level `logs/` directory only) into `logs/processed/`:
 
 ```bash
-mv <brave-core-bot>/logs/*.log <brave-core-bot>/logs/processed/
+mv $BOT_DIR/logs/*.log $BOT_DIR/logs/processed/
 ```
 
 ---

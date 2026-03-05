@@ -1,5 +1,5 @@
 #!/bin/bash
-# Idempotent cron job setup for brave-core-bot
+# Idempotent cron job setup for brave-bot
 # Run this script to install/update all cron jobs.
 # All schedule changes should be made here and committed to source control.
 
@@ -7,17 +7,29 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-CLAUDE_BIN="/home/bbondy/.local/bin/claude"
+source "$SCRIPT_DIR/lib/load-config.sh"
+
+CLAUDE_BIN="$BOT_CLAUDE_BIN"
 CLAUDE_TOOLS="Bash,Read,Glob,Grep,Write,Edit,Task,WebFetch"
 LOG_DIR="$PROJECT_ROOT/.ignore"
+
+# Derive the PATH from CLAUDE_BIN's directory
+CLAUDE_BIN_DIR=$(dirname "$CLAUDE_BIN")
+
+# Resolve sync repo path from config (optional — only for projects that sync from upstream)
+SYNC_REPO_ENABLED=$(bot_config '.schedules.syncRepo')
+SYNC_REPO_PATH=$(bot_config '.schedules.syncRepoPath')
+
+# Use project name for cron block marker to allow multiple projects on same machine
+CRON_MARKER="brave-bot [$BOT_PROJECT_NAME]"
 
 # Build the crontab content
 # Note: add-backlog-to-prd runs 1 hour before each run.sh invocation
 CRON_JOBS=$(cat <<EOF
-# === brave-core-bot scheduled jobs ===
+# === $CRON_MARKER scheduled jobs ===
 # Managed by sync-schedules.sh - do not edit manually
 SHELL=/bin/bash
-PATH=/home/bbondy/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin
+PATH=$CLAUDE_BIN_DIR:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin
 
 # Add backlog to PRD (15 min before each run.sh) — skip if no prd.json
 # Gate check runs before git sync to avoid wasted fetches
@@ -42,18 +54,23 @@ PATH=/home/bbondy/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/
 # Update best practices from upstream Chromium docs (monthly, 1st of each month)
 15 4 1 * * cd $PROJECT_ROOT && source .envrc && git fetch origin && git checkout master && git reset --hard origin/master && ./scripts/update-submodule.sh && ./scripts/with-lock.sh update-best-practices -- $CLAUDE_BIN -p '/update-best-practices' --allowedTools '$CLAUDE_TOOLS' >> $LOG_DIR/update-best-practices-cron.log 2>&1
 
-# Sync src/brave origin/master from upstream/master (daily at 00:01)
-1 0 * * * cd /home/bbondy/projects/brave-browser/src/brave && git fetch upstream && git push origin upstream/master:master && git fetch origin >> $LOG_DIR/sync-brave-core-cron.log 2>&1
+$(if [ "$SYNC_REPO_ENABLED" = "true" ] && [ -n "$SYNC_REPO_PATH" ]; then
+cat <<SYNC
+# Sync repo origin/$BOT_DEFAULT_BRANCH from upstream/$BOT_DEFAULT_BRANCH (daily at 00:01)
+1 0 * * * cd $SYNC_REPO_PATH && git fetch upstream && git push origin upstream/$BOT_DEFAULT_BRANCH:$BOT_DEFAULT_BRANCH && git fetch origin >> $LOG_DIR/sync-repo-cron.log 2>&1
+SYNC
+fi)
 
-# === end brave-core-bot ===
+# === end $CRON_MARKER ===
 EOF
 )
 
-# Extract existing crontab, stripping any previous brave-core-bot block
+# Extract existing crontab, stripping any previous block for this project
 EXISTING=$(crontab -l 2>/dev/null || true)
-CLEANED=$(echo "$EXISTING" | sed '/^# === brave-core-bot scheduled jobs ===/,/^# === end brave-core-bot ===/d')
+CLEANED=$(echo "$EXISTING" | sed "/^# === $CRON_MARKER scheduled jobs ===/,/^# === end $CRON_MARKER ===/d")
 
-# Remove any legacy brave-core-bot lines that predate the managed block
+# Also strip legacy brave-core-bot blocks if present
+CLEANED=$(echo "$CLEANED" | sed '/^# === brave-core-bot scheduled jobs ===/,/^# === end brave-core-bot ===/d')
 CLEANED=$(echo "$CLEANED" | grep -v "brave-core-bot" || true)
 
 # Combine preserved entries with new block

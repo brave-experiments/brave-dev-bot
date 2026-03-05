@@ -5,10 +5,13 @@
 
 set -e
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/load-config.sh"
+
 ISSUE_NUMBER="$1"
 OUTPUT_FORMAT="${2:-json}"
-REPO="brave/brave-browser"
-ORG="brave"
+REPO="${BOT_ISSUE_REPO:-brave/brave-browser}"
+ORG="${BOT_ORG:-brave}"
 
 if [ -z "$ISSUE_NUMBER" ]; then
   echo "Usage: $0 <issue-number> [json|markdown]"
@@ -22,11 +25,9 @@ if ! gh auth status > /dev/null 2>&1; then
 fi
 
 # Allowlist for trusted reviewers (for when running with external account)
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ALLOWLIST_FILE="$SCRIPT_DIR/trusted-reviewers.txt"
 
 # Org members cache (stored in .ignore/ to survive reboots, unlike /tmp)
-BOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 CACHE_FILE="$BOT_DIR/.ignore/org-members.txt"
 
 # Require org members file to exist

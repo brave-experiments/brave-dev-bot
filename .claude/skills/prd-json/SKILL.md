@@ -1,17 +1,17 @@
 ---
 name: prd-json
-description: "Convert PRDs to prd.json format for the brave-core-bot autonomous agent system. Use when you have an existing PRD and need to convert it to prd.json format. Triggers on: convert this prd, turn this into prd.json, create prd.json from this."
+description: "Convert PRDs to prd.json format for the autonomous agent system. Use when you have an existing PRD and need to convert it to prd.json format. Triggers on: convert this prd, turn this into prd.json, create prd.json from this."
 ---
 
 # PRD to prd.json Converter
 
-Converts existing PRDs to the prd.json format that brave-core-bot uses for autonomous execution.
+Converts existing PRDs to the prd.json format that the bot uses for autonomous execution.
 
 ---
 
 ## The Job
 
-Take a PRD (markdown file or text) and convert it to `data/prd.json` in your brave-core-bot directory.
+Take a PRD (markdown file or text) and convert it to `data/prd.json` in the bot directory.
 
 ---
 

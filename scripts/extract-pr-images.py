@@ -55,7 +55,7 @@ IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg"}
 
 
 def get_bot_dir():
-    """Get the brave-core-bot directory (parent of scripts/)."""
+    """Get the bot directory (parent of scripts/)."""
     return Path(__file__).resolve().parent.parent
 
 
@@ -157,7 +157,7 @@ def download_image(url, dest_path):
     """Download an image file. Returns True on success."""
     try:
         req = urllib.request.Request(url, headers={
-            "User-Agent": "brave-core-bot/1.0",
+            "User-Agent": "brave-bot/1.0",
             "Accept": "image/*",
         })
         with urllib.request.urlopen(req, timeout=15) as response:

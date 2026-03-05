@@ -1,0 +1,29 @@
+{
+  "project": {
+    "name": "my-project",
+    "org": "brave",
+    "prRepository": "brave/my-project",
+    "issueRepository": "brave/my-project",
+    "defaultBranch": "main"
+  },
+  "bot": {
+    "username": "netzenbot",
+    "email": "netzenbot@brave.com",
+    "claudeModel": "opus",
+    "claudeBin": null
+  },
+  "labels": {
+    "prLabels": ["ai-generated"],
+    "issueLabels": [],
+    "disabledTestLabel": ""
+  },
+  "bestPractices": {
+    "submodule": "brave-core-tools",
+    "indexFile": "BEST-PRACTICES.md",
+    "securityFile": "SECURITY.md"
+  },
+  "schedules": {
+    "syncRepo": false,
+    "syncRepoPath": null
+  }
+}

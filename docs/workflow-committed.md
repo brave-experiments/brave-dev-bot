@@ -80,7 +80,7 @@ EOF
    gh pr edit <pr-number> --add-label "label1,label2"
 
    # Add labels to linked issue (ALWAYS required - cannot be done during PR creation)
-   gh issue edit <issue-number> --add-label "label1,label2" --repo brave/brave-browser
+   gh issue edit <issue-number> --add-label "label1,label2" --repo $ISSUE_REPO
    ```
 
    ### Label Rules
@@ -100,16 +100,16 @@ EOF
 7. **If push or PR creation succeeds:**
    - Update the PRD status:
      ```bash
-     python3 <brave-core-bot>/scripts/update-prd-status.py pushed <story-id> --pr-number <number>
+     python3 $BOT_DIR/scripts/update-prd-status.py pushed <story-id> --pr-number <number>
      ```
-   - Append to `./brave-core-bot/data/progress.txt` (see [progress-reporting.md](./progress-reporting.md))
+   - Append to `$BOT_DIR/data/progress.txt` (see [progress-reporting.md](./progress-reporting.md))
    - **Send Signal notification** (no-op if not configured):
      ```bash
-     <brave-core-bot>/scripts/signal-notify.sh "PR created: #<number> - <title> https://github.com/brave/brave-core/pull/<number>"
+     $BOT_DIR/scripts/signal-notify.sh "PR created: #<number> - <title> https://github.com/$PR_REPO/pull/<number>"
      ```
    - **END THE ITERATION** - Stop processing
 
 8. **If push or PR creation fails:**
    - DO NOT update status in prd.json (keep as "committed")
-   - Document failure in `./brave-core-bot/data/progress.txt`
+   - Document failure in `$BOT_DIR/data/progress.txt`
    - **END THE ITERATION** - Stop processing

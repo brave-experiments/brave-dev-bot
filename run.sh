@@ -32,6 +32,8 @@ for arg in "$@"; do
   fi
 done
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/scripts/lib/load-config.sh"
+
 PRD_FILE="$SCRIPT_DIR/data/prd.json"
 PROGRESS_FILE="$SCRIPT_DIR/data/progress.txt"
 ARCHIVE_DIR="$SCRIPT_DIR/archive"
@@ -48,7 +50,7 @@ cleanup_and_return_to_master() {
     if [ -n "$GIT_REPO" ]; then
       # Handle relative paths - make them absolute from brave-browser root
       if [[ "$GIT_REPO" != /* ]]; then
-        # Assume it's relative to brave-browser root (parent of brave-core-bot)
+        # Assume it's relative to parent directory (parent of bot repo)
         BRAVE_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
         GIT_REPO="$BRAVE_ROOT/$GIT_REPO"
       fi
@@ -114,7 +116,7 @@ if [ ! -f "$ORG_MEMBERS_FILE" ]; then
   echo "Error: Org members file not found at $ORG_MEMBERS_FILE"
   echo "This file is required for prompt injection protection."
   echo "Run 'make setup' or create it manually:"
-  echo "  mkdir -p $SCRIPT_DIR/.ignore && gh api 'orgs/brave/members' --paginate | jq -r '.[].login' > $ORG_MEMBERS_FILE"
+  echo "  mkdir -p $SCRIPT_DIR/.ignore && gh api 'orgs/$BOT_ORG/members' --paginate | jq -r '.[].login' > $ORG_MEMBERS_FILE"
   exit 1
 fi
 
@@ -223,12 +225,12 @@ while [ $loop_count -lt $MAX_ITERATIONS ]; do
   echo ""
 
   # Claude Code: use --dangerously-skip-permissions for autonomous operation
-  # Always use opus model (which has extended thinking built-in)
   # In print mode: use stream-json output format with verbose flag to capture detailed execution logs
   # In TUI mode: omit --print to show the interactive TUI
+  BOT_DIRNAME=$(basename "$SCRIPT_DIR")
   CLAUDE_PROMPT="You are working on story $STORY_ID (current status: $STORY_STATUS).
-Follow ./brave-core-bot/docs/workflow-${STORY_STATUS}.md for the workflow.
-Follow the general instructions in ./brave-core-bot/.claude/CLAUDE.md.
+Follow ./$BOT_DIRNAME/docs/workflow-${STORY_STATUS}.md for the workflow.
+Follow the general instructions in ./$BOT_DIRNAME/.claude/CLAUDE.md.
 
 Story details:
 $STORY_DETAILS
@@ -254,9 +256,9 @@ Additional context: $EXTRA_PROMPT"
 
   if [ "$USE_TUI" = true ]; then
     # TUI mode: let Claude own the terminal directly (no piping)
-    claude --dangerously-skip-permissions --model opus --session-id "$SESSION_ID" "$CLAUDE_PROMPT" || true
+    $BOT_CLAUDE_BIN --dangerously-skip-permissions --model "$BOT_CLAUDE_MODEL" --session-id "$SESSION_ID" "$CLAUDE_PROMPT" || true
   else
-    claude --dangerously-skip-permissions --print --model opus --verbose --output-format stream-json --session-id "$SESSION_ID" "$CLAUDE_PROMPT" 2>&1 | tee -a "$ITERATION_LOG" > "$TEMP_OUTPUT" || true
+    $BOT_CLAUDE_BIN --dangerously-skip-permissions --print --model "$BOT_CLAUDE_MODEL" --verbose --output-format stream-json --session-id "$SESSION_ID" "$CLAUDE_PROMPT" 2>&1 | tee -a "$ITERATION_LOG" > "$TEMP_OUTPUT" || true
   fi
 
   echo "To continue this session: claude --resume $SESSION_ID"

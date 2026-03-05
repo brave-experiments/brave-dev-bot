@@ -205,7 +205,7 @@ If changes were made to best practices files, commit them and create a PR so the
 1. **Navigate to the brave-core-tools submodule** directory
 2. **Create a new branch** from the current HEAD:
    ```bash
-   cd <brave-core-bot>/brave-core-tools
+   cd $BOT_DIR/$BP_SUBMODULE
    git checkout -b best-practices-update-$(date +%Y%m%d-%H%M%S)
    ```
 3. **Stage and commit** only the changed best practices files:
@@ -227,7 +227,7 @@ If changes were made to best practices files, commit them and create a PR so the
    ```
 5. **Return to the bot directory** and update the submodule reference if needed:
    ```bash
-   cd <brave-core-bot>
+   cd $BOT_DIR
    ```
 
 If no changes were made, skip this step entirely.
@@ -241,7 +241,7 @@ After the summary report, send a Signal notification. Each changed file goes on 
 **If changes were made:**
 
 ```bash
-<brave-core-bot>/scripts/signal-notify.sh "Best practices updated from <N> upstream URLs.
+$BOT_DIR/scripts/signal-notify.sh "Best practices updated from <N> upstream URLs.
 Conflicts fixed: <C>, rules updated: <U>, new rules: <R>.
 PR: <pr_url>
 Files changed:
@@ -252,7 +252,7 @@ Files changed:
 **If no changes were needed:**
 
 ```bash
-<brave-core-bot>/scripts/signal-notify.sh "Best practices sync: <N> upstream URLs checked, all rules already up to date."
+$BOT_DIR/scripts/signal-notify.sh "Best practices sync: <N> upstream URLs checked, all rules already up to date."
 ```
 
 Do NOT send a notification without listing changed files when changes were made.

@@ -1,5 +1,5 @@
 #!/bin/bash
-# Display a human-readable summary of brave-core-bot scheduled tasks
+# Display a human-readable summary of brave-bot scheduled tasks
 # Parses sync-schedules.sh to show what runs when
 
 set -e
@@ -64,7 +64,7 @@ cron_to_human() {
   echo "${freq_part}${time_part:+ $time_part}"
 }
 
-echo -e "${BOLD}brave-core-bot Scheduled Tasks${RESET}"
+echo -e "${BOLD}Brave Bot Scheduled Tasks${RESET}"
 echo -e "${DIM}Source: scripts/sync-schedules.sh${RESET}"
 echo ""
 
@@ -86,7 +86,7 @@ while IFS= read -r line; do
   fi
 
   # Skip boilerplate lines
-  if [[ "$line" =~ ^(SHELL|PATH)= ]] || [[ "$line" == *"do not edit"* ]] || [[ "$line" == *"=== brave-core-bot"* ]]; then
+  if [[ "$line" =~ ^(SHELL|PATH)= ]] || [[ "$line" == *"do not edit"* ]] || [[ "$line" == *"=== brave-bot"* ]]; then
     continue
   fi
 
@@ -136,7 +136,7 @@ while IFS= read -r line; do
   elif [[ "$command" =~ -p\ \'(/[a-z-]+) ]]; then
     task_name="${BASH_REMATCH[1]}"
   elif [[ "$command" == *"git push origin"* ]]; then
-    task_name="sync brave-core upstream→origin"
+    task_name="sync repo upstream→origin"
   else
     task_name="(unknown)"
   fi

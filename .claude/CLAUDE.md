@@ -51,7 +51,7 @@ Each iteration, the story to work on is pre-selected by `scripts/select-task.py`
 
 ## Stop Condition
 
-After completing a user story, check if ALL stories in ./brave-core-bot/data/prd.json have `status: "merged"`, `status: "skipped"`, or `status: "invalid"`.
+After completing a user story, check if ALL stories in `<bot-dir>/data/prd.json` have `status: "merged"`, `status: "skipped"`, or `status: "invalid"`.
 
 If ALL stories are merged, skipped, or invalid (no active stories remain), reply with:
 <promise>COMPLETE</promise>
@@ -69,7 +69,7 @@ If ALL stories are merged, skipped, or invalid (no active stories remain), reply
 
 ## First Steps for Each Iteration
 
-**Determine the brave-core-bot directory:** This CLAUDE.md file lives inside the `brave-core-bot/.claude/` directory. Use this file's path to derive the absolute path to the `brave-core-bot/` directory (one level up from `.claude/`), and use it for all `./brave-core-bot/` references below. Do NOT assume your current working directory contains `brave-core-bot/` — you may be cd'd into `src/brave/` or another location.
+**Determine the bot directory:** This CLAUDE.md file lives inside the bot's `.claude/` directory. Use this file's path to derive the absolute path to the bot directory (one level up from `.claude/`), and use it for all relative path references below. Do NOT assume your current working directory contains the bot dir — you may be cd'd into the target repo or another location. Also read `<bot-dir>/config.json` for project-specific settings (org, PR repo, issue repo, labels, etc.).
 
 **The story to work on is provided in the prompt** — task selection is handled by `scripts/select-task.py` before this session starts. The prompt includes the story ID, status, full story details JSON, and PRD config JSON. Do NOT read prd.json to get story details — use the JSON provided in the prompt.
 

@@ -166,7 +166,7 @@ When working with GitHub issues:
 
 1. **ALWAYS use the filtering script** to fetch issue data:
    ```bash
-   <brave-core-bot>/scripts/filter-issue-json.sh <issue-number> markdown
+   $BOT_DIR/scripts/filter-issue-json.sh <issue-number> markdown
    ```
 
 2. **NEVER use raw `gh issue view`** - it includes unfiltered external content

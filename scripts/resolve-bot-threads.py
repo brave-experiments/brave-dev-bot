@@ -13,8 +13,12 @@ Usage:
 
 import argparse
 import json
+import os
 import subprocess
 import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from lib.load_config import get_config, load_config
 
 
 def gh_rest(endpoint, method="GET", data=None):
@@ -77,13 +81,13 @@ def gh_graphql(query, variables):
         return None
 
 
-def fetch_review_comments(pr_number):
+def fetch_review_comments(pr_number, repo):
     """Fetch all review comments on a PR."""
-    endpoint = f"repos/brave/brave-core/pulls/{pr_number}/comments"
+    endpoint = f"repos/{repo}/pulls/{pr_number}/comments"
     return gh_rest_paginated(endpoint)
 
 
-def fetch_review_threads(pr_number):
+def fetch_review_threads(pr_number, repo_owner, repo_name):
     """Fetch all review threads with their first comment info via GraphQL."""
     query = """
     query($owner: String!, $name: String!, $number: Int!) {
@@ -108,8 +112,8 @@ def fetch_review_threads(pr_number):
     data = gh_graphql(
         query,
         {
-            "owner": "brave",
-            "name": "brave-core",
+            "owner": repo_owner,
+            "name": repo_name,
             "number": pr_number,
         },
     )
@@ -121,12 +125,12 @@ def fetch_review_threads(pr_number):
         return []
 
 
-def add_reaction(comment_id, dry_run):
+def add_reaction(comment_id, repo, dry_run):
     """Add a +1 reaction to a review comment."""
     if dry_run:
         return True
     result = gh_rest(
-        f"repos/brave/brave-core/pulls/comments/{comment_id}/reactions",
+        f"repos/{repo}/pulls/comments/{comment_id}/reactions",
         method="POST",
         data={"content": "+1"},
     )
@@ -154,11 +158,15 @@ def resolve_thread(thread_id, dry_run):
 
 
 def main():
+    config = load_config()
+    default_repo = get_config(config, "project.prRepository", "brave/brave-core")
+
     parser = argparse.ArgumentParser(
-        description="Resolve bot review threads on a brave/brave-core PR."
+        description="Resolve bot review threads on a PR."
     )
     parser.add_argument("pr_number", type=int, help="PR number")
     parser.add_argument("bot_username", help="Bot's GitHub username")
+    parser.add_argument("--repo", default=default_repo, help="owner/repo for PRs")
     parser.add_argument(
         "--dry-run",
         action="store_true",
@@ -166,8 +174,11 @@ def main():
     )
     args = parser.parse_args()
 
+    repo = args.repo
+    repo_owner, repo_name = repo.split("/", 1)
+
     # 1. Fetch all review comments
-    comments = fetch_review_comments(args.pr_number)
+    comments = fetch_review_comments(args.pr_number, repo)
     if not comments:
         print(
             json.dumps(
@@ -183,7 +194,7 @@ def main():
         return
 
     # 2. Fetch review threads (GraphQL)
-    threads = fetch_review_threads(args.pr_number)
+    threads = fetch_review_threads(args.pr_number, repo_owner, repo_name)
     if not threads:
         print(
             json.dumps(
@@ -266,7 +277,7 @@ def main():
         # Resolve is the harder operation; only add the visible thumbs-up
         # if the thread was actually resolved.
         resolve_ok = resolve_thread(thread_id, args.dry_run)
-        reaction_ok = add_reaction(reply["id"], args.dry_run) if resolve_ok else False
+        reaction_ok = add_reaction(reply["id"], repo, args.dry_run) if resolve_ok else False
 
         if resolve_ok and reaction_ok:
             resolved.append(

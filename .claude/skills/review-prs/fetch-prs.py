@@ -20,9 +20,19 @@ Output: JSON with "prs" array and "summary" stats.
 """
 
 import json
+import os
 import subprocess
 import sys
 from datetime import datetime, timedelta, timezone
+
+# Add scripts/lib to path for config module
+_script_dir = os.path.dirname(os.path.abspath(__file__))
+_bot_dir = os.path.join(_script_dir, "..", "..", "..")
+sys.path.insert(0, os.path.join(_bot_dir, "scripts"))
+from lib.load_config import get_config, load_config
+
+_config = load_config()
+PR_REPO = get_config(_config, "project.prRepository", "brave/brave-core")
 
 CACHE_PATH = ".ignore/review-prs-cache.json"
 ORG_MEMBERS_PATH = ".ignore/org-members.txt"
@@ -89,7 +99,7 @@ def fetch_single_pr(pr_number):
             "view",
             str(pr_number),
             "--repo",
-            "brave/brave-core",
+            PR_REPO,
             "--json",
             fields,
         ],
@@ -123,7 +133,7 @@ def fetch_prs(mode, days, page, pr_number, state):
         "pr",
         "list",
         "--repo",
-        "brave/brave-core",
+        PR_REPO,
         "--state",
         state,
         "--json",

@@ -6,25 +6,25 @@ This document defines how the bot identifies, evaluates, and captures reusable p
 
 Patterns can be discovered from two sources:
 
-### 1. Review Feedback on brave-core PRs
+### 1. Review Feedback on the PR Repository's PRs
 
 When reviewers comment on bot PRs, their feedback often encodes team conventions, coding standards, or Brave-specific idioms that apply beyond the current PR.
 
 ### 2. Previous Fix Attempts (GitHub PR History)
 
-Before implementing any fix, the bot must research previous PRs that attempted the same fix. These previous attempts are searchable in GitHub within the brave-core repository:
+Before implementing any fix, the bot must research previous PRs that attempted the same fix. These previous attempts are searchable in GitHub within the PR repository:
 
 ```bash
 # Search for previous PRs that attempted to fix this issue
 gh api search/issues --method GET \
-  -f q="repo:brave/brave-core is:pr <issue-number> OR <test-name-or-keywords>" \
+  -f q="repo:$PR_REPO is:pr <issue-number> OR <test-name-or-keywords>" \
   --jq '.items[] | {number, title, state, html_url, user: .user.login}'
 
 # Get the diff from a previous attempt
-gh pr diff <pr-number> --repo brave/brave-core
+gh pr diff <pr-number> --repo $PR_REPO
 
 # Get review comments to understand why it failed/was rejected
-gh pr view <pr-number> --repo brave/brave-core --json reviews,comments
+gh pr view <pr-number> --repo $PR_REPO --json reviews,comments
 ```
 
 Review comments on closed/rejected PRs are especially valuable since they explain what went wrong and why.
@@ -62,7 +62,7 @@ After pushing review-requested changes, answer these questions:
 3. Is this about a common mistake or general best practice (not specific to just this PR)?
 4. Would other PRs benefit from knowing this pattern upfront?
 
-**If YES to any question:** Create a documentation PR to brave-core-bot (see [Capturing Patterns](#capturing-patterns) below).
+**If YES to any question:** Create a documentation PR to the bot repository (see [Capturing Patterns](#capturing-patterns) below).
 
 **If NO to all questions:** The feedback is PR-specific, no documentation needed.
 
@@ -74,23 +74,23 @@ After pushing review-requested changes, answer these questions:
 
 | Pattern Type | Document Location |
 |-------------|-------------------|
-| Async testing, RunUntil patterns | `./brave-core-bot/brave-core-tools/BEST-PRACTICES.md` |
-| Git workflow, branch naming | `./brave-core-bot/docs/git-repository.md` |
-| Test execution requirements | `./brave-core-bot/docs/testing-requirements.md` |
-| Problem-solving approaches | `./brave-core-bot/docs/workflow-pending.md` (Problem-Solving Approach section) |
-| PR creation, commit messages | `./brave-core-bot/docs/workflow-committed.md` |
-| Review response patterns | `./brave-core-bot/docs/workflow-pushed.md` |
-| Security practices | `./brave-core-bot/brave-core-tools/SECURITY.md` |
-| General codebase patterns | `./brave-core-bot/data/progress.txt` (Codebase Patterns section) |
+| Async testing, RunUntil patterns | `$BOT_DIR/brave-core-tools/BEST-PRACTICES.md` |
+| Git workflow, branch naming | `$BOT_DIR/docs/git-repository.md` |
+| Test execution requirements | `$BOT_DIR/docs/testing-requirements.md` |
+| Problem-solving approaches | `$BOT_DIR/docs/workflow-pending.md` (Problem-Solving Approach section) |
+| PR creation, commit messages | `$BOT_DIR/docs/workflow-committed.md` |
+| Review response patterns | `$BOT_DIR/docs/workflow-pushed.md` |
+| Security practices | `$BOT_DIR/brave-core-tools/SECURITY.md` |
+| General codebase patterns | `$BOT_DIR/data/progress.txt` (Codebase Patterns section) |
 
-### 2. Create a Separate Branch and PR for brave-core-bot
+### 2. Create a Separate Branch and PR for the Bot Repository
 
 ```bash
 # Save current directory
 ORIGINAL_DIR=$(pwd)
 
-# Switch to brave-core-bot repo
-cd ./brave-core-bot
+# Switch to the bot directory
+cd $BOT_DIR
 
 # Create a new branch for the documentation update
 git checkout master
@@ -110,7 +110,7 @@ Learned from review feedback on PR #<pr-number>: <one-line summary of the patter
 git push -u origin docs/learn-<brief-description>
 gh pr create --title "Add learned pattern: <brief description>" --body "$(cat <<'EOF'
 ## Summary
-- Captured a reusable pattern from review feedback on brave-core PR #<pr-number>
+- Captured a reusable pattern from review feedback on the PR repository's PR #<pr-number>
 
 ## Pattern
 <describe the pattern that was learned>
@@ -127,7 +127,7 @@ cd "$ORIGINAL_DIR"
 ### 3. Document the Learning in progress.txt
 
 - Note that a pattern was identified and captured
-- Reference the brave-core-bot PR number
+- Reference the bot repository PR number
 
 ### When to Skip
 
@@ -140,7 +140,7 @@ cd "$ORIGINAL_DIR"
 
 When researching previous fix attempts (see [workflow-pending.md](./workflow-pending.md) step 4), extract patterns from WHY those attempts failed:
 
-1. **Search closed/rejected PRs** in the brave-core GitHub repo for the same issue or test name
+1. **Search closed/rejected PRs** in the PR repository for the same issue or test name
 2. **Read the diffs** to understand what approaches were tried
 3. **Read review comments** to understand why the approach was rejected or failed
 4. **Look for recurring themes** across multiple failed attempts (e.g., "all three previous attempts tried timing-based fixes and all were rejected")
@@ -152,7 +152,7 @@ If a pattern from previous failures would prevent future PRs from repeating the 
 
 ## Codebase Patterns in progress.txt
 
-For quick, lightweight patterns that don't warrant a documentation PR, add them to the `## Codebase Patterns` section at the TOP of `./brave-core-bot/data/progress.txt`:
+For quick, lightweight patterns that don't warrant a documentation PR, add them to the `## Codebase Patterns` section at the TOP of `$BOT_DIR/data/progress.txt`:
 
 ```
 ## Codebase Patterns

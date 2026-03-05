@@ -1,26 +1,28 @@
 ---
 name: add-backlog-to-prd
-description: "Fetch open issues from brave/brave-browser (by label or assignee) and add missing ones to the Brave Core PRD backlog. Triggers on: add backlog to prd, update prd with issues, sync backlog, fetch issues for prd, add intermittent tests."
+description: "Fetch open issues from the configured issue repository (by label or assignee) and add missing ones to the PRD backlog. Triggers on: add backlog to prd, update prd with issues, sync backlog, fetch issues for prd, add intermittent tests."
 allowed-tools: Bash, Read, Grep, Glob
 ---
 
-# PRD Brave Core - Add Backlog Issues
+# PRD - Add Backlog Issues
 
-Automatically fetch open issues from the brave/brave-browser repository and add any missing ones to the Brave Core Bot PRD.
+Automatically fetch open issues from the configured issue repository and add any missing ones to the PRD.
 
 ---
 
 ## The Job
 
+**Step 0: Read project config.** Read `config.json` (in the bot repo root) to determine:
+- `project.issueRepository` — the repo to fetch issues from (e.g. `brave/brave-browser`)
+- `labels.issueLabels` — array of labels to filter by (e.g. `["bot/type/test"]`)
+
 1. Get the configured git user.name (used as the GitHub username)
-2. Fetch all open issues with the `bot/type/test` label from brave/brave-browser
-3. Fetch all open issues assigned to the git user.name from brave/brave-browser
+2. Fetch all open issues with the configured issue labels from the issue repository
+3. Fetch all open issues assigned to the git user.name from the issue repository
 4. Combine both sets of issues (deduplicated)
 5. Compare with existing issues in the PRD (`./data/prd.json`)
 6. Add any missing issues as new user stories
 7. Provide a recap of what was added
-
-**Important:** This skill is specifically for the Brave Core Bot PRD format.
 
 ---
 
@@ -36,21 +38,21 @@ git config user.name
 
 ## Step 2: Fetch GitHub Issues
 
-Fetch issues from TWO sources and combine them:
+Read `config.json` to get the issue repository and labels. Then fetch issues from TWO sources and combine them:
 
-1. **Labeled issues** (bot/type/test):
+1. **Labeled issues** (using each label from `labels.issueLabels`):
 ```bash
-gh issue list --repo brave/brave-browser --label "bot/type/test" --state open --json number,title,url,labels --limit 100
+gh issue list --repo <issueRepository> --label "<label>" --state open --json number,title,url,labels --limit 100
 ```
 
 2. **Assigned issues** (assigned to the git user.name):
 ```bash
-gh issue list --repo brave/brave-browser --assignee "<git_user_name>" --state open --json number,title,url,labels --limit 100
+gh issue list --repo <issueRepository> --assignee "<git_user_name>" --state open --json number,title,url,labels --limit 100
 ```
 
 3. **Combine and deduplicate** by issue number:
 ```bash
-jq -s '[.[][] | {number, title, url, labels}] | unique_by(.number)' <(gh issue list --repo brave/brave-browser --label "bot/type/test" --state open --json number,title,url,labels --limit 100) <(gh issue list --repo brave/brave-browser --assignee "$(git config user.name)" --state open --json number,title,url,labels --limit 100)
+jq -s '[.[][] | {number, title, url, labels}] | unique_by(.number)' <(gh issue list --repo <issueRepository> --label "<label>" --state open --json number,title,url,labels --limit 100) <(gh issue list --repo <issueRepository> --assignee "$(git config user.name)" --state open --json number,title,url,labels --limit 100)
 ```
 
 ---
@@ -60,9 +62,11 @@ jq -s '[.[][] | {number, title, url, labels}] | unique_by(.number)' <(gh issue l
 A single helper script handles both new and existing PRDs:
 
 ```bash
+ISSUE_REPO=$(jq -r '.project.issueRepository' config.json)
+ISSUE_LABEL=$(jq -r '.labels.issueLabels[0]' config.json)
 jq -s '[.[][] | {number, title, url, labels}] | unique_by(.number)' \
-  <(gh issue list --repo brave/brave-browser --label "bot/type/test" --state open --json number,title,url,labels --limit 100) \
-  <(gh issue list --repo brave/brave-browser --assignee "$(git config user.name)" --state open --json number,title,url,labels --limit 100) | \
+  <(gh issue list --repo "$ISSUE_REPO" --label "$ISSUE_LABEL" --state open --json number,title,url,labels --limit 100) \
+  <(gh issue list --repo "$ISSUE_REPO" --assignee "$(git config user.name)" --state open --json number,title,url,labels --limit 100) | \
   .claude/skills/add-backlog-to-prd/update-prd-with-issues.py ./data/prd.json > /tmp/prd_updated.json && \
   mv /tmp/prd_updated.json ./data/prd.json
 ```
@@ -173,7 +177,7 @@ After the recap, send a Signal notification summarizing what was added. Each iss
 **If new issues were added:**
 
 ```bash
-<brave-core-bot>/scripts/signal-notify.sh "PRD backlog updated: added <N> new issues.
+$BOT_DIR/scripts/signal-notify.sh "PRD backlog updated: added <N> new issues.
 https://github.com/brave/brave-browser/issues/<number1>
 https://github.com/brave/brave-browser/issues/<number2>
 https://github.com/brave/brave-browser/issues/<number3>"
@@ -182,7 +186,7 @@ https://github.com/brave/brave-browser/issues/<number3>"
 **If no new issues were added:**
 
 ```bash
-<brave-core-bot>/scripts/signal-notify.sh "PRD backlog sync: no new issues to add. <N> issues already tracked."
+$BOT_DIR/scripts/signal-notify.sh "PRD backlog sync: no new issues to add. <N> issues already tracked."
 ```
 
 Do NOT send a notification without issue links when issues were added.

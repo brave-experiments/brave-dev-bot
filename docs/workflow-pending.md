@@ -2,7 +2,7 @@
 
 **Goal: Implement and test the story**
 
-**📖 FIRST STEP**: Read `./brave-core-bot/brave-core-tools/BEST-PRACTICES.md` which indexes all best practices docs. Then read the specific docs relevant to your task:
+**📖 FIRST STEP**: Read `$BOT_DIR/brave-core-tools/BEST-PRACTICES.md` which indexes all best practices docs. Then read the specific docs relevant to your task:
 - **Test fixes**: Read the async testing, JS evaluation, navigation, and test isolation docs
 - **C++ code changes**: Read `docs/best-practices/coding-standards.md` (naming, ownership, Chromium APIs, banned patterns)
 - **Front-end (TypeScript/React) changes**: Read `docs/best-practices/frontend.md` (component props, XSS prevention)
@@ -26,7 +26,7 @@ Only read the docs relevant to your story — don't load all of them every time.
    - If story has NO `branchName` or it's null: Create NEW branch following naming convention below
    - Store the branch name:
      ```bash
-     python3 <brave-core-bot>/scripts/update-prd-status.py set-branch <story-id> --branch <branch-name>
+     python3 $BOT_DIR/scripts/update-prd-status.py set-branch <story-id> --branch <branch-name>
      ```
 
    **Branch Naming Format:**
@@ -56,12 +56,12 @@ Only read the docs relevant to your story — don't load all of them every time.
    **Check for linked or related pull requests:**
    ```bash
    # Search for PRs that reference this issue number
-   gh pr list --repo brave/brave-browser --search "<issue-number>" --json number,title,state,url,author
+   gh pr list --repo $ISSUE_REPO --search "<issue-number>" --json number,title,state,url,author
    ```
 
-   **Also check the brave-core repository (where PRs are created):**
+   **Also check the PR repository (where PRs are created):**
    ```bash
-   gh pr list --repo brave/brave-core --search "<issue-number>" --json number,title,state,url,author
+   gh pr list --repo $PR_REPO --search "<issue-number>" --json number,title,state,url,author
    ```
 
    **Analyze the results:**
@@ -84,10 +84,10 @@ Only read the docs relevant to your story — don't load all of them every time.
    3. **How to check timestamps:**
       ```bash
       # Get issue creation date
-      gh issue view <issue-number> --repo brave/brave-browser --json createdAt
+      gh issue view <issue-number> --repo $ISSUE_REPO --json createdAt
 
       # Get PR merge date (if merged)
-      gh pr view <pr-number> --repo brave/brave-core --json mergedAt
+      gh pr view <pr-number> --repo $PR_REPO --json mergedAt
 
       # If issue.createdAt > pr.mergedAt, this is a RE-OCCURRENCE → work on it
       # If issue.createdAt < pr.mergedAt AND no new comments after merge → may be duplicate
@@ -103,13 +103,13 @@ Only read the docs relevant to your story — don't load all of them every time.
      - Check the PR author and description to confirm it's for the same issue
      - Update the story status:
        ```bash
-       python3 <brave-core-bot>/scripts/update-prd-status.py skipped <story-id> --reason "PR #XXXXX already exists for this issue"
+       python3 $BOT_DIR/scripts/update-prd-status.py skipped <story-id> --reason "PR #XXXXX already exists for this issue"
        ```
-     - Document in `./brave-core-bot/data/progress.txt` that you found an existing PR
+     - Document in `$BOT_DIR/data/progress.txt` that you found an existing PR
      - **Post a comment on the GitHub issue** (if not already commented):
        ```bash
-       gh issue comment <issue-number> --repo brave/brave-browser --body "$(cat <<'EOF'
-       This issue is already being addressed by PR #XXXXX (in brave-core repository).
+       gh issue comment <issue-number> --repo $ISSUE_REPO --body "$(cat <<'EOF'
+       This issue is already being addressed by PR #XXXXX (in the PR repository).
 
        Skipping duplicate work.
        EOF
@@ -132,14 +132,14 @@ Only read the docs relevant to your story — don't load all of them every time.
    ```bash
    # Search for closed/merged PRs that reference this issue
    gh api search/issues --method GET \
-     -f q="repo:brave/brave-core is:pr <issue-number> OR <test-name-or-keywords>" \
+     -f q="repo:$PR_REPO is:pr <issue-number> OR <test-name-or-keywords>" \
      --jq '.items[] | {number, title, state, html_url, user: .user.login}'
    ```
 
    **If previous attempts are found:**
    - Gather the diffs from those PRs to understand what was tried:
      ```bash
-     gh pr diff <pr-number> --repo brave/brave-core
+     gh pr diff <pr-number> --repo $PR_REPO
      ```
    - Read any review comments to understand why the approach may have failed
    - Use this context to inform your approach - avoid repeating failed strategies
@@ -220,7 +220,7 @@ Only read the docs relevant to your story — don't load all of them every time.
    3. **Check upstream flakiness data (Chromium tests only):**
       This step only applies to upstream Chromium tests — skip it for Brave-specific tests (defined in `src/brave/`), which will not appear in the Chromium database.
       ```bash
-      python3 ./brave-core-bot/brave-core-tools/scripts/check-upstream-flake.py "<TestClassName.TestMethod>"
+      python3 $BOT_DIR/brave-core-tools/scripts/check-upstream-flake.py "<TestClassName.TestMethod>"
       ```
       - If the verdict is "Known upstream flake" or "Occasional upstream failures":
         Document this finding in the filter file comment and commit message
@@ -299,16 +299,16 @@ Only read the docs relevant to your story — don't load all of them every time.
 12. **Once all verifications pass:**
    - Update the PRD status:
      ```bash
-     python3 <brave-core-bot>/scripts/update-prd-status.py committed <story-id> --branch <branch-name>
+     python3 $BOT_DIR/scripts/update-prd-status.py committed <story-id> --branch <branch-name>
      ```
-   - Append your progress to `./brave-core-bot/data/progress.txt` (see [progress-reporting.md](./progress-reporting.md))
+   - Append your progress to `$BOT_DIR/data/progress.txt` (see [progress-reporting.md](./progress-reporting.md))
    - **Continue in same iteration:** Do NOT mark story as checked yet - proceed immediately to push and create PR (see [workflow-committed.md](./workflow-committed.md))
 
 13. **If ANY tests fail:**
    - DO NOT commit changes
    - Keep `status: "pending"`
    - Keep `branchName` (so we can continue on same branch next iteration)
-   - Document failure in `./brave-core-bot/data/progress.txt`
+   - Document failure in `$BOT_DIR/data/progress.txt`
    - **END THE ITERATION** - Stop processing
 
 ## Retry Policy for Persistent Failures
@@ -340,7 +340,7 @@ When multiple attempts have failed, consider whether the fundamental approach is
 
 **Last resort - disable with full documentation:**
 If no fix is viable after thorough investigation, you may create a PR to disable the test, but you MUST:
-- For Chromium tests (not Brave-specific tests): run `python3 ./brave-core-bot/brave-core-tools/scripts/check-upstream-flake.py "<TestName>"` and include the results
+- For Chromium tests (not Brave-specific tests): run `python3 $BOT_DIR/brave-core-tools/scripts/check-upstream-flake.py "<TestName>"` and include the results
 - Document all previous fix attempts (including PRs by others)
 - Explain why each approach failed
 - Describe the fundamental issue that makes the test unfixable
