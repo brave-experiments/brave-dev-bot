@@ -78,12 +78,29 @@ Before merging, verify ALL of the following:
    Use the nightly version provided in the prompt (e.g., `1.89.x`). The milestone name is `<nightly-version> - Nightly` (e.g., `1.89.x - Nightly`). Only run `python3 $BOT_DIR/scripts/get-nightly-version.py` to fetch the nightly version if none was provided in the prompt.
 
    ```bash
-   # Set milestone on the PR
+   # Set milestone on the PR (PRs always get the milestone matching their base branch)
    gh pr edit <pr-number> --repo $PR_REPO --milestone "<nightly-version> - Nightly"
-
-   # Set milestone on the linked issue (if the story has an issueNumber)
-   gh issue edit <issue-number> --repo $ISSUE_REPO --milestone "<nightly-version> - Nightly"
    ```
+
+   **For the linked issue** (if the story has an `issueNumber`): only set the milestone if the issue doesn't already have a smaller version milestone. An issue may already have a smaller milestone from an uplift PR that landed on beta or release.
+
+   ```bash
+   # Check the issue's current milestone first
+   CURRENT_MILESTONE=$(gh issue view <issue-number> --repo $ISSUE_REPO --json milestone --jq '.milestone.title // ""')
+
+   # Extract version number from milestone (e.g., "1.87.x - Release" → "1.87")
+   CURRENT_VERSION=$(echo "$CURRENT_MILESTONE" | grep -oE '^[0-9]+\.[0-9]+' || echo "")
+   NEW_VERSION=$(echo "<nightly-version>" | grep -oE '^[0-9]+\.[0-9]+' || echo "")
+
+   # Only set milestone if:
+   # - Issue has no milestone, OR
+   # - New version is smaller than (i.e., released before) the current version
+   if [ -z "$CURRENT_VERSION" ] || [ "$(echo -e "$NEW_VERSION\n$CURRENT_VERSION" | sort -V | head -1)" = "$NEW_VERSION" ] && [ "$NEW_VERSION" != "$CURRENT_VERSION" ]; then
+     gh issue edit <issue-number> --repo $ISSUE_REPO --milestone "<nightly-version> - Nightly"
+   fi
+   ```
+
+   The correct issue milestone is always the **smallest version** where the fix has landed. Do NOT overwrite a smaller milestone with a larger one (e.g., do not change `1.87.x - Release` to `1.89.x - Nightly`).
 
    If setting the milestone fails (e.g., milestone doesn't exist yet), note it in progress.txt but continue — do not block the merge workflow.
 
