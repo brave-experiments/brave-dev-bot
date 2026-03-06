@@ -16,9 +16,9 @@ Automatically fetch open issues from the configured issue repository and add any
 - `project.issueRepository` — the repo to fetch issues from (e.g. `brave/brave-browser`)
 - `labels.issueLabels` — array of labels to filter by (e.g. `["bot/type/test"]`)
 
-1. Get the configured git user.name (used as the GitHub username)
+1. Get the bot username from `config.json` (used as the GitHub username)
 2. Fetch all open issues with the configured issue labels from the issue repository
-3. Fetch all open issues assigned to the git user.name from the issue repository
+3. Fetch all open issues assigned to the bot username from the issue repository
 4. Combine both sets of issues (deduplicated)
 5. Compare with existing issues in the PRD (`./data/prd.json`)
 6. Add any missing issues as new user stories
@@ -26,13 +26,9 @@ Automatically fetch open issues from the configured issue repository and add any
 
 ---
 
-## Step 1: Get Git Username
+## Step 1: Bot Username
 
-Get the configured git user.name to use as the GitHub username for fetching assigned issues:
-
-```bash
-git config user.name
-```
+The bot username is already available from `config.json` (read in Step 0) via `bot.username`. Use this as the GitHub username for fetching assigned issues.
 
 ---
 
@@ -45,14 +41,14 @@ Read `config.json` to get the issue repository and labels. Then fetch issues fro
 gh issue list --repo <issueRepository> --label "<label>" --state open --json number,title,url,labels --limit 100
 ```
 
-2. **Assigned issues** (assigned to the git user.name):
+2. **Assigned issues** (assigned to `bot.username` from config.json):
 ```bash
-gh issue list --repo <issueRepository> --assignee "<git_user_name>" --state open --json number,title,url,labels --limit 100
+gh issue list --repo <issueRepository> --assignee "$BOT_USER" --state open --json number,title,url,labels --limit 100
 ```
 
 3. **Combine and deduplicate** by issue number:
 ```bash
-jq -s '[.[][] | {number, title, url, labels}] | unique_by(.number)' <(gh issue list --repo <issueRepository> --label "<label>" --state open --json number,title,url,labels --limit 100) <(gh issue list --repo <issueRepository> --assignee "$(git config user.name)" --state open --json number,title,url,labels --limit 100)
+jq -s '[.[][] | {number, title, url, labels}] | unique_by(.number)' <(gh issue list --repo <issueRepository> --label "<label>" --state open --json number,title,url,labels --limit 100) <(gh issue list --repo <issueRepository> --assignee "$BOT_USER" --state open --json number,title,url,labels --limit 100)
 ```
 
 ---
@@ -64,9 +60,11 @@ A single helper script handles both new and existing PRDs:
 ```bash
 ISSUE_REPO=$(jq -r '.project.issueRepository' config.json)
 ISSUE_LABEL=$(jq -r '.labels.issueLabels[0]' config.json)
+BOT_USER=$(jq -r '.bot.username' config.json)
+# Note: all three values above come from config.json (already read in Step 0)
 jq -s '[.[][] | {number, title, url, labels}] | unique_by(.number)' \
   <(gh issue list --repo "$ISSUE_REPO" --label "$ISSUE_LABEL" --state open --json number,title,url,labels --limit 100) \
-  <(gh issue list --repo "$ISSUE_REPO" --assignee "$(git config user.name)" --state open --json number,title,url,labels --limit 100) | \
+  <(gh issue list --repo "$ISSUE_REPO" --assignee "$BOT_USER" --state open --json number,title,url,labels --limit 100) | \
   .claude/skills/add-backlog-to-prd/update-prd-with-issues.py ./data/prd.json > /tmp/prd_updated.json && \
   mv /tmp/prd_updated.json ./data/prd.json
 ```
