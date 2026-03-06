@@ -8,7 +8,7 @@
   },
   "bot": {
     "username": "netzenbot",
-    "email": "netzenbot@brave.com",
+    "email": "netzenbot@agentmail.to",
     "claudeModel": "opus",
     "claudeBin": null
   },

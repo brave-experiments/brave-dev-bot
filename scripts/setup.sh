@@ -66,7 +66,7 @@ if [ "$WRITE_CONFIG" = true ]; then
   read -p "Default branch (e.g. master) [master]: " CFG_DEFAULT_BRANCH
   CFG_DEFAULT_BRANCH="${CFG_DEFAULT_BRANCH:-master}"
   prompt_required CFG_BOT_USER "Bot GitHub username (e.g. netzenbot): "
-  prompt_required CFG_BOT_EMAIL "Bot email (e.g. netzenbot@brave.com): "
+  prompt_required CFG_BOT_EMAIL "Bot email (e.g. bot@example.com): "
   read -p "Issue labels (comma-separated, e.g. bot/type/test): " CFG_LABELS_RAW
 
   # Build config.json safely via Python to avoid JSON injection from user input

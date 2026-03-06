@@ -1,14 +1,14 @@
 {
   "project": {
     "name": "my-project",
-    "org": "brave",
-    "prRepository": "brave/my-project",
-    "issueRepository": "brave/my-project",
+    "org": "my-org",
+    "prRepository": "my-org/my-project",
+    "issueRepository": "my-org/my-project",
     "defaultBranch": "main"
   },
   "bot": {
-    "username": "netzenbot",
-    "email": "netzenbot@brave.com",
+    "username": "my-bot",
+    "email": "my-bot@example.com",
     "claudeModel": "opus",
     "claudeBin": null
   },
