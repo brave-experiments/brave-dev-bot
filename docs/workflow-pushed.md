@@ -75,7 +75,7 @@ Before merging, verify ALL of the following:
 
 4. **Set nightly milestone on the PR and linked issue:**
 
-   Use the nightly version provided in the prompt (e.g., `1.89.x`). The milestone name is `<nightly-version> - Nightly` (e.g., `1.89.x - Nightly`). Only fetch `https://github.com/$ISSUE_REPO/wiki/Brave-Release-Schedule` if no nightly version was provided in the prompt.
+   Use the nightly version provided in the prompt (e.g., `1.89.x`). The milestone name is `<nightly-version> - Nightly` (e.g., `1.89.x - Nightly`). Only run `python3 $BOT_DIR/scripts/get-nightly-version.py` to fetch the nightly version if none was provided in the prompt.
 
    ```bash
    # Set milestone on the PR

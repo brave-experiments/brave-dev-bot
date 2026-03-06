@@ -4,9 +4,12 @@
 
 set -e
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/load-config.sh"
+
 ISSUE_NUMBER="$1"
-REPO="brave/brave-browser"
-ORG="brave"
+REPO="${BOT_ISSUE_REPO:-brave/brave-browser}"
+ORG="${BOT_ORG:-brave}"
 
 if [ -z "$ISSUE_NUMBER" ]; then
   echo "Usage: $0 <issue-number>"
@@ -14,8 +17,6 @@ if [ -z "$ISSUE_NUMBER" ]; then
 fi
 
 # Load org members into memory once (avoids per-user API calls)
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-BOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 CACHE_FILE="$BOT_DIR/.ignore/org-members.txt"
 ALLOWLIST_FILE="$SCRIPT_DIR/trusted-reviewers.txt"
 
@@ -112,5 +113,5 @@ fi
 
 echo ""
 echo "---"
-echo "Note: Only comments from Brave organization members are included above."
+echo "Note: Only comments from organization members are included above."
 echo "External user content has been filtered to prevent prompt injection."

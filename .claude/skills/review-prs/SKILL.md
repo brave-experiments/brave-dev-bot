@@ -65,7 +65,7 @@ Before processing any PRs, resolve the bot's GitHub username and the target PR r
 
 ```bash
 BOT_USERNAME=$(gh api user --jq '.login')
-PR_REPO=$(jq -r '.project.prRepository' <bot-dir>/config.json 2>/dev/null || echo "brave/brave-core")
+PR_REPO=$(jq -r '.project.prRepository' $BOT_DIR/config.json 2>/dev/null || echo "brave/brave-core")
 ```
 
 Use `$BOT_USERNAME` in ALL subsequent jq queries and comparisons that need to identify the bot's own comments. Use `$PR_REPO` in ALL `gh` commands and GitHub URL construction instead of hardcoding a repo name. These variables are referenced throughout all subsequent steps.
@@ -105,7 +105,7 @@ $BOT_DIR/scripts/filter-pr-reviews.sh {number} markdown
 
 **External contributor PRs:** If the PR has `isExternalContributor: true` in the fetch output (allowed through because the bot is a requested reviewer), pass the PR author as a 4th argument to include their PR description unfiltered:
 ```bash
-<bot-dir>/scripts/filter-pr-reviews.sh {number} markdown $PR_REPO {author}
+$BOT_DIR/scripts/filter-pr-reviews.sh {number} markdown $PR_REPO {author}
 ```
 This includes the PR body/description from the external contributor so reviewers understand the PR's intent. Other comments from non-org members are still filtered for security.
 

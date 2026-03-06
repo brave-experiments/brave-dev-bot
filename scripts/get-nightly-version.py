@@ -5,12 +5,19 @@ Prints the nightly version (e.g. '1.89.x') to stdout.
 Falls back to empty output on failure (caller should handle gracefully).
 """
 
+import os
 import re
 import sys
 import urllib.request
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from lib.load_config import get_config, load_config
+
+_config = load_config()
+_issue_repo = get_config(_config, "project.issueRepository", "brave/brave-browser")
+
 WIKI_URL = ("https://raw.githubusercontent.com/wiki/"
-            "brave/brave-browser/Brave-Release-Schedule.md")
+            f"{_issue_repo}/Brave-Release-Schedule.md")
 
 
 def main():

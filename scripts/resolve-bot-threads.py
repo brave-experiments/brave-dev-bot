@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Resolve bot review threads on a brave/brave-core PR.
+Resolve bot review threads on a PR.
 
 Atomically: fetches bot comments, finds developer replies, adds thumbs-up
 reactions, and resolves review threads. Replaces the multi-step manual

@@ -208,7 +208,7 @@ Bot-only skills are available as slash commands in Claude Code. 8 bot-specific s
 | `/prd` | Generate structured PRDs with clarifying questions |
 | `/prd-json` | Convert PRD markdown to `prd.json` format |
 | `/prd-clean` | Archive merged/invalid stories to `prd.archived.json` |
-| `/add-backlog-to-prd` | Fetch open issues from brave/brave-browser by label and add to PRD |
+| `/add-backlog-to-prd` | Fetch open issues from configured issue repo by label and add to PRD |
 
 ### Code Review & Quality
 

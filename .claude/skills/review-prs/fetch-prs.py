@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fetch and filter brave/brave-core PRs for review.
+"""Fetch and filter PRs for review.
 
 Handles all PR fetching, filtering, and cache checking in one script
 so the LLM doesn't burn tokens on this logic.

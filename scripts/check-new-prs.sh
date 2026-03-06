@@ -1,6 +1,6 @@
 #!/bin/bash
 # Gate script for review-prs cron job.
-# Exits 0 if there are open PRs in brave/brave-core updated in the last day.
+# Exits 0 if there are open PRs in the configured PR repo updated in the last day.
 # Exits 1 if no recent PRs found (nothing to review).
 #
 # Usage in cron: ./scripts/check-new-prs.sh && claude -p '/review-prs 1d open auto' ...
