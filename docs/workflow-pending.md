@@ -239,44 +239,13 @@
    DIFF=$(git diff HEAD~1..HEAD)
    ```
 
-   ### Step 9.2: Classify changed files
+   ### Step 9.2: Classify files and determine applicable docs
 
-   Extract the file list and classify:
-   - **has_cpp_files**: `.cc`, `.h`, `.mm` files
-   - **has_test_files**: `*_test.cc`, `*_browsertest.cc`, `*_unittest.cc`
-   - **has_chromium_src**: `chromium_src/` paths
-   - **has_build_files**: `BUILD.gn`, `DEPS`, `*.gni`
-   - **has_frontend_files**: `.ts`, `.tsx`, `.html`, `.css`
-   - **has_android_files**: `.java`, `.kt` files, or `android/` paths
-   - **has_ios_files**: `.swift` files, or `ios/` paths
-   - **has_patch_files**: `.patch` files or `patches/` paths
-   - **has_filter_files**: `test/filters/*.filter` files only
-   - **has_grd_files**: `.grd`, `.grdp` files
-
-   ### Step 9.3: Determine applicable documents
-
-   | Document | Condition |
-   |----------|-----------|
-   | `coding-standards.md` | has_cpp_files |
-   | `coding-standards-memory.md` | has_cpp_files |
-   | `coding-standards-apis.md` | has_cpp_files |
-   | `testing-async.md` | has_test_files |
-   | `testing-isolation.md` | has_test_files |
-   | `testing-javascript.md` | has_test_files |
-   | `testing-navigation.md` | has_test_files |
-   | `build-system.md` | has_build_files |
-   | `chromium-src-overrides.md` | has_chromium_src |
-   | `frontend.md` | has_frontend_files |
-   | `android.md` | has_android_files |
-   | `ios.md` | has_ios_files |
-   | `patches.md` | has_patch_files |
-   | `localization.md` | has_grd_files |
-   | `architecture.md` | has_cpp_files or has_build_files |
-   | `documentation.md` | Always |
+   Follow the exact same process as Steps 4 and 5 of the `/check-best-practices` skill (`$BOT_DIR/brave-core-tools/.claude/skills/check-best-practices/SKILL.md`): classify changed files, determine applicable best practices documents using the applicability table defined there, and skip documents whose category has no matching files.
 
    **For filter-file-only changes** (`test/filters/*.filter` and nothing else): Only `testing-isolation.md` and `documentation.md` apply. Skip all other documents.
 
-   ### Step 9.4: Chunk documents and launch parallel subagents
+   ### Step 9.3: Chunk documents and launch parallel subagents
 
    For each applicable document, run the chunking script:
    ```bash
