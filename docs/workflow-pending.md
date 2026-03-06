@@ -4,10 +4,10 @@
 
 ## Implementation Steps
 
-1. **IMPORTANT**: All git operations must be done in `[workingDirectory from prd.json config]` directory
+1. **IMPORTANT**: All git operations must be done in `[targetRepoPath from bot config]` directory
 
 2. **CRITICAL BRANCH MANAGEMENT**:
-   - Change to the git repo: `cd [workingDirectory from prd.json config]`
+   - Change to the git repo: `cd [targetRepoPath from bot config]`
    - Checkout master: `git checkout master`
    - Pull latest changes: `git pull origin master`
 
@@ -249,7 +249,7 @@
    This step is mandatory — it catches issues that are easy to miss when focused on implementation. Do NOT skip it.
 
 10. **If ALL tests pass:**
-   - Commit ALL changes (must be in `[workingDirectory from prd.json config]`)
+   - Commit ALL changes (must be in `[targetRepoPath from bot config]`)
    - **IMPORTANT**: If fixing security-sensitive issues (XSS, CSRF, buffer overflows, sanitizer issues, etc.), use discretion in commit messages - see [SECURITY.md](../brave-core-tools/SECURITY.md#public-security-messaging) for guidance
    - **For Chromium test disables (filter file modifications)**: If you detected this is a Chromium test in step 7, include in commit message:
      - State clearly that it's a **Chromium test** (e.g., "Disable Chromium test..." or "This is an upstream Chromium test...")
@@ -260,7 +260,7 @@
 
    After committing, you MUST run the full verification cycle to ensure the commit is valid:
    ```bash
-   cd [workingDirectory from prd.json config]
+   cd [targetRepoPath from bot config]
    npm run format      # Check/fix formatting
    npm run presubmit   # Run presubmit checks
    npm run gn_check    # Verify GN configuration (skip for filter-file-only changes)

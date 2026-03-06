@@ -82,9 +82,6 @@ if [ "$WRITE_CONFIG" = true ]; then
   if [ -f "$CONFIG_FILE" ]; then
     PREV_TARGET_REPO=$(jq -r '.project.targetRepoPath // empty' "$CONFIG_FILE" 2>/dev/null || echo "")
   fi
-  if [ -z "$PREV_TARGET_REPO" ] && [ -f "$PROJECT_ROOT/data/prd.json" ]; then
-    PREV_TARGET_REPO=$(jq -r '.config.workingDirectory // .config.gitRepo // .ralphConfig.workingDirectory // .ralphConfig.gitRepo // empty' "$PROJECT_ROOT/data/prd.json" 2>/dev/null || echo "")
-  fi
   prompt_required CFG_TARGET_REPO "Target repo path (e.g. src/brave, ../my-project): " "$PREV_TARGET_REPO"
 
   echo ""
@@ -438,7 +435,7 @@ echo ""
 # Show next steps based on what's still needed
 NEXT=()
 if [ ! -f "$PROJECT_ROOT/data/prd.json" ] || \
-   [ "$(jq -r '.userStories // .stories | length' "$PROJECT_ROOT/data/prd.json" 2>/dev/null)" = "0" ]; then
+   [ "$(jq -r '.stories // .stories | length' "$PROJECT_ROOT/data/prd.json" 2>/dev/null)" = "0" ]; then
   NEXT+=("Edit data/prd.json with your user stories (or use /prd-json skill)")
 fi
 if [ "$SKIP_GIT" = true ] && [ -z "${GIT_REPO_RAW:-}" ]; then

@@ -107,8 +107,8 @@ COMMENT_ID=$(echo "$FILTERED_DATA" | jq -r '.issue_comments[] | select(.user.log
 **Posting the reply:**
 
 ```bash
-# Get PR repository from config.json
-PR_REPO=$(jq -r '.project.prRepository' $BOT_DIR/config.json)
+# Get PR repository from bot config (provided in prompt)
+PR_REPO="<project.prRepository from bot config>"
 
 # Calculate next check timespan based on current mergedCheckCount
 # mergedCheckCount 0 (just did first check): next in 2 days
@@ -167,11 +167,7 @@ For each follow-up task requested in post-merge comments:
 
 #### a. Create GitHub Issue
 
-Get the issue repository from `prd.json` config:
-```bash
-# Read issueRepository from config.json
-ISSUE_REPO=$(jq -r '.project.issueRepository' $BOT_DIR/config.json)
-```
+Get the issue repository from the bot config provided in the prompt (`project.issueRepository`).
 
 Create a detailed GitHub issue:
 ```bash
@@ -249,8 +245,8 @@ From the filtered PR reviews data, you have the comment ID of the post-merge com
 
 Reply directly to that comment using the GitHub API:
 ```bash
-# Get PR repository from config.json
-PR_REPO=$(jq -r '.project.prRepository' $BOT_DIR/config.json)
+# Get PR repository from bot config (provided in prompt)
+PR_REPO="<project.prRepository from bot config>"
 
 # Reply to the specific comment (creates a threaded reply)
 gh api \

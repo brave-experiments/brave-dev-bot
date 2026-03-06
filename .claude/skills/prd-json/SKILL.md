@@ -26,7 +26,7 @@ Take a PRD (markdown file or text) and convert it to `data/prd.json` in the bot 
     "workingDirectory": "[Git repo path, e.g., src/brave]",
     "testExecutionRequired": true
   },
-  "userStories": [
+  "stories": [
     {
       "id": "US-001",
       "title": "[Story title]",
@@ -199,7 +199,7 @@ Add ability to mark tasks with different statuses.
     "workingDirectory": ".",
     "testExecutionRequired": true
   },
-  "userStories": [
+  "stories": [
     {
       "id": "US-001",
       "title": "Add status field to tasks table",

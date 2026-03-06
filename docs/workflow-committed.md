@@ -8,7 +8,7 @@
 
 ## Steps
 
-1. Change to git repo: `cd [workingDirectory from prd.json config]`
+1. Change to git repo: `cd [targetRepoPath from bot config]`
 
 2. Get branch name from story's `branchName` field
 

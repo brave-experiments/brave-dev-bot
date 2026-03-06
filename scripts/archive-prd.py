@@ -38,7 +38,7 @@ def main():
         try:
             with open(archive_path, "r") as f:
                 old_prd = json.load(f)
-                old_stories = old_prd.get("userStories", [])
+                old_stories = old_prd.get("stories", [])
         except (FileNotFoundError, json.JSONDecodeError) as e:
             print(f"WARNING: Could not read {archive_path}: {e}", file=sys.stderr)
             print("Starting with empty archive.", file=sys.stderr)
@@ -47,7 +47,7 @@ def main():
     active_stories = []
     archived_stories = []
 
-    for story in prd.get("userStories", []):
+    for story in prd.get("stories", []):
         if story.get("status") in ("merged", "invalid"):
             archived_stories.append(story)
         else:
@@ -66,12 +66,10 @@ def main():
 
     # Build output structures
     new_prd = copy.deepcopy(prd)
-    new_prd["userStories"] = active_stories
+    new_prd["stories"] = active_stories
 
     archive_data = {
-        "projectName": prd.get("projectName", "Unknown"),
-        "config": prd.get("config", {}),
-        "userStories": all_archived,
+        "stories": all_archived,
     }
 
     # Write archive file

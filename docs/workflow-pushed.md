@@ -11,7 +11,7 @@ If a story has `status: "pushed"` with `prUrl` and `prNumber` already defined, t
 ## Initial Steps
 
 1. Get the PR number from the story's `prNumber` field
-2. Get the PR repository from prd.json `ralphConfig.prRepository` field
+2. Get the PR repository from the bot config provided in the prompt (`project.prRepository`)
 3. **Check if PR is already closed:**
    ```bash
    gh pr view <pr-number> --json state -q '.state'
@@ -254,7 +254,7 @@ Before implementing changes, analyze review comments to detect if the reviewer i
 ### 4. Checkout Correct Branch and Rebase
 
 - Get branch name from story's `branchName` field
-- `cd [workingDirectory from prd.json config]`
+- `cd [targetRepoPath from bot config]`
 - `git checkout <branchName>`
 - Ensure you're on the story's existing branch
 - **Rebase on upstream/master** to pick up any new changes:

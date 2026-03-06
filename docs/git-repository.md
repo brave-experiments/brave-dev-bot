@@ -3,7 +3,7 @@
 ## Git Repository Location
 
 **CRITICAL**: All git operations (checkout, commit, branch) must be done in:
-- `[workingDirectory from prd.json config]`
+- `[targetRepoPath from bot config]`
 
 This is the brave-core repository. The parent directories are chromium and not where you should commit.
 
@@ -12,7 +12,7 @@ This is the brave-core repository. The parent directories are chromium and not w
 Every user story MUST start with a fresh branch from origin/master:
 
 ```bash
-cd [workingDirectory from prd.json config]
+cd [targetRepoPath from bot config]
 git checkout master
 git pull origin master
 git checkout -b fix-<test-name-or-feature>
@@ -26,8 +26,8 @@ git checkout -b fix-<test-name-or-feature>
 
 When running npm commands from the PRD acceptance criteria:
 - The commands say "npm run X from src/brave"
-- Change directory to `[workingDirectory from prd.json config]` first
-- Example: `cd [workingDirectory from prd.json config] && npm run build`
+- Change directory to `[targetRepoPath from bot config]` first
+- Example: `cd [targetRepoPath from bot config] && npm run build`
 
 ## Committing Changes with git
 

@@ -50,7 +50,7 @@ cd brave-dev-bot
 ### 5. Configuration Tests
 - Validates data/prd.json is valid JSON
 - Checks for required config sections
-- Verifies userStories array exists
+- Verifies stories array exists
 
 ## Test Output
 

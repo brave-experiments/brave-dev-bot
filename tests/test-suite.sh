@@ -359,36 +359,19 @@ test_prd_json_valid() {
     jq . "$ROOT_DIR/data/prd.json"
 }
 
-test_prd_json_has_config() {
-  # Test that prd.json has config or ralphConfig
-  local has_config=$(jq 'has("config") or has("ralphConfig")' "$ROOT_DIR/data/prd.json")
-
-  TESTS_RUN=$((TESTS_RUN + 1))
-  if [ "$has_config" = "true" ]; then
-    echo -e "${GREEN}✓${NC} PASS: prd.json has config section"
-    TESTS_PASSED=$((TESTS_PASSED + 1))
-    return 0
-  else
-    echo -e "${RED}✗${NC} FAIL: prd.json missing config section"
-    TESTS_FAILED=$((TESTS_FAILED + 1))
-    FAILED_TESTS+=("prd.json has config section")
-    return 1
-  fi
-}
-
 test_prd_json_has_user_stories() {
-  # Test that prd.json has userStories array
-  local has_stories=$(jq 'has("userStories")' "$ROOT_DIR/data/prd.json")
+  # Test that prd.json has stories array
+  local has_stories=$(jq 'has("stories")' "$ROOT_DIR/data/prd.json")
 
   TESTS_RUN=$((TESTS_RUN + 1))
   if [ "$has_stories" = "true" ]; then
-    echo -e "${GREEN}✓${NC} PASS: prd.json has userStories"
+    echo -e "${GREEN}✓${NC} PASS: prd.json has stories"
     TESTS_PASSED=$((TESTS_PASSED + 1))
     return 0
   else
-    echo -e "${RED}✗${NC} FAIL: prd.json missing userStories"
+    echo -e "${RED}✗${NC} FAIL: prd.json missing stories"
     TESTS_FAILED=$((TESTS_FAILED + 1))
-    FAILED_TESTS+=("prd.json has userStories")
+    FAILED_TESTS+=("prd.json has stories")
     return 1
   fi
 }
@@ -435,7 +418,6 @@ run_all_tests() {
 
   echo "=== Configuration Tests ==="
   test_prd_json_valid
-  test_prd_json_has_config
   test_prd_json_has_user_stories
   echo ""
 

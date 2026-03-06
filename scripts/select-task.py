@@ -233,7 +233,7 @@ def main():
         print(f"Error reading run-state.json: {e}", file=sys.stderr)
         return 2
 
-    stories = prd.get("userStories", [])
+    stories = prd.get("stories", [])
     if not stories:
         print(json.dumps({"selected": False, "reason": "No stories in prd.json"}))
         return 1
@@ -273,10 +273,7 @@ def main():
     # Update prd.json
     update_prd(prd_path, prd, selected, args.iteration_log)
 
-    # Extract config (ralphConfig or config section)
-    config = prd.get("ralphConfig") or prd.get("config") or {}
-
-    # Output result with full story details and config embedded in prompt
+    # Output result with full story details embedded in prompt
     result = {
         "selected": True,
         "storyId": story_id,
@@ -287,7 +284,6 @@ def main():
         "priority": selected.get("priority"),
         "candidateCount": len(candidates),
         "storyDetails": selected,
-        "config": config,
     }
     print(json.dumps(result))
     return 0

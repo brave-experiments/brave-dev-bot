@@ -122,7 +122,7 @@ Bash({
 **When changes include `.ts`, `.tsx`, or `.js` files, you MUST run:**
 
 ```bash
-cd [workingDirectory from prd.json config]
+cd [targetRepoPath from bot config]
 npm run test-unit      # Run front-end unit tests
 npm run build-storybook  # Verify Storybook builds successfully
 ```
@@ -446,7 +446,7 @@ See also: [chromium_src Overrides](./best-practices/chromium-src-overrides.md) f
 After committing your changes, run the full verification cycle:
 
 ```bash
-cd [workingDirectory from prd.json config]
+cd [targetRepoPath from bot config]
 npm run format      # Check/fix formatting
 npm run presubmit   # Run presubmit checks
 npm run gn_check    # Verify GN configuration (skip for filter-file-only changes)

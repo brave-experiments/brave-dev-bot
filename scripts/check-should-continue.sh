@@ -19,7 +19,7 @@ if [ ! -f "$PRD_FILE" ]; then
 fi
 
 # Count non-merged stories
-non_merged=$(jq '[.userStories[] | select(.status != "merged")] | length' "$PRD_FILE")
+non_merged=$(jq '[.stories[] | select(.status != "merged")] | length' "$PRD_FILE")
 
 # Check if all stories are merged
 if [ "$non_merged" -eq 0 ]; then

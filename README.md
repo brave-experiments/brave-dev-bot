@@ -111,10 +111,7 @@ Follow the prompts, then use `/prd-json` to convert to `data/prd.json`.
 
 ```json
 {
-  "config": {
-    "workingDirectory": "../my-project"
-  },
-  "userStories": [
+  "stories": [
     {
       "id": "STORY-1",
       "title": "Fix authentication test",
@@ -242,14 +239,14 @@ A `config.example.json` template and `config.brave-core.json` reference config a
 
 Product Requirements Document defining user stories and acceptance criteria.
 
-- `userStories[].id`: Unique story identifier
-- `userStories[].priority`: Execution order (1 = highest)
-- `userStories[].status`: Story state
-- `userStories[].branchName`: Git branch name (set when work starts)
-- `userStories[].prNumber`: PR number (set when PR created)
-- `userStories[].prUrl`: PR URL (set when PR created)
-- `userStories[].lastActivityBy`: Who acted last — `"bot"` | `"reviewer"` | `null`
-- `userStories[].acceptanceCriteria`: Test commands that must pass
+- `stories[].id`: Unique story identifier
+- `stories[].priority`: Execution order (1 = highest)
+- `stories[].status`: Story state
+- `stories[].branchName`: Git branch name (set when work starts)
+- `stories[].prNumber`: PR number (set when PR created)
+- `stories[].prUrl`: PR URL (set when PR created)
+- `stories[].lastActivityBy`: Who acted last — `"bot"` | `"reviewer"` | `null`
+- `stories[].acceptanceCriteria`: Test commands that must pass
 
 ### data/progress.txt
 

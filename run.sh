@@ -36,17 +36,16 @@ source "$SCRIPT_DIR/scripts/lib/load-config.sh"
 
 PRD_FILE="$SCRIPT_DIR/data/prd.json"
 PROGRESS_FILE="$SCRIPT_DIR/data/progress.txt"
-ARCHIVE_DIR="$SCRIPT_DIR/archive"
 LOGS_DIR="$SCRIPT_DIR/logs"
-LAST_BRANCH_FILE="$SCRIPT_DIR/.last-branch"
 RUN_STATE_FILE="$SCRIPT_DIR/data/run-state.json"
 
-# Resolve target repo path from config.json (with prd.json fallback for migration)
+# Resolve target repo path from config.json (required)
 GIT_REPO="${BOT_TARGET_REPO_PATH:-}"
-if [ -z "$GIT_REPO" ] && [ -f "$PRD_FILE" ]; then
-  GIT_REPO=$(jq -r '.config.workingDirectory // .config.gitRepo // .ralphConfig.workingDirectory // .ralphConfig.gitRepo // empty' "$PRD_FILE" 2>/dev/null || echo "")
+if [ -z "$GIT_REPO" ]; then
+  echo "Error: project.targetRepoPath not set in config.json"
+  exit 1
 fi
-if [ -n "$GIT_REPO" ] && [[ "$GIT_REPO" != /* ]]; then
+if [[ "$GIT_REPO" != /* ]]; then
   PARENT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
   GIT_REPO="$PARENT_ROOT/$GIT_REPO"
 fi
@@ -64,37 +63,6 @@ cleanup_and_return_to_master() {
 
 # Register cleanup function to run on exit
 trap cleanup_and_return_to_master EXIT
-
-# Archive previous run if branch changed
-if [ -f "$PRD_FILE" ] && [ -f "$LAST_BRANCH_FILE" ]; then
-  CURRENT_BRANCH=$(jq -r '.branchName // empty' "$PRD_FILE" 2>/dev/null || echo "")
-  LAST_BRANCH=$(cat "$LAST_BRANCH_FILE" 2>/dev/null || echo "")
-  
-  if [ -n "$CURRENT_BRANCH" ] && [ -n "$LAST_BRANCH" ] && [ "$CURRENT_BRANCH" != "$LAST_BRANCH" ]; then
-    # Archive the previous run
-    DATE=$(date +%Y-%m-%d)
-    ARCHIVE_FOLDER="$ARCHIVE_DIR/$DATE-$LAST_BRANCH"
-    
-    echo "Archiving previous run: $LAST_BRANCH"
-    mkdir -p "$ARCHIVE_FOLDER"
-    [ -f "$PRD_FILE" ] && cp "$PRD_FILE" "$ARCHIVE_FOLDER/"
-    [ -f "$PROGRESS_FILE" ] && cp "$PROGRESS_FILE" "$ARCHIVE_FOLDER/"
-    echo "   Archived to: $ARCHIVE_FOLDER"
-    
-    # Reset progress file for new run
-    echo "# Progress Log" > "$PROGRESS_FILE"
-    echo "Started: $(date)" >> "$PROGRESS_FILE"
-    echo "---" >> "$PROGRESS_FILE"
-  fi
-fi
-
-# Track current branch
-if [ -f "$PRD_FILE" ]; then
-  CURRENT_BRANCH=$(jq -r '.branchName // empty' "$PRD_FILE" 2>/dev/null || echo "")
-  if [ -n "$CURRENT_BRANCH" ]; then
-    echo "$CURRENT_BRANCH" > "$LAST_BRANCH_FILE"
-  fi
-fi
 
 # Initialize progress file if it doesn't exist
 if [ ! -f "$PROGRESS_FILE" ]; then
@@ -178,7 +146,6 @@ while [ $loop_count -lt $MAX_ITERATIONS ]; do
   TIER_NAME=$(echo "$TASK_JSON" | jq -r '.tierName')
   STORY_TITLE=$(echo "$TASK_JSON" | jq -r '.title')
   STORY_DETAILS=$(echo "$TASK_JSON" | jq -c '.storyDetails')
-  PRD_CONFIG=$(echo "$TASK_JSON" | jq -c '.config')
   echo "Selected: $STORY_ID - $STORY_TITLE (status: $STORY_STATUS, tier: $TIER_NAME)"
 
   # Task confirmed — proceed with iteration setup
@@ -224,6 +191,7 @@ while [ $loop_count -lt $MAX_ITERATIONS ]; do
   # In print mode: use stream-json output format with verbose flag to capture detailed execution logs
   # In TUI mode: omit --print to show the interactive TUI
   BOT_DIRNAME=$(basename "$SCRIPT_DIR")
+  BOT_CONFIG=$(cat "$SCRIPT_DIR/config.json")
   CLAUDE_PROMPT="You are working on story $STORY_ID (current status: $STORY_STATUS).
 Follow ./$BOT_DIRNAME/docs/workflow-${STORY_STATUS}.md for the workflow.
 Follow the general instructions in ./$BOT_DIRNAME/.claude/CLAUDE.md.
@@ -231,8 +199,8 @@ Follow the general instructions in ./$BOT_DIRNAME/.claude/CLAUDE.md.
 Story details:
 $STORY_DETAILS
 
-PRD config:
-$PRD_CONFIG"
+Bot config (from config.json — do NOT read this file):
+$BOT_CONFIG"
   if [ -n "$NIGHTLY_VERSION" ]; then
     CLAUDE_PROMPT="$CLAUDE_PROMPT
 

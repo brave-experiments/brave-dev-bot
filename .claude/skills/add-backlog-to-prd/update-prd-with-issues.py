@@ -273,11 +273,11 @@ else:
         "projectName": f"{_project_name} Backlog",
         "description": f"Issues from {_issue_repo} repository to be resolved",
         "config": {},
-        "userStories": [],
+        "stories": [],
     }
 
 # Detect which key the PRD uses for stories
-stories_key = "stories" if "stories" in prd else "userStories"
+stories_key = "stories" if "stories" in prd else "stories"
 
 # Create a deep copy of existing stories for verification
 original_stories = copy.deepcopy(prd[stories_key])

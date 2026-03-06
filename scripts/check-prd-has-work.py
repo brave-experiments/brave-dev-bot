@@ -41,7 +41,7 @@ def main():
 
     skip_pushed = run_state.get("skipPushedTasks", False)
 
-    stories = prd.get("userStories", [])
+    stories = prd.get("stories", [])
     if not stories:
         print("prd.json has no user stories — nothing to work on.")
         return 1

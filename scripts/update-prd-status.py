@@ -69,7 +69,7 @@ def atomic_write_json(path, data):
 
 def find_story(prd, story_id):
     """Find and return story dict by ID, or None."""
-    for story in prd.get("userStories", []):
+    for story in prd.get("stories", []):
         if story.get("id") == story_id:
             return story
     return None

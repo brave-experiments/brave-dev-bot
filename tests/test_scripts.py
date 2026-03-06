@@ -231,35 +231,35 @@ class TestUpdatePrdStateChange:
 
 class TestUpdatePrdIntegration:
     def test_full_lifecycle(self, write_json, read_json, tmp_dir):
-        prd_path = write_json("prd.json", {"userStories": [make_story("pending")]})
+        prd_path = write_json("prd.json", {"stories": [make_story("pending")]})
         rs_path = write_json("run-state.json", {"lastIterationHadStateChange": False})
 
         rc, _, _ = run_update_script(
             prd_path, rs_path, "committed", "US-001", "--branch", "fix-x"
         )
         assert rc == 0
-        assert read_json(prd_path)["userStories"][0]["status"] == "committed"
+        assert read_json(prd_path)["stories"][0]["status"] == "committed"
 
         rc, _, _ = run_update_script(
             prd_path, rs_path, "pushed", "US-001", "--pr-number", "123"
         )
         assert rc == 0
-        assert read_json(prd_path)["userStories"][0]["prNumber"] == 123
+        assert read_json(prd_path)["stories"][0]["prNumber"] == 123
 
         rc, _, _ = run_update_script(prd_path, rs_path, "merged", "US-001")
         assert rc == 0
-        assert read_json(prd_path)["userStories"][0]["status"] == "merged"
+        assert read_json(prd_path)["stories"][0]["status"] == "merged"
         assert read_json(rs_path)["lastIterationHadStateChange"] is True
 
     def test_invalid_transition_exits_1(self, write_json, tmp_dir):
-        prd_path = write_json("prd.json", {"userStories": [make_story("pending")]})
+        prd_path = write_json("prd.json", {"stories": [make_story("pending")]})
         rs_path = write_json("run-state.json", {})
         rc, _, err = run_update_script(prd_path, rs_path, "merged", "US-001")
         assert rc == 1
         assert "Validation error" in err
 
     def test_story_not_found_exits_1(self, write_json, tmp_dir):
-        prd_path = write_json("prd.json", {"userStories": [make_story("pending")]})
+        prd_path = write_json("prd.json", {"stories": [make_story("pending")]})
         rs_path = write_json("run-state.json", {})
         rc, _, err = run_update_script(
             prd_path, rs_path, "committed", "US-999", "--branch", "x"
@@ -279,20 +279,20 @@ class TestUpdatePrdIntegration:
         assert rc == 2
 
     def test_special_chars_in_reason(self, write_json, read_json, tmp_dir):
-        prd_path = write_json("prd.json", {"userStories": [make_story("pending")]})
+        prd_path = write_json("prd.json", {"stories": [make_story("pending")]})
         rs_path = write_json("run-state.json", {})
         reason = 'PR #123 already exists for "this issue"'
         rc, _, _ = run_update_script(
             prd_path, rs_path, "skipped", "US-001", "--reason", reason
         )
         assert rc == 0
-        assert read_json(prd_path)["userStories"][0]["skipReason"] == reason
+        assert read_json(prd_path)["stories"][0]["skipReason"] == reason
 
     def test_other_stories_untouched(self, write_json, read_json, tmp_dir):
         prd_path = write_json(
             "prd.json",
             {
-                "userStories": [
+                "stories": [
                     make_story("pending", id="US-001"),
                     make_story("pushed", id="US-002"),
                 ],
@@ -301,11 +301,11 @@ class TestUpdatePrdIntegration:
         rs_path = write_json("run-state.json", {})
         run_update_script(prd_path, rs_path, "committed", "US-001", "--branch", "fix-a")
         prd = read_json(prd_path)
-        assert prd["userStories"][0]["status"] == "committed"
-        assert prd["userStories"][1]["status"] == "pushed"
+        assert prd["stories"][0]["status"] == "committed"
+        assert prd["stories"][1]["status"] == "pushed"
 
     def test_missing_run_state_still_succeeds(self, write_json, read_json, tmp_dir):
-        prd_path = write_json("prd.json", {"userStories": [make_story("pending")]})
+        prd_path = write_json("prd.json", {"stories": [make_story("pending")]})
         rc, _, _ = run_update_script(
             prd_path,
             os.path.join(tmp_dir, "nope-rs.json"),
@@ -315,7 +315,7 @@ class TestUpdatePrdIntegration:
             "fix-x",
         )
         assert rc == 0
-        assert read_json(prd_path)["userStories"][0]["status"] == "committed"
+        assert read_json(prd_path)["stories"][0]["status"] == "committed"
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -462,25 +462,25 @@ class TestSelectTaskSortKey:
 class TestSelectTaskUpdatePrd:
     def test_sets_last_processed_for_pushed(self, select_task, write_json, read_json):
         story = make_story("pushed")
-        prd = {"userStories": [story]}
+        prd = {"stories": [story]}
         path = write_json("prd.json", prd)
         select_task.update_prd(path, prd, story, None)
-        assert "lastProcessedDate" in read_json(path)["userStories"][0]
+        assert "lastProcessedDate" in read_json(path)["stories"][0]
 
     def test_skips_last_processed_for_pending(self, select_task, write_json, read_json):
         story = make_story("pending")
-        prd = {"userStories": [story]}
+        prd = {"stories": [story]}
         path = write_json("prd.json", prd)
         select_task.update_prd(path, prd, story, None)
-        assert "lastProcessedDate" not in read_json(path)["userStories"][0]
+        assert "lastProcessedDate" not in read_json(path)["stories"][0]
 
     def test_appends_iteration_log(self, select_task, write_json, read_json):
         story = make_story("pending")
-        prd = {"userStories": [story]}
+        prd = {"stories": [story]}
         path = write_json("prd.json", prd)
         select_task.update_prd(path, prd, story, "/tmp/log1.txt")
         select_task.update_prd(path, prd, story, "/tmp/log2.txt")
-        assert read_json(path)["userStories"][0]["iterationLogs"] == [
+        assert read_json(path)["stories"][0]["iterationLogs"] == [
             "/tmp/log1.txt",
             "/tmp/log2.txt",
         ]

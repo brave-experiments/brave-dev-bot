@@ -1,47 +1,5 @@
 {
-  "project": "Your Project Name",
-  "repository": "owner/repository",
-  "description": "Description of your project",
-  "ralphConfig": {
-    "gitRepo": "relative/path/to/git/repo",
-    "workingDirectory": "/absolute/path/to/your/working/directory",
-    "prRepository": "owner/repository-for-prs",
-    "testExecutionRequired": true,
-    "allowSkippingTests": false,
-    "longRunningCommandsAllowed": true,
-    "maxCommandTimeout": 7200000,
-    "testExecution": {
-      "browserTests": {
-        "baseCommand": "npm run test -- brave_browser_tests --gtest_filter={test_filter}",
-        "conditionalFlags": [
-          {
-            "flag": "--ozone-platform=headless",
-            "condition": "SSH session",
-            "detection": "Check if $SSH_CONNECTION or $SSH_CLIENT environment variable is set"
-          },
-          {
-            "flag": "--no-sandbox",
-            "condition": "Ubuntu host",
-            "detection": "Check if running on Ubuntu via /etc/os-release or uname"
-          }
-        ],
-        "notes": [
-          "Add your test execution notes here"
-        ]
-      }
-    },
-    "pullRequest": {
-      "labels": [
-        "ai-generated"
-      ],
-      "includeClaudeCodeAttribution": false,
-      "commitStrategy": "smart"
-    },
-    "notes": [
-      "Add project-specific notes here"
-    ]
-  },
-  "userStories": [
+  "stories": [
     {
       "id": "US-001",
       "title": "Example user story",
