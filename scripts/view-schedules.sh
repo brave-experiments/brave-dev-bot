@@ -1,5 +1,5 @@
 #!/bin/bash
-# Display a human-readable summary of brave-bot scheduled tasks
+# Display a human-readable summary of brave-dev-bot scheduled tasks
 # Parses sync-schedules.sh to show what runs when
 
 set -e
@@ -86,7 +86,7 @@ while IFS= read -r line; do
   fi
 
   # Skip boilerplate lines
-  if [[ "$line" =~ ^(SHELL|PATH)= ]] || [[ "$line" == *"do not edit"* ]] || [[ "$line" == *"=== brave-bot"* ]] || [[ "$line" == *"=== end brave-bot"* ]]; then
+  if [[ "$line" =~ ^(SHELL|PATH)= ]] || [[ "$line" == *"do not edit"* ]] || [[ "$line" == *"=== brave-dev-bot"* ]] || [[ "$line" == *"=== end brave-dev-bot"* ]] || [[ "$line" == *"=== brave-bot"* ]] || [[ "$line" == *"=== end brave-bot"* ]]; then
     continue
   fi
 
