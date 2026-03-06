@@ -26,6 +26,8 @@ TERMINAL_STATUSES = {"skipped", "invalid"}
 STATUS_CHANGE_SUBCOMMANDS = {"committed", "pushed", "merged", "skipped", "invalid"}
 
 # Valid current statuses for each subcommand (None = any non-terminal)
+VALID_STATUSES = {"pending", "committed", "pushed", "merged", "skipped", "invalid"}
+
 VALID_CURRENT_STATUSES = {
     "committed": {"pending"},
     "pushed": {"committed"},
@@ -36,6 +38,7 @@ VALID_CURRENT_STATUSES = {
     "set-ping": {"pushed"},
     "set-branch": {"pending", "committed"},
     "merged-check": {"merged"},
+    "fix-status": None,  # any -> valid status
 }
 
 
@@ -80,6 +83,10 @@ def validate_transition(subcommand, story):
     story_id = story.get("id", "?")
     current_status = story.get("status", "pending")
     allowed = VALID_CURRENT_STATUSES.get(subcommand)
+
+    if subcommand == "fix-status":
+        # fix-status: allowed from any status (validation in handler)
+        return None
 
     if allowed is None:
         # skipped/invalid: allowed from any non-terminal status
@@ -249,6 +256,22 @@ def handle_merged_check(story, args):
     return changes
 
 
+def handle_fix_status(story, args):
+    old_status = story.get("status", "unknown")
+    if old_status in VALID_STATUSES:
+        # Refuse to "fix" a status that's already valid
+        print(
+            f"Status '{old_status}' is already valid. "
+            f"Use the appropriate subcommand for transitions.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+    changes = {}
+    story["status"] = args.target_status
+    changes["status"] = f"{old_status} -> {args.target_status}"
+    return changes
+
+
 HANDLER_MAP = {
     "committed": handle_committed,
     "pushed": handle_pushed,
@@ -259,6 +282,7 @@ HANDLER_MAP = {
     "set-ping": handle_set_ping,
     "set-branch": handle_set_branch,
     "merged-check": handle_merged_check,
+    "fix-status": handle_fix_status,
 }
 
 
@@ -303,6 +327,12 @@ def main():
 
     p = sub.add_parser("merged-check", help="Post-merge check update")
     p.add_argument("story_id")
+
+    p = sub.add_parser("fix-status", help="Fix invalid status to a valid one")
+    p.add_argument("story_id")
+    p.add_argument("--target", required=True, dest="target_status",
+                   choices=sorted(VALID_STATUSES),
+                   help="Target valid status")
 
     args = parser.parse_args()
 
