@@ -134,20 +134,29 @@ def fetch_pr_data(pr_number, bot_username):
     if not reviews:
         reviews = []
 
+    # Body text patterns that are just bot signatures, not actual concerns.
+    # These should not block approval.
+    HARMLESS_BODY_PATTERNS = {
+        "review via brave-core-bot",
+    }
+
     body_comments = []
     already_approved = False
     for review in reviews:
         if review.get("user", {}).get("login") != bot_username:
             continue
         state = review.get("state", "")
-        # Body-level comments: any COMMENTED review with non-empty body
+        # Body-level comments: any COMMENTED review with non-empty body,
+        # excluding known harmless bot signatures.
         if state == "COMMENTED" and review.get("body", "").strip():
-            body_comments.append(
-                {
-                    "review_id": review.get("id"),
-                    "body_preview": review["body"].strip()[:120],
-                }
-            )
+            body_text = review["body"].strip()
+            if body_text.lower() not in HARMLESS_BODY_PATTERNS:
+                body_comments.append(
+                    {
+                        "review_id": review.get("id"),
+                        "body_preview": body_text[:120],
+                    }
+                )
         # Already approved at current SHA
         if state == "APPROVED" and review.get("commit_id") == head_sha:
             already_approved = True
