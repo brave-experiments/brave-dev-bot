@@ -48,14 +48,25 @@ else
 fi
 
 if [ "$WRITE_CONFIG" = true ]; then
-  read -p "Project name (e.g. brave-core): " CFG_PROJECT_NAME
-  read -p "GitHub org (e.g. brave): " CFG_ORG
-  read -p "PR repository (owner/repo, e.g. brave/brave-core): " CFG_PR_REPO
-  read -p "Issue repository (owner/repo, e.g. brave/brave-browser): " CFG_ISSUE_REPO
-  read -p "Default branch (e.g. master): " CFG_DEFAULT_BRANCH
+  prompt_required() {
+    local var_name="$1" prompt_text="$2" value=""
+    while [ -z "$value" ]; do
+      read -p "$prompt_text" value
+      if [ -z "$value" ]; then
+        echo "  ⚠️  This field is required."
+      fi
+    done
+    eval "$var_name=\$value"
+  }
+
+  prompt_required CFG_PROJECT_NAME "Project name (e.g. brave-core): "
+  prompt_required CFG_ORG "GitHub org (e.g. brave): "
+  prompt_required CFG_PR_REPO "PR repository (owner/repo, e.g. brave/brave-core): "
+  prompt_required CFG_ISSUE_REPO "Issue repository (owner/repo, e.g. brave/brave-browser): "
+  read -p "Default branch (e.g. master) [master]: " CFG_DEFAULT_BRANCH
   CFG_DEFAULT_BRANCH="${CFG_DEFAULT_BRANCH:-master}"
-  read -p "Bot GitHub username (e.g. netzenbot): " CFG_BOT_USER
-  read -p "Bot email (e.g. netzenbot@brave.com): " CFG_BOT_EMAIL
+  prompt_required CFG_BOT_USER "Bot GitHub username (e.g. netzenbot): "
+  prompt_required CFG_BOT_EMAIL "Bot email (e.g. netzenbot@brave.com): "
   read -p "Issue labels (comma-separated, e.g. bot/type/test): " CFG_LABELS_RAW
 
   # Build config.json safely via Python to avoid JSON injection from user input
