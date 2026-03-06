@@ -33,6 +33,9 @@ import urllib.request
 import urllib.error
 from pathlib import Path
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from lib.load_config import load_config, require_config
+
 
 # Allowed image hosts (GitHub-hosted content only, for security)
 ALLOWED_HOSTS = [
@@ -55,7 +58,7 @@ IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg"}
 
 
 def get_bot_dir():
-    """Get the brave-core-bot directory (parent of scripts/)."""
+    """Get the bot directory (parent of scripts/)."""
     return Path(__file__).resolve().parent.parent
 
 
@@ -157,7 +160,7 @@ def download_image(url, dest_path):
     """Download an image file. Returns True on success."""
     try:
         req = urllib.request.Request(url, headers={
-            "User-Agent": "brave-core-bot/1.0",
+            "User-Agent": "brave-dev-bot/1.0",
             "Accept": "image/*",
         })
         with urllib.request.urlopen(req, timeout=15) as response:
@@ -190,9 +193,12 @@ def download_image(url, dest_path):
 
 
 def main():
+    _config = load_config()
+    _default_repo = require_config(_config, "project.prRepository")
+
     parser = argparse.ArgumentParser(description="Extract and download PR images")
     parser.add_argument("pr_number", type=int, help="PR number")
-    parser.add_argument("--repo", default="brave/brave-core", help="Repository")
+    parser.add_argument("--repo", default=_default_repo, help="Repository")
     args = parser.parse_args()
 
     org_members = get_org_members()

@@ -60,7 +60,7 @@ When a merged story is picked for rechecking:
 ### 1. Fetch Post-Merge Comments
 
 ```bash
-<brave-core-bot>/scripts/filter-pr-reviews.sh <pr-number> markdown <pr-repository>
+$BOT_DIR/scripts/filter-pr-reviews.sh <pr-number> markdown <pr-repository>
 ```
 
 ### 2. Filter to Comments AFTER Merge
@@ -107,8 +107,8 @@ COMMENT_ID=$(echo "$FILTERED_DATA" | jq -r '.issue_comments[] | select(.user.log
 **Posting the reply:**
 
 ```bash
-# Get PR repository from prd.json
-PR_REPO=$(jq -r '.ralphConfig.prRepository' ./brave-core-bot/data/prd.json)
+# Get PR repository from config.json
+PR_REPO=$(jq -r '.project.prRepository' $BOT_DIR/config.json)
 
 # Calculate next check timespan based on current mergedCheckCount
 # mergedCheckCount 0 (just did first check): next in 2 days
@@ -169,8 +169,8 @@ For each follow-up task requested in post-merge comments:
 
 Get the issue repository from `prd.json` config:
 ```bash
-# Read issueRepository from prd.json ralphConfig
-ISSUE_REPO=$(jq -r '.ralphConfig.issueRepository' ./brave-core-bot/data/prd.json)
+# Read issueRepository from config.json
+ISSUE_REPO=$(jq -r '.project.issueRepository' $BOT_DIR/config.json)
 ```
 
 Create a detailed GitHub issue:
@@ -216,7 +216,7 @@ Create a new story entry following the same format as existing stories:
   "title": "Brief title matching the GitHub issue",
   "description": "Follow-up from US-[original] PR #[pr-number]: [Description of what needs to be done]",
   "acceptanceCriteria": [
-    "Read ./brave-core-bot/brave-core-tools/BEST-PRACTICES.md",
+    "Read $BOT_DIR/brave-core-tools/BEST-PRACTICES.md",
     "[Specific test or verification step]",
     "[Additional requirements]"
   ],
@@ -249,8 +249,8 @@ From the filtered PR reviews data, you have the comment ID of the post-merge com
 
 Reply directly to that comment using the GitHub API:
 ```bash
-# Get PR repository from prd.json
-PR_REPO=$(jq -r '.ralphConfig.prRepository' ./brave-core-bot/data/prd.json)
+# Get PR repository from config.json
+PR_REPO=$(jq -r '.project.prRepository' $BOT_DIR/config.json)
 
 # Reply to the specific comment (creates a threaded reply)
 gh api \
@@ -285,7 +285,7 @@ gh pr comment <pr-number> --body "[same body as above]"
 
 Run the merged-check command to increment the count and recalculate the backoff:
 ```bash
-python3 <brave-core-bot>/scripts/update-prd-status.py merged-check <story-id>
+python3 $BOT_DIR/scripts/update-prd-status.py merged-check <story-id>
 ```
 This handles the exponential backoff schedule (2d, 4d, 8d) and sets `mergedCheckFinalState: true` after the fourth check.
 

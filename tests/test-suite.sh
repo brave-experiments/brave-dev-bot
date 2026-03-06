@@ -1,5 +1,5 @@
 #!/bin/bash
-# Test suite for brave-core-bot
+# Test suite for brave-dev-bot
 # Returns 0 if all tests pass, non-zero if any fail
 
 set -e

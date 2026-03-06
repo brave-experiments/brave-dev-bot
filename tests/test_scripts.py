@@ -1,4 +1,4 @@
-"""Tests for all Python scripts in brave-core-bot.
+"""Tests for all Python scripts in brave-dev-bot.
 
 Covers: update-prd-status.py, select-task.py, business-hours-elapsed.py,
 and check-prd-has-work.py.
@@ -151,7 +151,7 @@ class TestUpdatePrdHandlers:
         update_prd_status.handle_pushed(story, Namespace(pr_number=34567))
         assert story["status"] == "pushed"
         assert story["prNumber"] == 34567
-        assert story["prUrl"] == "https://github.com/brave/brave-core/pull/34567"
+        assert story["prUrl"].endswith("/pull/34567")
         assert story["lastActivityBy"] == "bot"
 
     def test_merged(self, update_prd_status):

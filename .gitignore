@@ -1,6 +1,12 @@
 # Ignore directory - for local files that should not be tracked
 .ignore/
 
+# Project config - user-specific (template: config.example.json)
+config.json
+
+# Runtime lock file
+.run.lock
+
 # Runtime files - user-specific state
 data/prd.json
 data/prd.archived.json
@@ -41,3 +47,4 @@ Thumbs.db
 .envrc
 
 __pycache__
+*.egg-info/

@@ -1,12 +1,14 @@
 ---
 name: learnable-pattern-search
-description: "Analyze review comments from brave-core PRs to discover learnable patterns for improving bot documentation and best practices. Triggers on: learnable-pattern-search, learn from prs, analyze reviews, find patterns in prs."
+description: "Analyze review comments from PRs in the configured PR repository to discover learnable patterns for improving bot documentation and best practices. Triggers on: learnable-pattern-search, learn from prs, analyze reviews, find patterns in prs."
 argument-hint: "<pr-numbers... | --username <github-user>> [<N>d]"
 ---
 
 # Learnable Pattern Search
 
-Analyze review comments from brave-core PRs to discover learnable patterns. Extracts coding conventions, best practices, common review feedback themes, and architectural insights that can improve bot documentation.
+Analyze review comments from PRs in the configured PR repository (from `config.json` → `project.prRepository`) to discover learnable patterns. Extracts coding conventions, best practices, common review feedback themes, and architectural insights that can improve bot documentation.
+
+**Step 0: Read project config.** Read `config.json` (in the bot repo root) to determine `$PR_REPO` (`project.prRepository`). Use `$PR_REPO` in ALL `gh` commands and GitHub URL construction below.
 
 Supports four modes:
 - **PR list mode:** Provide specific PR numbers to analyze
@@ -41,7 +43,7 @@ When the user invokes `/learnable-pattern-search <pr-numbers>`:
 
 When the user invokes `/learnable-pattern-search --username <github-user>`:
 
-1. **Fetch all PRs reviewed by the user** in brave/brave-core (see "Fetching PRs by Reviewer" below)
+1. **Fetch all PRs reviewed by the user** in the PR repository (see "Fetching PRs by Reviewer" below)
 2. **For each PR**, fetch review data and analyze it (focus on comments by the specified user)
 3. **Identify learnable patterns** across the reviews
 4. **Update documentation** with discovered patterns
@@ -51,7 +53,7 @@ When the user invokes `/learnable-pattern-search --username <github-user>`:
 
 When the user invokes `/learnable-pattern-search <N>d` (lookback window only, no `--username` or PR numbers):
 
-1. **Fetch all recently merged PRs** in brave/brave-core within the lookback window (see "Fetching Recent PRs" below)
+1. **Fetch all recently merged PRs** in the PR repository within the lookback window (see "Fetching Recent PRs" below)
 2. **For each PR**, fetch review data and analyze comments from all Brave org member reviewers
 3. **Identify learnable patterns** across all reviews
 4. **Update documentation** with discovered patterns
@@ -68,7 +70,7 @@ When no `--username` is provided and no PR numbers are given, fetch all recently
 CUTOFF_DATE=$(date -u -d "$N days ago" +%Y-%m-%d 2>/dev/null || date -u -v-${N}d +%Y-%m-%d)
 
 # Fetch merged PRs updated since cutoff
-gh search prs --repo brave/brave-core --state merged --sort updated --order desc --limit 200 --json number,title,updatedAt -- "updated:>=$CUTOFF_DATE"
+gh search prs --repo $PR_REPO --state merged --sort updated --order desc --limit 200 --json number,title,updatedAt -- "updated:>=$CUTOFF_DATE"
 ```
 
 **Important notes:**
@@ -89,20 +91,20 @@ When `--username <user>` is provided, use the GitHub search API to find merged P
 CUTOFF_DATE=$(date -u -d "$N days ago" +%Y-%m-%d 2>/dev/null || date -u -v-${N}d +%Y-%m-%d)
 
 # Fetch merged PRs reviewed by the user, updated since cutoff
-gh search prs --repo brave/brave-core --reviewed-by <username> --state merged --sort updated --order desc --limit 200 --json number,title,updatedAt -- "updated:>=$CUTOFF_DATE"
+gh search prs --repo $PR_REPO --reviewed-by <username> --state merged --sort updated --order desc --limit 200 --json number,title,updatedAt -- "updated:>=$CUTOFF_DATE"
 ```
 
 **If no lookback window was specified**, fetch all:
 
 ```bash
-gh search prs --repo brave/brave-core --reviewed-by <username> --state merged --sort updated --order desc --limit 200 --json number,title,updatedAt
+gh search prs --repo $PR_REPO --reviewed-by <username> --state merged --sort updated --order desc --limit 200 --json number,title,updatedAt
 ```
 
 If `gh search prs` doesn't work or returns errors, fall back to the search API with pagination:
 
 ```bash
 # Page through results (100 per page) — add +updated:>=$CUTOFF_DATE if lookback specified
-gh api 'search/issues?q=repo:brave/brave-core+type:pr+is:merged+reviewed-by:<username>+updated:>='$CUTOFF_DATE'&sort=updated&order=desc&per_page=100&page=1' --jq '.items[] | {number: .number, title: .title}'
+gh api "search/issues?q=repo:$PR_REPO+type:pr+is:merged+reviewed-by:<username>+updated:>=$CUTOFF_DATE&sort=updated&order=desc&per_page=100&page=1" --jq '.items[] | {number: .number, title: .title}'
 # Continue incrementing &page=2, &page=3, etc. until no more results
 ```
 
@@ -134,8 +136,8 @@ After fetching the PR list and filtering out external contributors, use the **Ag
 For each batch, use a prompt like:
 
 ```
-Analyze these brave-core PRs for learnable patterns. For each PR:
-1. Run: ./scripts/filter-pr-reviews.sh <pr-number> markdown brave/brave-core
+Analyze these PRs for learnable patterns. For each PR:
+1. Run: ./scripts/filter-pr-reviews.sh <pr-number> markdown $PR_REPO
 2. Look for generalizable coding conventions, common mistakes, architectural patterns, or testing requirements
 3. Skip PRs with no substantive review comments
 
@@ -242,7 +244,7 @@ For each PR number:
 
 ```bash
 # Get PR title, description, and state
-gh pr view <pr-number> --repo brave/brave-core --json title,body,state,mergedAt,labels,files
+gh pr view <pr-number> --repo $PR_REPO --json title,body,state,mergedAt,labels,files
 ```
 
 ### Step 2: Fetch Review Comments (Filtered for Security)
@@ -250,17 +252,17 @@ gh pr view <pr-number> --repo brave/brave-core --json title,body,state,mergedAt,
 Use the filtering script to get only Brave org member comments:
 
 ```bash
-./scripts/filter-pr-reviews.sh <pr-number> markdown brave/brave-core
+./scripts/filter-pr-reviews.sh <pr-number> markdown $PR_REPO
 ```
 
 If that fails (e.g., rate limiting), fall back to direct API calls with manual filtering:
 
 ```bash
 # Get reviews
-gh api repos/brave/brave-core/pulls/<pr-number>/reviews --paginate --jq '.[] | {user: .user.login, state: .state, body: .body}'
+gh api repos/$PR_REPO/pulls/<pr-number>/reviews --paginate --jq '.[] | {user: .user.login, state: .state, body: .body}'
 
 # Get inline review comments
-gh api repos/brave/brave-core/pulls/<pr-number>/comments --paginate --jq '.[] | {user: .user.login, path: .path, body: .body}'
+gh api repos/$PR_REPO/pulls/<pr-number>/comments --paginate --jq '.[] | {user: .user.login, path: .path, body: .body}'
 ```
 
 ### Step 3: Analyze Review Comments
@@ -364,13 +366,13 @@ After completing the analysis, send a Signal notification summarizing findings.
 
 ```bash
 # When patterns are found and documentation updated
-<brave-core-bot>/scripts/signal-notify.sh "Learnable patterns: analyzed <N> PRs from <team/reviewers>, found <M> new patterns. Updated <list of docs>. Commit: https://github.com/anthropics/brave-core-bot/commit/<short-hash>. Source PRs: https://github.com/brave/brave-core/pull/111, https://github.com/brave/brave-core/pull/222"
+$BOT_DIR/scripts/signal-notify.sh "Learnable patterns: analyzed <N> PRs from <team/reviewers>, found <M> new patterns. Updated <list of docs>. Commit: <short-hash>. Source PRs: https://github.com/$PR_REPO/pull/111, https://github.com/$PR_REPO/pull/222"
 
 # When best practice adjustment PRs are created (self-review mode)
-<brave-core-bot>/scripts/signal-notify.sh "Best practice PR created: <pr-url> - <title>"
+$BOT_DIR/scripts/signal-notify.sh "Best practice PR created: <pr-url> - <title>"
 
 # When no new patterns found
-<brave-core-bot>/scripts/signal-notify.sh "Learnable patterns: analyzed <N> PRs from <team/reviewers>, no new patterns found."
+$BOT_DIR/scripts/signal-notify.sh "Learnable patterns: analyzed <N> PRs from <team/reviewers>, no new patterns found."
 ```
 
 Do NOT send a notification without links. If you committed doc changes, include the commit link. If patterns came from specific PRs, include those PR links.

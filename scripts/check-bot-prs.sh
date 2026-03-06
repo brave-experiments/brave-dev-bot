@@ -11,20 +11,23 @@
 
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/load-config.sh"
+
 LOOKBACK_DAYS="${1:-2}"
-BOT_USERNAME="${2:-}"
+BOT_USERNAME_ARG="${2:-}"
 
 CUTOFF_DATE=$(date -u -v-${LOOKBACK_DAYS}d +%Y-%m-%d 2>/dev/null || date -u -d "$LOOKBACK_DAYS days ago" +%Y-%m-%d)
 
-if [ -n "$BOT_USERNAME" ]; then
-  PR_COUNT=$(gh search prs --repo brave/brave-core --reviewed-by "$BOT_USERNAME" --state merged --sort updated --limit 1 --json number -- "updated:>=$CUTOFF_DATE" 2>/dev/null | python3 -c "import sys,json; print(len(json.load(sys.stdin)))" 2>/dev/null || echo "0")
+if [ -n "$BOT_USERNAME_ARG" ]; then
+  PR_COUNT=$(gh search prs --repo "$BOT_PR_REPO" --reviewed-by "$BOT_USERNAME_ARG" --state merged --sort updated --limit 1 --json number -- "updated:>=$CUTOFF_DATE" 2>/dev/null | python3 -c "import sys,json; print(len(json.load(sys.stdin)))" 2>/dev/null || echo "0")
 else
-  PR_COUNT=$(gh search prs --repo brave/brave-core --state merged --sort updated --limit 1 --json number -- "updated:>=$CUTOFF_DATE" 2>/dev/null | python3 -c "import sys,json; print(len(json.load(sys.stdin)))" 2>/dev/null || echo "0")
+  PR_COUNT=$(gh search prs --repo "$BOT_PR_REPO" --state merged --sort updated --limit 1 --json number -- "updated:>=$CUTOFF_DATE" 2>/dev/null | python3 -c "import sys,json; print(len(json.load(sys.stdin)))" 2>/dev/null || echo "0")
 fi
 
 if [ "$PR_COUNT" = "0" ]; then
-  if [ -n "$BOT_USERNAME" ]; then
-    echo "No merged PRs reviewed by $BOT_USERNAME since $CUTOFF_DATE — skipping learnable-pattern-search."
+  if [ -n "$BOT_USERNAME_ARG" ]; then
+    echo "No merged PRs reviewed by $BOT_USERNAME_ARG since $CUTOFF_DATE — skipping learnable-pattern-search."
   else
     echo "No merged PRs since $CUTOFF_DATE — skipping learnable-pattern-search."
   fi

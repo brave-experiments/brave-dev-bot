@@ -1,12 +1,17 @@
 #!/bin/bash
 set -e
 
-cd "$(dirname "$0")/.."
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/load-config.sh"
 
-echo "Updating brave-core-tools submodule..."
-cd brave-core-tools
+cd "$BOT_DIR"
+
+echo "Updating $BOT_BP_SUBMODULE submodule..."
+cd "$BOT_BP_SUBMODULE"
 git fetch origin
-git checkout origin/master
+BOT_REPO_BRANCH=$(bot_config '.project.botRepoBranch')
+BOT_REPO_BRANCH="${BOT_REPO_BRANCH:-master}"
+git checkout "origin/$BOT_REPO_BRANCH"
 cd ..
 
 git add brave-core-tools
@@ -14,7 +19,7 @@ git add brave-core-tools
 if git diff --cached --quiet; then
   echo "No changes. Submodule already up to date."
 else
-  git commit -m "Update brave-core-tools submodule"
+  git commit -m "Update $BOT_BP_SUBMODULE submodule"
   git push
   echo "Done. Submodule updated, committed, and pushed."
 fi

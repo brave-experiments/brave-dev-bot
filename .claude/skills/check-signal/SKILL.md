@@ -76,7 +76,7 @@ Process incoming Signal messages and execute the requested commands. Messages ar
 
    d. **Send a Signal reply** as a threaded reply to the original message:
       ```bash
-      <brave-core-bot>/scripts/signal-notify.sh "<brief result summary>" \
+      $BOT_DIR/scripts/signal-notify.sh "<brief result summary>" \
         --quote-timestamp <message_timestamp> \
         --quote-author "<message_source>" \
         --quote-message "<first 100 chars of original message>"

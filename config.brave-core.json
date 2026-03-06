@@ -1,0 +1,30 @@
+{
+  "project": {
+    "name": "brave-core",
+    "org": "brave",
+    "prRepository": "brave/brave-core",
+    "issueRepository": "brave/brave-browser",
+    "defaultBranch": "master",
+    "targetRepoPath": "src/brave"
+  },
+  "bot": {
+    "username": "netzenbot",
+    "email": "netzenbot@agentmail.to",
+    "claudeModel": "opus",
+    "claudeBin": null
+  },
+  "labels": {
+    "prLabels": ["ai-generated"],
+    "issueLabels": ["bot/type/test"],
+    "disabledTestLabel": "disabled-brave-test"
+  },
+  "bestPractices": {
+    "submodule": "brave-core-tools",
+    "indexFile": "BEST-PRACTICES.md",
+    "securityFile": "SECURITY.md"
+  },
+  "schedules": {
+    "syncRepo": true,
+    "syncRepoPath": null
+  }
+}

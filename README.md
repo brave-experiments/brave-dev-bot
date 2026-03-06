@@ -1,6 +1,8 @@
-# Brave Core Bot
+# Brave Bot
 
-An autonomous coding agent for the Brave browser project. Built on Claude Code, it reads Product Requirements Documents (PRDs), implements user stories, runs tests, creates PRs, handles review feedback, and manages CI — all autonomously in iterative loops.
+An autonomous coding agent for Brave projects. Built on Claude Code, it reads Product Requirements Documents (PRDs), implements user stories, runs tests, creates PRs, handles review feedback, and manages CI — all autonomously in iterative loops.
+
+Each clone of this repo targets a single project (configured via `config.json`). To use with multiple repositories, clone once per project with its own config.
 
 ## Overview
 
@@ -62,76 +64,41 @@ merged  └─► (check again next iteration)
 - **Claude Code CLI** installed and configured
 - **GitHub CLI** (`gh`) authenticated with your account
 - **jq** for JSON parsing: `brew install jq` (macOS) or `sudo apt install jq` (Debian/Ubuntu)
+- **flock** for run locking: `brew install flock` (macOS — included by default on Linux)
 - **Git** configured with your credentials
 - **Python 3** (for utility scripts)
 - **signal-cli** (optional) — for Signal message notifications. See [Signal Notifications](#signal-notifications-optional) below
-- Access to the `brave/brave-browser` repository
+- Access to the target GitHub repositories
 
 ## Setup
 
 ### 1. Clone This Repository
 
-Clone at the root of your brave-browser checkout, alongside the `src` directory:
-
-```
-brave-browser/
-├── src/
-│   └── brave/              # Target git repository
-└── brave-core-bot/         # This bot (clone here)
-    ├── run.sh
-    ├── data/prd.json
-    └── ...
-```
+Clone alongside (or near) your target project's repository:
 
 ```bash
-cd /path/to/brave-browser
-git clone https://github.com/brave-experiments/brave-core-bot.git
+git clone git@github.com:brave-experiments/brave-dev-bot.git my-project-bot
+cd my-project-bot
 ```
 
-### 2. Configure Git
-
-Configure git identity in the target repository (`src/brave`):
+### 2. Run Setup
 
 ```bash
-cd brave-browser/src/brave
-git config user.name "netzenbot"
-git config user.email "netzenbot@brave.com"
-```
-
-These settings are repository-specific (stored in `.git/config`), not global.
-
-### 3. Create Configuration Files
-
-Copy the example templates and customize:
-
-```bash
-cd brave-core-bot
-
-cp data/prd.example.json data/prd.json
-cp data/run-state.example.json data/run-state.json
-cp data/progress.example.txt data/progress.txt
-```
-
-Edit `data/prd.json` to set your working directory path (e.g., `src/brave`).
-
-These files contain user-specific paths and runtime state, so they're gitignored.
-
-### 4. Run Setup Script
-
-```bash
-cd brave-core-bot
 make setup
 ```
 
-This will:
-- Install Python dev dependencies (pytest, ruff)
-- Install pre-commit hooks to the target repository and bot repository
-- Validate `data/prd.json` configuration
-- Verify git repo structure and user configuration
-- Create and populate the org-members cache (`.ignore/org-members.txt`)
-- Display next steps
+The setup wizard handles everything interactively and is fully idempotent — safe to re-run at any time. It will:
 
-### 5. Create Your PRD
+1. **Create `config.json`** (if missing) — prompts for project name, GitHub org, PR/issue repositories, bot username/email, and issue labels. If `config.json` already exists, shows current values and skips unless you explicitly choose to reconfigure.
+2. **Initialize submodules** — pulls the best-practices submodule.
+3. **Create data files** (`prd.json`, `run-state.json`, `progress.txt`) from templates if missing. Never overwrites existing files.
+4. **Generate org members cache** (`.ignore/org-members.txt`) via GitHub API if missing.
+5. **Configure git identity** in the target repo if not already set (using the bot username/email from config).
+6. **Install pre-commit hooks** for both the target repo and bot repo.
+
+**For existing brave-core deployments:** You can skip the wizard entirely by copying the reference config: `cp config.brave-core.json config.json`, then run `make setup` to complete the remaining steps.
+
+### 3. Create Your PRD
 
 **Option A: Use the `/prd` skill** (recommended)
 ```bash
@@ -145,7 +112,7 @@ Follow the prompts, then use `/prd-json` to convert to `data/prd.json`.
 ```json
 {
   "config": {
-    "workingDirectory": "src/brave"
+    "workingDirectory": "../my-project"
   },
   "userStories": [
     {
@@ -158,7 +125,7 @@ Follow the prompts, then use `/prd-json` to convert to `data/prd.json`.
       "prUrl": null,
       "lastActivityBy": null,
       "acceptanceCriteria": [
-        "npm run test -- auth_tests from src/brave"
+        "npm run test -- auth_tests"
       ]
     }
   ]
@@ -176,22 +143,14 @@ Follow the prompts, then use `/prd-json` to convert to `data/prd.json`.
 `run.sh` can be run from any directory — it resolves all paths from its own location:
 
 ```bash
-# From brave-browser/
-./brave-core-bot/run.sh           # Default: 10 iterations
-./brave-core-bot/run.sh 20        # Run 20 iterations
-./brave-core-bot/run.sh 10 tui    # TUI mode (interactive terminal UI)
-
-# Or from brave-core-bot/
-cd brave-core-bot
-./run.sh
-./run.sh 20
-./run.sh 10 tui
+./run.sh              # Default: 10 iterations
+./run.sh 20           # Run 20 iterations
+./run.sh 10 tui       # TUI mode (interactive terminal UI)
 ```
 
-Skills (like `/review-prs`) are run interactively from the `brave-core-bot/` directory:
+Skills (like `/review-prs`) are run interactively from the bot directory:
 
 ```bash
-cd brave-core-bot
 claude
 > /review-prs 1d open
 ```
@@ -225,7 +184,7 @@ Bot-only skills are available as slash commands in Claude Code. 8 bot-specific s
 | `/prd` | Generate structured PRDs with clarifying questions |
 | `/prd-json` | Convert PRD markdown to `prd.json` format |
 | `/prd-clean` | Archive merged/invalid stories to `prd.archived.json` |
-| `/add-backlog-to-prd` | Fetch open issues from brave/brave-browser by label and add to PRD |
+| `/add-backlog-to-prd` | Fetch open issues from configured issue repo by label and add to PRD |
 
 ### Code Review & Quality
 
@@ -260,11 +219,29 @@ Bot-only skills are available as slash commands in Claude Code. 8 bot-specific s
 
 ## Configuration Files
 
+### config.json
+
+Project-specific configuration (gitignored, created by `make setup`). Keys:
+
+- `project.name`: Project name (e.g. `brave-core`)
+- `project.org`: GitHub organization (e.g. `brave`)
+- `project.prRepository`: PR repository as `owner/repo` (e.g. `brave/brave-core`)
+- `project.issueRepository`: Issue repository as `owner/repo` (e.g. `brave/brave-browser`)
+- `project.defaultBranch`: Default branch for the PR repo (e.g. `master`)
+- `project.targetRepoPath`: Path to the target git repo (relative to parent dir or absolute)
+- `bot.username`: Bot's GitHub username
+- `bot.email`: Bot's email for git commits
+- `bot.claudeModel`: Claude model to use (`opus`, `sonnet`, etc.)
+- `labels.prLabels`: Labels applied to bot-created PRs
+- `labels.issueLabels`: Labels used for backlog issue fetching
+- `bestPractices.submodule`: Name of the best-practices submodule
+
+A `config.example.json` template and `config.brave-core.json` reference config are included.
+
 ### data/prd.json
 
 Product Requirements Document defining user stories and acceptance criteria.
 
-- `config.workingDirectory`: Git repository path (typically `src/brave`)
 - `userStories[].id`: Unique story identifier
 - `userStories[].priority`: Execution order (1 = highest)
 - `userStories[].status`: Story state
@@ -310,7 +287,7 @@ Each user story gets its own branch, created automatically by the bot from `data
 Two hooks are installed by `make setup`:
 
 **Target repo hook** (`hooks/pre-commit`):
-Blocks the `netzenbot` account from modifying dependency files (package.json, DEPS, Cargo.toml, go.mod, etc.). Prevents bots from introducing external dependencies without review.
+Blocks the configured bot account from modifying dependency files (package.json, DEPS, Cargo.toml, go.mod, etc.). Prevents bots from introducing external dependencies without review.
 
 **Bot repo hook** (`hooks/pre-commit-bot-repo`):
 Blocks committing `data/prd.json`, `data/progress.txt`, and `data/run-state.json` to ensure user-specific files don't get committed.
@@ -456,7 +433,7 @@ Then reload: `direnv allow`
 ### Test It
 
 ```bash
-./scripts/signal-notify.sh "Hello from brave-core-bot!"
+./scripts/signal-notify.sh "Hello from brave-dev-bot!"
 ```
 
 You should receive the message on the recipient's Signal account.
@@ -487,7 +464,7 @@ No skill or workflow will error due to missing Signal configuration.
 When the branch changes between runs, previous state is automatically archived:
 
 ```
-brave-core-bot/archive/
+archive/
   └── 2026-01-30-old-branch/
       ├── data/prd.json
       └── data/progress.txt
@@ -496,8 +473,10 @@ brave-core-bot/archive/
 ## Project Structure
 
 ```
-brave-core-bot/
+brave-dev-bot/                 # (or your clone name)
 ├── README.md                  # This file
+├── config.json                # Project config (gitignored, created by setup)
+├── config.example.json        # Config template
 ├── brave-core-tools/          # Git submodule: best practices, dev skills, shared scripts
 │   ├── BEST-PRACTICES.md      # Index of all best practices
 │   ├── SECURITY.md            # Security guidelines
@@ -558,22 +537,17 @@ brave-core-bot/
 
 ### "Git user not configured"
 
-Run `make setup` again or manually configure:
-```bash
-cd brave-browser/src/brave
-git config user.name "netzenbot"
-git config user.email "netzenbot@brave.com"
-```
+Run `make setup` again or manually configure git in your target repo with the username/email from `config.json`.
 
 ### "Pre-commit hook blocks my commit"
 
-If the `netzenbot` account is trying to modify dependencies — this is intentional. Use existing libraries or a different git account.
+If the bot account is trying to modify dependencies — this is intentional. Use existing libraries or a different git account.
 
 ### "Org members cache missing"
 
 Run `make setup` to regenerate `.ignore/org-members.txt`, or manually:
 ```bash
-gh api /orgs/brave/members --paginate --jq '.[].login' > .ignore/org-members.txt
+gh api /orgs/<your-org>/members --paginate --jq '.[].login' > .ignore/org-members.txt
 ```
 
 ### "Tests are taking too long"

@@ -1,4 +1,4 @@
-"""Shared fixtures for brave-core-bot tests."""
+"""Shared fixtures for brave-dev-bot tests."""
 
 import importlib.util
 import json

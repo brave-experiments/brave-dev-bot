@@ -4,14 +4,17 @@
 
 set -e
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/load-config.sh"
+
 PR_NUMBER="$1"
 OUTPUT_FORMAT="${2:-markdown}"  # markdown or json
-PR_REPO="${3:-brave/brave-core}"  # Default to brave-core where PRs are created
+PR_REPO="${3:-$BOT_PR_REPO}"
 INCLUDE_AUTHOR="${4:-}"  # Optional: include this author's PR body unfiltered (for external contributor PRs)
 
 if [ -z "$PR_NUMBER" ]; then
   echo "Usage: $0 <pr-number> [markdown|json] [repo]"
-  echo "  repo defaults to: brave/brave-core"
+  echo "  repo defaults to: $BOT_PR_REPO"
   exit 1
 fi
 
@@ -22,11 +25,9 @@ if ! gh auth status > /dev/null 2>&1; then
 fi
 
 # Allowlist for trusted reviewers (for when running with external account)
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ALLOWLIST_FILE="$SCRIPT_DIR/trusted-reviewers.txt"
 
 # Org members cache (stored in .ignore/ to survive reboots, unlike /tmp)
-BOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 CACHE_FILE="$BOT_DIR/.ignore/org-members.txt"
 
 # Require org members file to exist
@@ -54,7 +55,7 @@ is_org_member() {
 
   # Fallback: Direct API check for private members
   # Returns 204 for members, 404 for non-members
-  if gh api "orgs/brave/members/$username" --silent 2>/dev/null; then
+  if gh api "orgs/$BOT_ORG/members/$username" --silent 2>/dev/null; then
     # Add to cache for future lookups
     echo "$username" >> "$CACHE_FILE"
     _ORG_MEMBERS="$_ORG_MEMBERS$username"$'\n'

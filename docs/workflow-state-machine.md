@@ -58,10 +58,10 @@ Only skip a test fix story as "duplicate" if ALL of these are verified:
 
 ```bash
 # Get issue creation date
-gh issue view <issue-number> --repo brave/brave-browser --json createdAt
+gh issue view <issue-number> --repo $ISSUE_REPO --json createdAt
 
 # Get PR merge date
-gh pr view <pr-number> --repo brave/brave-core --json mergedAt
+gh pr view <pr-number> --repo $PR_REPO --json mergedAt
 
 # Compare: If issue.createdAt > pr.mergedAt → RE-OCCURRENCE (work on it)
 ```
@@ -109,4 +109,4 @@ Task selection is handled deterministically by `scripts/select-task.py` — the 
 **GitHub CLI (gh) Failures:**
 - If any `gh` command fails, log the error and abort immediately
 - Do NOT attempt workarounds or continue without the gh operation
-- Document the failure in ./brave-core-bot/data/progress.txt (story remains at current status)
+- Document the failure in $BOT_DIR/data/progress.txt (story remains at current status)

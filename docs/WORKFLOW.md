@@ -12,7 +12,7 @@ After any story status change to `"merged"`, the agent MUST:
 2. Update `data/progress.txt` with merge details
 3. **IMMEDIATELY run the stop condition check**:
    ```bash
-   ./brave-core-bot/scripts/check-should-continue.sh story-completed
+   $BOT_DIR/scripts/check-should-continue.sh story-completed
    ```
 
 4. **Act on the exit code**:

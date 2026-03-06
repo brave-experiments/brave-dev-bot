@@ -22,6 +22,9 @@ import os
 import subprocess
 import sys
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from lib.load_config import get_config, load_config, require_config
+
 REVIEW_CACHE_PATH = ".ignore/review-prs-cache.json"
 
 
@@ -64,7 +67,7 @@ def gh_graphql(query, variables):
         return None
 
 
-def fetch_pr_data(pr_number, bot_username):
+def fetch_pr_data(pr_number, bot_username, repo_owner="brave", repo_name="brave-core"):
     """Fetch all bot review data: inline threads + reviews.
 
     Returns (head_sha, threads_info, body_comments, already_approved)
@@ -94,8 +97,8 @@ def fetch_pr_data(pr_number, bot_username):
     data = gh_graphql(
         query,
         {
-            "owner": "brave",
-            "name": "brave-core",
+            "owner": repo_owner,
+            "name": repo_name,
             "number": pr_number,
         },
     )
@@ -130,14 +133,14 @@ def fetch_pr_data(pr_number, bot_username):
     }
 
     # 2. Reviews via REST (for body-level comments and approval check)
-    reviews = gh_api(f"repos/brave/brave-core/pulls/{pr_number}/reviews")
+    reviews = gh_api(f"repos/{repo_owner}/{repo_name}/pulls/{pr_number}/reviews")
     if not reviews:
         reviews = []
 
     # Body text patterns that are just bot signatures, not actual concerns.
     # These should not block approval.
     HARMLESS_BODY_PATTERNS = {
-        "review via brave-core-bot",
+        "review via brave-dev-bot",
     }
 
     body_comments = []
@@ -172,15 +175,23 @@ def fail(reason, **extra):
 
 
 def main():
+    config = load_config()
+    pr_repo = require_config(config, "project.prRepository")
+    repo_owner, repo_name = pr_repo.split("/", 1)
+
     parser = argparse.ArgumentParser(
         description="Gate check: can the bot approve this PR?"
     )
     parser.add_argument("pr_number", type=int, help="PR number")
     parser.add_argument("bot_username", help="Bot's GitHub username")
+    parser.add_argument("--repo", default=pr_repo, help="owner/repo for PRs")
     args = parser.parse_args()
 
+    if "/" in args.repo:
+        repo_owner, repo_name = args.repo.split("/", 1)
+
     head_sha, threads_info, body_comments, already_approved = fetch_pr_data(
-        args.pr_number, args.bot_username
+        args.pr_number, args.bot_username, repo_owner, repo_name
     )
     if head_sha is None:
         fail("Failed to fetch PR data from GitHub API")
