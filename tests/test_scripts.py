@@ -1,4 +1,4 @@
-"""Tests for all Python scripts in brave-core-bot.
+"""Tests for all Python scripts in brave-dev-bot.
 
 Covers: update-prd-status.py, select-task.py, business-hours-elapsed.py,
 and check-prd-has-work.py.
