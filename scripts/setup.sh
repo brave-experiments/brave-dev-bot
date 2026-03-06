@@ -48,10 +48,26 @@ else
 fi
 
 if [ "$WRITE_CONFIG" = true ]; then
+  # Load previous values if config exists (for use as defaults)
+  if [ -f "$CONFIG_FILE" ]; then
+    _prev() { jq -r "$1 // empty" "$CONFIG_FILE" 2>/dev/null; }
+    PREV_PR_REPO=$(_prev '.project.prRepository')
+    PREV_DEFAULT_BRANCH=$(_prev '.project.defaultBranch')
+    PREV_ISSUE_REPO=$(_prev '.project.issueRepository')
+    PREV_BOT_USER=$(_prev '.bot.username')
+    PREV_BOT_EMAIL=$(_prev '.bot.email')
+    PREV_LABELS=$(jq -r '(.labels.issueLabels // []) | join(",")' "$CONFIG_FILE" 2>/dev/null)
+  fi
+
   prompt_required() {
-    local var_name="$1" prompt_text="$2" value=""
+    local var_name="$1" prompt_text="$2" default="$3" value=""
     while [ -z "$value" ]; do
-      read -p "$prompt_text" value
+      if [ -n "$default" ]; then
+        read -p "$prompt_text[$default]: " value
+        value="${value:-$default}"
+      else
+        read -p "$prompt_text" value
+      fi
       if [ -z "$value" ]; then
         echo "  ⚠️  This field is required."
       fi
@@ -60,10 +76,10 @@ if [ "$WRITE_CONFIG" = true ]; then
   }
 
   echo "─── Target Project ───"
-  prompt_required CFG_PR_REPO "Repo where the bot creates PRs (owner/repo, e.g. brave/brave-core): "
-  read -p "Default branch for ${CFG_PR_REPO} [master]: " CFG_DEFAULT_BRANCH
-  CFG_DEFAULT_BRANCH="${CFG_DEFAULT_BRANCH:-master}"
-  prompt_required CFG_ISSUE_REPO "Repo where issues/backlog lives (owner/repo, e.g. brave/brave-browser): "
+  prompt_required CFG_PR_REPO "Repo where the bot creates PRs (owner/repo): " "$PREV_PR_REPO"
+  read -p "Default branch for ${CFG_PR_REPO} [${PREV_DEFAULT_BRANCH:-master}]: " CFG_DEFAULT_BRANCH
+  CFG_DEFAULT_BRANCH="${CFG_DEFAULT_BRANCH:-${PREV_DEFAULT_BRANCH:-master}}"
+  prompt_required CFG_ISSUE_REPO "Repo where issues/backlog lives (owner/repo): " "$PREV_ISSUE_REPO"
 
   # Derive org and project name from PR repo
   CFG_ORG="${CFG_PR_REPO%%/*}"
@@ -71,9 +87,10 @@ if [ "$WRITE_CONFIG" = true ]; then
 
   echo ""
   echo "─── Bot Identity ───"
-  prompt_required CFG_BOT_USER "GitHub username the bot commits as (e.g. netzenbot): "
-  prompt_required CFG_BOT_EMAIL "Email for git commits (e.g. bot@example.com): "
-  read -p "Issue labels (comma-separated, e.g. bot/type/test): " CFG_LABELS_RAW
+  prompt_required CFG_BOT_USER "GitHub username the bot commits as: " "$PREV_BOT_USER"
+  prompt_required CFG_BOT_EMAIL "Email for git commits: " "$PREV_BOT_EMAIL"
+  read -p "Issue labels (comma-separated) [${PREV_LABELS:-}]: " CFG_LABELS_RAW
+  CFG_LABELS_RAW="${CFG_LABELS_RAW:-$PREV_LABELS}"
 
   # Build config.json safely via Python to avoid JSON injection from user input
   python3 -c "
