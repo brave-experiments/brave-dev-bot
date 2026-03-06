@@ -81,48 +81,24 @@ git clone git@github.com:brave-experiments/brave-core-bot.git my-project-bot
 cd my-project-bot
 ```
 
-### 2. Run Setup (creates config.json interactively)
+### 2. Run Setup
 
 ```bash
 make setup
 ```
 
-This will prompt you for:
-- Project name, GitHub org, PR and issue repositories
-- Bot username and email
-- Issue labels for backlog sync
+The setup wizard handles everything interactively and is fully idempotent — safe to re-run at any time. It will:
 
-It also initializes submodules and installs pre-commit hooks.
+1. **Create `config.json`** (if missing) — prompts for project name, GitHub org, PR/issue repositories, bot username/email, and issue labels. If `config.json` already exists, shows current values and skips unless you explicitly choose to reconfigure.
+2. **Initialize submodules** — pulls the best-practices submodule.
+3. **Create data files** (`prd.json`, `run-state.json`, `progress.txt`) from templates if missing. Never overwrites existing files.
+4. **Generate org members cache** (`.ignore/org-members.txt`) via GitHub API if missing.
+5. **Configure git identity** in the target repo if not already set (using the bot username/email from config).
+6. **Install pre-commit hooks** for both the target repo and bot repo.
 
-### 3. Configure Git
+**For existing brave-core deployments:** You can skip the wizard entirely by copying the reference config: `cp config.brave-core.json config.json`, then run `make setup` to complete the remaining steps.
 
-Configure git identity in the target repository:
-
-```bash
-cd /path/to/target/repo
-git config user.name "your-bot-name"
-git config user.email "your-bot@example.com"
-```
-
-These settings are repository-specific (stored in `.git/config`), not global.
-
-### 4. Create PRD
-
-Copy the example template and customize:
-
-```bash
-cd my-project-bot
-
-cp data/prd.example.json data/prd.json
-cp data/run-state.example.json data/run-state.json
-cp data/progress.example.txt data/progress.txt
-```
-
-Edit `data/prd.json` to set your working directory path (e.g., `src/brave`).
-
-These files contain user-specific paths and runtime state, so they're gitignored.
-
-### 5. Create Your PRD
+### 3. Create Your PRD
 
 **Option A: Use the `/prd` skill** (recommended)
 ```bash
@@ -136,7 +112,7 @@ Follow the prompts, then use `/prd-json` to convert to `data/prd.json`.
 ```json
 {
   "config": {
-    "workingDirectory": "src/brave"
+    "workingDirectory": "../my-project"
   },
   "userStories": [
     {
@@ -149,7 +125,7 @@ Follow the prompts, then use `/prd-json` to convert to `data/prd.json`.
       "prUrl": null,
       "lastActivityBy": null,
       "acceptanceCriteria": [
-        "npm run test -- auth_tests from src/brave"
+        "npm run test -- auth_tests"
       ]
     }
   ]
@@ -243,11 +219,29 @@ Bot-only skills are available as slash commands in Claude Code. 8 bot-specific s
 
 ## Configuration Files
 
+### config.json
+
+Project-specific configuration (gitignored, created by `make setup`). Keys:
+
+- `project.name`: Project name (e.g. `brave-core`)
+- `project.org`: GitHub organization (e.g. `brave`)
+- `project.prRepository`: PR repository as `owner/repo` (e.g. `brave/brave-core`)
+- `project.issueRepository`: Issue repository as `owner/repo` (e.g. `brave/brave-browser`)
+- `project.defaultBranch`: Default branch name (e.g. `master`)
+- `bot.username`: Bot's GitHub username
+- `bot.email`: Bot's email for git commits
+- `bot.claudeModel`: Claude model to use (`opus`, `sonnet`, etc.)
+- `labels.prLabels`: Labels applied to bot-created PRs
+- `labels.issueLabels`: Labels used for backlog issue fetching
+- `bestPractices.submodule`: Name of the best-practices submodule
+
+A `config.example.json` template and `config.brave-core.json` reference config are included.
+
 ### data/prd.json
 
 Product Requirements Document defining user stories and acceptance criteria.
 
-- `config.workingDirectory`: Git repository path (typically `src/brave`)
+- `config.workingDirectory`: Path to the target git repository (relative to parent dir or absolute)
 - `userStories[].id`: Unique story identifier
 - `userStories[].priority`: Execution order (1 = highest)
 - `userStories[].status`: Story state
