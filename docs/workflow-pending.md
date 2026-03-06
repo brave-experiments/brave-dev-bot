@@ -226,25 +226,91 @@
 
 8. Update CLAUDE.md files if you discover reusable patterns (see below)
 
-9. **REQUIRED: Verify implementation against best practices (MUST use subagent):**
+9. **REQUIRED: Verify implementation against best practices (chunked parallel subagents):**
 
-   **CRITICAL: You MUST use a subagent for this step. Do NOT read best practices docs in the main context — they are 1000+ lines each and will fill the context window, causing compaction. The entire audit must happen inside the subagent.**
+   **CRITICAL: Do NOT read best practices docs in the main context — they are 1000+ lines each and will fill the context window, causing compaction. Use the same chunked parallel subagent approach as `/review-prs` and `/check-best-practices`.**
 
-   Spawn a subagent (using the Agent tool with `subagent_type: "general-purpose"`) to audit your changes. Pass it the bot directory path and tell it to:
+   ### Step 9.1: Gather the diff
 
-   1. Read the diff of all changed files (`git diff` or `git diff HEAD` depending on staging)
-   2. Read the relevant best practices docs based on what changed:
-      - **Test changes**: `$BOT_DIR/brave-core-tools/docs/best-practices/testing-async.md`, `testing-isolation.md`, `testing-javascript.md`
-      - **C++ changes**: `$BOT_DIR/brave-core-tools/docs/best-practices/coding-standards.md`
-      - **Architecture changes**: `$BOT_DIR/brave-core-tools/docs/best-practices/architecture.md`
-      - **Build file changes**: `$BOT_DIR/brave-core-tools/docs/best-practices/build-system.md`
-      - **chromium_src changes**: `$BOT_DIR/brave-core-tools/docs/best-practices/chromium-src-overrides.md`
-   3. For every new symbol (function, struct, class, constant, variable) introduced in the diff, check it against each relevant rule in the best practices docs — don't skim, check each symbol individually
-   4. For every modification to existing code, verify the change is directly necessary for the fix
-   5. Return a list of any violations found, with the specific rule and the offending code
+   ```bash
+   cd [targetRepoPath from bot config]
+   DIFF=$(git diff HEAD)
+   # If changes are already committed:
+   DIFF=$(git diff HEAD~1..HEAD)
+   ```
 
-   **If the subagent returns violations:** Fix them before committing.
-   **If the subagent returns no violations:** Proceed to commit.
+   ### Step 9.2: Classify changed files
+
+   Extract the file list and classify:
+   - **has_cpp_files**: `.cc`, `.h`, `.mm` files
+   - **has_test_files**: `*_test.cc`, `*_browsertest.cc`, `*_unittest.cc`
+   - **has_chromium_src**: `chromium_src/` paths
+   - **has_build_files**: `BUILD.gn`, `DEPS`, `*.gni`
+   - **has_frontend_files**: `.ts`, `.tsx`, `.html`, `.css`
+   - **has_android_files**: `.java`, `.kt` files, or `android/` paths
+   - **has_ios_files**: `.swift` files, or `ios/` paths
+   - **has_patch_files**: `.patch` files or `patches/` paths
+   - **has_filter_files**: `test/filters/*.filter` files only
+   - **has_grd_files**: `.grd`, `.grdp` files
+
+   ### Step 9.3: Determine applicable documents
+
+   | Document | Condition |
+   |----------|-----------|
+   | `coding-standards.md` | has_cpp_files |
+   | `coding-standards-memory.md` | has_cpp_files |
+   | `coding-standards-apis.md` | has_cpp_files |
+   | `testing-async.md` | has_test_files |
+   | `testing-isolation.md` | has_test_files |
+   | `testing-javascript.md` | has_test_files |
+   | `testing-navigation.md` | has_test_files |
+   | `build-system.md` | has_build_files |
+   | `chromium-src-overrides.md` | has_chromium_src |
+   | `frontend.md` | has_frontend_files |
+   | `android.md` | has_android_files |
+   | `ios.md` | has_ios_files |
+   | `patches.md` | has_patch_files |
+   | `localization.md` | has_grd_files |
+   | `architecture.md` | has_cpp_files or has_build_files |
+   | `documentation.md` | Always |
+
+   **For filter-file-only changes** (`test/filters/*.filter` and nothing else): Only `testing-isolation.md` and `documentation.md` apply. Skip all other documents.
+
+   ### Step 9.4: Chunk documents and launch parallel subagents
+
+   For each applicable document, run the chunking script:
+   ```bash
+   python3 $BOT_DIR/brave-core-tools/.claude/skills/check-best-practices/chunk-best-practices.py \
+     $BOT_DIR/brave-core-tools/docs/best-practices/<doc>.md
+   ```
+
+   This outputs JSON with chunks of ~20 rules each. Launch one Agent subagent (`subagent_type: "general-purpose"`) per chunk, **all in parallel**. Each subagent prompt MUST include:
+
+   1. **The chunk content** (from the `content` field) — embedded directly, the subagent does NOT read any files
+   2. **The diff** — embedded directly, the subagent does NOT re-gather it
+   3. **Instructions**: Only flag violations in ADDED lines (+ lines). Every claim must be backed by a specific rule in the provided chunk. Do NOT flag existing code or make claims based on general knowledge.
+   4. **Required output format**:
+      ```
+      AUDIT:
+      PASS: <rule heading>
+      N/A: <rule heading>
+      FAIL: <rule heading>
+      ... (one line per ## heading in the chunk)
+
+      VIOLATIONS:
+      - file: <path>, line: <N>, rule: "<heading>", issue: <description>, fix: <suggestion>
+      NO_VIOLATIONS (if none found)
+      ```
+
+   ### Step 9.5: Aggregate and validate
+
+   After all subagents return:
+   1. Collect all FAIL entries with their violations
+   2. **Validate each violation** — read the actual source file at the flagged line to confirm the claim is accurate in context. Drop false positives.
+   3. Fix confirmed violations before committing
+
+   **If no violations after validation:** Proceed to commit.
+   **If violations found:** Fix them, then re-run only the affected chunks to confirm the fix.
 
    This step is mandatory — it catches issues that are easy to miss when focused on implementation. Do NOT skip it.
 
