@@ -208,12 +208,18 @@ if [ -f "$PROJECT_ROOT/data/prd.json" ]; then
 fi
 
 if [ -z "$GIT_REPO" ]; then
-  echo "ℹ️  No workingDirectory found in prd.json — skipping target repo setup."
-  echo "   Edit data/prd.json to set config.workingDirectory, then re-run setup."
-  SKIP_GIT=true
+  echo "─── Target Repository Path ───"
+  echo "Path to the git repo where the bot will commit code."
+  echo "Can be absolute or relative to $(dirname "$PROJECT_ROOT")."
+  read -p "Target repo path (e.g. src/brave, ../my-project): " GIT_REPO
+  if [ -z "$GIT_REPO" ]; then
+    echo "  Skipped — you can set config.workingDirectory in data/prd.json later."
+    SKIP_GIT=true
+  fi
 fi
 
 if [ "$SKIP_GIT" = false ]; then
+  GIT_REPO_RAW="$GIT_REPO"
   # Handle relative paths
   if [[ "$GIT_REPO" != /* ]]; then
     GIT_REPO="$PARENT_ROOT/$GIT_REPO"
@@ -222,6 +228,18 @@ if [ "$SKIP_GIT" = false ]; then
   if [ ! -d "$GIT_REPO/.git" ]; then
     echo "⚠️  $GIT_REPO is not a git repository — skipping target repo setup."
     SKIP_GIT=true
+  else
+    # Write workingDirectory into prd.json if not already set
+    if [ -f "$PROJECT_ROOT/data/prd.json" ]; then
+      EXISTING_WD=$(jq -r '.config.workingDirectory // empty' "$PROJECT_ROOT/data/prd.json" 2>/dev/null || echo "")
+      if [ -z "$EXISTING_WD" ]; then
+        # Ensure .config exists, then set workingDirectory
+        jq --arg wd "$GIT_REPO_RAW" '.config = (.config // {}) | .config.workingDirectory = $wd' \
+          "$PROJECT_ROOT/data/prd.json" > "$PROJECT_ROOT/data/prd.json.tmp" && \
+          mv "$PROJECT_ROOT/data/prd.json.tmp" "$PROJECT_ROOT/data/prd.json"
+        echo "  ✓ Set config.workingDirectory = \"$GIT_REPO_RAW\" in data/prd.json"
+      fi
+    fi
   fi
 fi
 
@@ -304,7 +322,7 @@ if [ ! -f "$PROJECT_ROOT/data/prd.json" ] || \
   NEXT+=("Edit data/prd.json with your user stories (or use /prd-json skill)")
 fi
 if [ "$SKIP_GIT" = true ]; then
-  NEXT+=("Set config.workingDirectory in data/prd.json, then re-run: make setup")
+  NEXT+=("Re-run 'make setup' and provide the target repo path to configure git identity and hooks")
 fi
 
 if [ ${#NEXT[@]} -gt 0 ]; then
