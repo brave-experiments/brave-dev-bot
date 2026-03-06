@@ -1,5 +1,5 @@
 #!/bin/bash
-# Shared config loader for brave-bot shell scripts.
+# Shared config loader for brave-dev-bot shell scripts.
 #
 # Usage (from any script):
 #   source "$(dirname "${BASH_SOURCE[0]}")/lib/load-config.sh"

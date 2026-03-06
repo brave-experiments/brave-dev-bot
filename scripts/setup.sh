@@ -1,5 +1,5 @@
 #!/bin/bash
-# Setup script for brave-bot
+# Setup script for brave-dev-bot
 # Fully idempotent — safe to re-run at any time.
 # Creates config.json, data files, hooks, and org-members cache as needed.
 # Never overwrites existing files without an explicit confirmation.

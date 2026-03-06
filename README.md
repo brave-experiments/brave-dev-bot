@@ -433,7 +433,7 @@ Then reload: `direnv allow`
 ### Test It
 
 ```bash
-./scripts/signal-notify.sh "Hello from brave-bot!"
+./scripts/signal-notify.sh "Hello from brave-dev-bot!"
 ```
 
 You should receive the message on the recipient's Signal account.

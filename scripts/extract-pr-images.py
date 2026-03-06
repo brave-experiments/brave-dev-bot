@@ -160,7 +160,7 @@ def download_image(url, dest_path):
     """Download an image file. Returns True on success."""
     try:
         req = urllib.request.Request(url, headers={
-            "User-Agent": "brave-bot/1.0",
+            "User-Agent": "brave-dev-bot/1.0",
             "Accept": "image/*",
         })
         with urllib.request.urlopen(req, timeout=15) as response:
