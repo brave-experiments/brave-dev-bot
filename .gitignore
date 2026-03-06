@@ -4,6 +4,9 @@
 # Project config - user-specific (template: config.example.json)
 config.json
 
+# Runtime lock file
+.run.lock
+
 # Runtime files - user-specific state
 data/prd.json
 data/prd.archived.json
