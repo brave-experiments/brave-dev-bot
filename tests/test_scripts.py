@@ -151,7 +151,7 @@ class TestUpdatePrdHandlers:
         update_prd_status.handle_pushed(story, Namespace(pr_number=34567))
         assert story["status"] == "pushed"
         assert story["prNumber"] == 34567
-        assert "/pull/34567" in story["prUrl"]
+        assert story["prUrl"].endswith("/pull/34567")
         assert story["lastActivityBy"] == "bot"
 
     def test_merged(self, update_prd_status):
