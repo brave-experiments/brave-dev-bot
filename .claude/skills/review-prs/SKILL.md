@@ -275,6 +275,8 @@ This outputs JSON with one or more chunks per document. Each chunk contains:
 
 Small documents (≤3 rules) produce 1 chunk. Large documents are split evenly (e.g., 30 rules → 10 chunks of 3). Launch one **Task subagent** (subagent_type: "general-purpose") per chunk. **Use multiple Task tool calls in a single message** so they run in parallel. Pass the `PR_DIFF` content (fetched in Step 1) directly in each subagent's prompt so they don't need to fetch it again.
 
+**CRITICAL: Launch ALL chunks, not a subset.** The discovery script already filters documents by file type — do NOT apply additional "relevance" filtering. Every chunk returned by the chunking step MUST get a subagent. The discovery script is the only gate; you must not second-guess it.
+
 ### Step 3: Subagent Prompt
 
 Each subagent prompt MUST include:
