@@ -75,6 +75,8 @@ Use `$BOT_USERNAME` in ALL subsequent jq queries and comparisons that need to id
 
 Before launching subagents, fetch the full diff once. This diff will be reused by all subagents (they must NOT re-fetch it).
 
+**CRITICAL: Always pass the COMPLETE diff to every subagent — no matter how large it is.** Do NOT truncate, summarize, sample, or selectively extract parts of the diff based on size. Even if the diff is 100KB, 200KB, or larger, each subagent receives the full unmodified diff text. The chunking strategy splits RULES across subagents (so each checks a small set of rules), NOT the diff. Every subagent must see every line of the diff to check its assigned rules thoroughly. Taking shortcuts on large diffs defeats the entire review system.
+
 ```bash
 # Fetch the full diff once — save to a variable to pass to subagents
 PR_DIFF=$(gh pr diff --repo $PR_REPO {number})
@@ -285,7 +287,7 @@ Each subagent prompt MUST include:
    <chunk content>
    ```
    ````
-3. **The PR diff content** — include the full diff text (fetched once in Step 1) directly in the prompt. The subagent MUST NOT call `gh pr diff` — the diff is already provided. Embed it in the prompt like:
+3. **The PR diff content** — include the **entire, untruncated** diff text (fetched once in Step 1) directly in the prompt. Do NOT omit, truncate, or summarize any part of the diff regardless of its size. The subagent MUST NOT call `gh pr diff` — the diff is already provided. Embed it in the prompt like:
    ````
    Here is the PR diff:
    ```diff
