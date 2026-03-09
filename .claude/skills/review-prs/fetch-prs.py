@@ -154,7 +154,7 @@ def fetch_prs(mode, days, page, pr_number, state):
         return prs[start : start + 20]
     else:
         result = subprocess.run(
-            base_cmd + ["--limit", "200"],
+            base_cmd + ["--limit", "500"],
             capture_output=True,
             text=True,
             check=True,
