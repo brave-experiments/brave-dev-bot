@@ -39,24 +39,24 @@ CRON_JOBS=$(cat <<EOF
 SHELL=/bin/bash
 PATH=$CLAUDE_BIN_DIR:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin
 
-# Add backlog to PRD (15 min before each run.sh) — skip if no prd.json
+# Add backlog to PRD (before first run.sh) — skip if no prd.json
 # Gate check runs before git sync to avoid wasted fetches
-# Weekdays: 4x/day
-45 3,7,15,19 * * 1-5 cd $PROJECT_ROOT && source .envrc && ./scripts/check-has-prd.sh && git fetch origin && git checkout $BOT_REPO_BRANCH && git reset --hard origin/$BOT_REPO_BRANCH && ./scripts/update-submodule.sh && ./scripts/with-lock.sh add-backlog -- timeout 7200 $CLAUDE_BIN -p '/add-backlog-to-prd' --allowedTools '$CLAUDE_TOOLS' >> $LOG_DIR/add-backlog-cron.log 2>&1
+# Weekdays: 1x/day
+45 7 * * 1-5 cd $PROJECT_ROOT && source .envrc && ./scripts/check-has-prd.sh && git fetch origin && git checkout $BOT_REPO_BRANCH && git reset --hard origin/$BOT_REPO_BRANCH && ./scripts/update-submodule.sh && ./scripts/with-lock.sh add-backlog -- timeout 7200 $CLAUDE_BIN --model sonnet -p '/add-backlog-to-prd' --allowedTools '$CLAUDE_TOOLS' >> $LOG_DIR/add-backlog-cron.log 2>&1
 # Weekends: once/day (before run.sh)
-45 11 * * 0,6 cd $PROJECT_ROOT && source .envrc && ./scripts/check-has-prd.sh && git fetch origin && git checkout $BOT_REPO_BRANCH && git reset --hard origin/$BOT_REPO_BRANCH && ./scripts/update-submodule.sh && ./scripts/with-lock.sh add-backlog -- timeout 7200 $CLAUDE_BIN -p '/add-backlog-to-prd' --allowedTools '$CLAUDE_TOOLS' >> $LOG_DIR/add-backlog-cron.log 2>&1
+45 11 * * 0,6 cd $PROJECT_ROOT && source .envrc && ./scripts/check-has-prd.sh && git fetch origin && git checkout $BOT_REPO_BRANCH && git reset --hard origin/$BOT_REPO_BRANCH && ./scripts/update-submodule.sh && ./scripts/with-lock.sh add-backlog -- timeout 7200 $CLAUDE_BIN --model sonnet -p '/add-backlog-to-prd' --allowedTools '$CLAUDE_TOOLS' >> $LOG_DIR/add-backlog-cron.log 2>&1
 
 # Main agent run — skip if no actionable stories
 # Gate check runs before git sync to avoid wasted fetches
-# Weekdays: 4x/day
-10 0,8,12,16 * * 1-5 cd $PROJECT_ROOT && source .envrc && ./scripts/check-has-work.sh && git fetch origin && git checkout $BOT_REPO_BRANCH && git reset --hard origin/$BOT_REPO_BRANCH && ./scripts/update-submodule.sh && ./run.sh 3 >> $LOG_DIR/run-cron.log 2>&1
+# Weekdays: 2x/day
+10 8,16 * * 1-5 cd $PROJECT_ROOT && source .envrc && ./scripts/check-has-work.sh && git fetch origin && git checkout $BOT_REPO_BRANCH && git reset --hard origin/$BOT_REPO_BRANCH && ./scripts/update-submodule.sh && ./run.sh 3 >> $LOG_DIR/run-cron.log 2>&1
 # Weekends: once/day at 14:10
 10 14 * * 0,6 cd $PROJECT_ROOT && source .envrc && ./scripts/check-has-work.sh && git fetch origin && git checkout $BOT_REPO_BRANCH && git reset --hard origin/$BOT_REPO_BRANCH && ./scripts/update-submodule.sh && ./run.sh 3 >> $LOG_DIR/run-cron.log 2>&1
 
 # Review PRs — skip if no recent open PRs
 # Gate check runs before git sync to avoid wasted fetches
-# Weekdays: every 2h + off-hours
-0 0,4,8,10,12,14,16,18,20 * * 1-5 cd $PROJECT_ROOT && source .envrc && ./scripts/check-new-prs.sh && git fetch origin && git checkout $BOT_REPO_BRANCH && git reset --hard origin/$BOT_REPO_BRANCH && ./scripts/update-submodule.sh && ./scripts/with-lock.sh review-prs -- timeout 7200 $CLAUDE_BIN -p '/review-prs 1d open auto reviewer-priority' --allowedTools '$CLAUDE_TOOLS' >> $LOG_DIR/review-prs-cron.log 2>&1
+# Weekdays: 3x/day
+0 4,10,16 * * 1-5 cd $PROJECT_ROOT && source .envrc && ./scripts/check-new-prs.sh && git fetch origin && git checkout $BOT_REPO_BRANCH && git reset --hard origin/$BOT_REPO_BRANCH && ./scripts/update-submodule.sh && ./scripts/with-lock.sh review-prs -- timeout 7200 $CLAUDE_BIN -p '/review-prs 1d open auto reviewer-priority' --allowedTools '$CLAUDE_TOOLS' >> $LOG_DIR/review-prs-cron.log 2>&1
 # Weekends: once/day at noon
 0 12 * * 0,6 cd $PROJECT_ROOT && source .envrc && ./scripts/check-new-prs.sh && git fetch origin && git checkout $BOT_REPO_BRANCH && git reset --hard origin/$BOT_REPO_BRANCH && ./scripts/update-submodule.sh && ./scripts/with-lock.sh review-prs -- timeout 7200 $CLAUDE_BIN -p '/review-prs 1d open auto reviewer-priority' --allowedTools '$CLAUDE_TOOLS' >> $LOG_DIR/review-prs-cron.log 2>&1
 
@@ -99,12 +99,12 @@ echo "Cron jobs installed successfully."
 echo ""
 echo "Current schedule:"
 echo "  Weekdays (Mon-Fri):"
-echo "    00:10, 08:10, 12:10, 16:10 - run.sh (3 iterations)"
-echo "    03:45, 07:45, 15:45, 19:45 - /add-backlog-to-prd"
-echo "    00:00, 04:00, 08:00-20:00 (every 2h) - /review-prs"
+echo "    08:10, 16:10 - run.sh (3 iterations)"
+echo "    07:45 - /add-backlog-to-prd (sonnet)"
+echo "    04:00, 10:00, 16:00 - /review-prs"
 echo "  Weekends (Sat-Sun):"
 echo "    14:10 - run.sh (3 iterations)"
-echo "    11:45 - /add-backlog-to-prd"
+echo "    11:45 - /add-backlog-to-prd (sonnet)"
 echo "    12:00 - /review-prs"
 echo "  Daily:"
 echo "    06:00 - /learnable-pattern-search"

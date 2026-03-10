@@ -4,7 +4,7 @@
 Handles all PR fetching, filtering, and cache checking in one script
 so the LLM doesn't burn tokens on this logic.
 
-Usage: fetch-prs.py [days|page<N>|#<PR>] [open|closed|all] [--reviewer-priority <username>]
+Usage: fetch-prs.py [days|page<N>|#<PR>] [open|closed|all] [--reviewer-priority <username>] [--max-prs <N>]
 
 Examples:
   fetch-prs.py              # Default: 5 days, open PRs
@@ -15,6 +15,7 @@ Examples:
   fetch-prs.py #12345       # Single PR by number
   fetch-prs.py 12345        # Single PR by number (large numbers treated as PR#)
   fetch-prs.py 1 open --reviewer-priority user  # Prioritize PRs requesting review from user
+  fetch-prs.py 1 open --max-prs 10              # Limit to 10 PRs per batch
 
 Output: JSON with "prs" array and "summary" stats.
 """
@@ -47,6 +48,7 @@ def parse_args():
     pr_number = None
     state = "open"
     reviewer_priority = None
+    max_prs = None
 
     args = sys.argv[1:]
     i = 0
@@ -54,6 +56,10 @@ def parse_args():
         arg = args[i]
         if arg == "--reviewer-priority" and i + 1 < len(args):
             reviewer_priority = args[i + 1]
+            i += 2
+            continue
+        elif arg == "--max-prs" and i + 1 < len(args):
+            max_prs = int(args[i + 1])
             i += 2
             continue
         elif arg.startswith("#"):
@@ -77,7 +83,7 @@ def parse_args():
                 pass
         i += 1
 
-    return mode, days, page, pr_number, state, reviewer_priority
+    return mode, days, page, pr_number, state, reviewer_priority, max_prs
 
 
 def has_any_approval(pr):
@@ -282,7 +288,7 @@ def filter_prs(prs, mode, days, cache, org_members, reviewer_priority=None):
 
 
 def main():
-    mode, days, page, pr_number, state, reviewer_priority = parse_args()
+    mode, days, page, pr_number, state, reviewer_priority, max_prs = parse_args()
     prs = fetch_prs(mode, days, page, pr_number, state)
 
     org_members = load_org_members()
@@ -315,6 +321,12 @@ def main():
             key=lambda pr: 0 if is_requested_reviewer(pr, reviewer_priority) else 1
         )
 
+    # Apply max-prs limit after sorting (so priority PRs are kept first)
+    skipped_max_prs = 0
+    if max_prs is not None and len(to_review) > max_prs:
+        skipped_max_prs = len(to_review) - max_prs
+        to_review = to_review[:max_prs]
+
     def pr_entry(pr):
         author = pr.get("author", {}).get("login", "unknown")
         entry = {
@@ -341,6 +353,7 @@ def main():
             "skipped_cached": skipped_cached,
             "skipped_approved": skipped_approved,
             "skipped_external": skipped_external,
+            "skipped_max_prs": skipped_max_prs,
         },
     }
 
