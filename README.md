@@ -90,11 +90,10 @@ make setup
 The setup wizard handles everything interactively and is fully idempotent — safe to re-run at any time. It will:
 
 1. **Create `config.json`** (if missing) — prompts for project name, GitHub org, PR/issue repositories, bot username/email, and issue labels. If `config.json` already exists, shows current values and skips unless you explicitly choose to reconfigure.
-2. **Initialize submodules** — pulls the best-practices submodule.
-3. **Create data files** (`prd.json`, `run-state.json`, `progress.txt`) from templates if missing. Never overwrites existing files.
-4. **Generate org members cache** (`.ignore/org-members.txt`) via GitHub API if missing.
-5. **Configure git identity** in the target repo if not already set (using the bot username/email from config).
-6. **Install pre-commit hooks** for both the target repo and bot repo.
+2. **Create data files** (`prd.json`, `run-state.json`, `progress.txt`) from templates if missing. Never overwrites existing files.
+3. **Generate org members cache** (`.ignore/org-members.txt`) via GitHub API if missing.
+4. **Configure git identity** in the target repo if not already set (using the bot username/email from config).
+5. **Install pre-commit hooks** for both the target repo and bot repo.
 
 **For existing brave-core deployments:** You can skip the wizard entirely by copying the reference config: `cp config.brave-core.json config.json`, then run `make setup` to complete the remaining steps.
 
