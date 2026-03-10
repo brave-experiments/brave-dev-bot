@@ -53,8 +53,9 @@ LOCKFILE="$LOCK_DIR/.${LOCK_NAME}.lock"
 exec 200>"$LOCKFILE"
 flock -n 200 || { echo "Another $LOCK_NAME job is already running. Exiting."; exit 0; }
 
-# Run the command with a timeout
-timeout "$TIMEOUT" "$@"
+# Run the command with a timeout (use timeout-tree to kill entire process tree)
+SCRIPT_DIR_LOCK="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+"$SCRIPT_DIR_LOCK/timeout-tree.sh" "$TIMEOUT" "$@"
 EXIT_CODE=$?
 
 if [ $EXIT_CODE -eq 124 ]; then

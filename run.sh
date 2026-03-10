@@ -220,9 +220,9 @@ Additional context: $EXTRA_PROMPT"
 
   if [ "$USE_TUI" = true ]; then
     # TUI mode: let Claude own the terminal directly (no piping)
-    timeout --foreground 7200 $BOT_CLAUDE_BIN --dangerously-skip-permissions --project-dir "$SCRIPT_DIR" --model "$BOT_CLAUDE_MODEL" --session-id "$SESSION_ID" "$CLAUDE_PROMPT" || true
+    "$SCRIPT_DIR/scripts/timeout-tree.sh" 7200 $BOT_CLAUDE_BIN --dangerously-skip-permissions --project-dir "$SCRIPT_DIR" --model "$BOT_CLAUDE_MODEL" --session-id "$SESSION_ID" "$CLAUDE_PROMPT" || true
   else
-    timeout 7200 $BOT_CLAUDE_BIN --dangerously-skip-permissions --print --project-dir "$SCRIPT_DIR" --model "$BOT_CLAUDE_MODEL" --verbose --output-format stream-json --session-id "$SESSION_ID" "$CLAUDE_PROMPT" 2>&1 | tee -a "$ITERATION_LOG" > "$TEMP_OUTPUT" || true
+    "$SCRIPT_DIR/scripts/timeout-tree.sh" 7200 $BOT_CLAUDE_BIN --dangerously-skip-permissions --print --project-dir "$SCRIPT_DIR" --model "$BOT_CLAUDE_MODEL" --verbose --output-format stream-json --session-id "$SESSION_ID" "$CLAUDE_PROMPT" 2>&1 | tee -a "$ITERATION_LOG" > "$TEMP_OUTPUT" || true
   fi
 
   echo "To continue this session: claude --resume $SESSION_ID"
