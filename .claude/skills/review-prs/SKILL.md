@@ -84,6 +84,8 @@ After reviewing and validating, write your results JSON to the file path specifi
 
 Wait for all subagents to return.
 
+**CRITICAL: NEVER post reviews, comments, or approvals to GitHub yourself.** Do NOT use `gh api`, `gh pr review`, `gh pr comment`, or any GitHub API calls to post anything on any PR. All posting is handled exclusively by `collect-results.py` → `post-review.py` in Step 4. If you post reviews directly, it creates duplicates.
+
 ### Step 4: Collect and post (zero LLM tokens)
 
 Run the collector script — it reads all subagent result files and runs post-review.py:

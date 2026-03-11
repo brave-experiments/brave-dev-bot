@@ -741,7 +741,9 @@ Use the Write tool to create this file with the following format:
 }}
 
 If there are no validated violations, write: {{"violations": [], "validation_log": []}}
-CRITICAL: You MUST write the results JSON file even if there are no violations."""
+CRITICAL: You MUST write the results JSON file even if there are no violations.
+
+CRITICAL: NEVER post reviews, comments, or approvals to GitHub. NEVER use `gh api`, `gh pr review`, `gh pr comment`, or any other command to interact with the GitHub API. Your ONLY job is to analyze the diff against the rules and write the results JSON file. All posting is handled by a separate pipeline script after your results are collected."""
 
 
 def build_subagent_prompt(pr_number, pr_title, diff_text, images, prior_comments,

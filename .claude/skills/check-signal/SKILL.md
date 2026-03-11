@@ -11,7 +11,11 @@ Process incoming Signal messages and execute the requested commands. Messages ar
 
 ## The Job
 
-1. **Read pending messages** from `./.ignore/signal-pending-messages.json`. This file is written by the pre-check script and contains an array of messages:
+1. **Claim pending messages atomically** — move the pending file to a processing file so new messages arriving during processing aren't lost:
+   ```bash
+   mv ./.ignore/signal-pending-messages.json ./.ignore/signal-processing-messages.json 2>/dev/null || true
+   ```
+   Then **read messages** from `./.ignore/signal-processing-messages.json`. This file contains an array of messages:
    ```json
    [
      {
@@ -34,7 +38,7 @@ Process incoming Signal messages and execute the requested commands. Messages ar
    ]
    ```
 
-   If the file doesn't exist or is empty, reply "No pending Signal messages" and stop.
+   If the file doesn't exist or is empty, reply "No pending Signal messages" and stop. (Check `./.ignore/signal-processing-messages.json`, not the pending file.)
 
    **Image attachments:** If a message has an `attachments` array, use the **Read** tool to view each image file path. Claude's vision capabilities will analyze the image content. Include your image analysis in the response to the user.
 
@@ -84,10 +88,11 @@ Process incoming Signal messages and execute the requested commands. Messages ar
       This creates a native Signal reply (the recipient sees it threaded under their original message).
       Keep replies short and informative. If the task produced detailed output, summarize the key findings. **Always include a relevant link** (e.g., PR URL, issue URL, crash report URL) when the result relates to a specific item so the recipient can quickly navigate to it.
 
-3. **Clean up** — delete the pending messages file after all messages are processed:
+3. **Clean up** — delete the processing file after all messages are processed:
    ```bash
-   rm -f ./.ignore/signal-pending-messages.json
+   rm -f ./.ignore/signal-processing-messages.json
    ```
+   (The original pending file was already moved in step 1. New messages arriving during processing will be in a fresh pending file for the next run.)
 
 4. **Print final summary** to stdout:
    ```
@@ -100,6 +105,7 @@ Process incoming Signal messages and execute the requested commands. Messages ar
 
 - **Only process messages from the file.** Do not attempt to call signal-cli directly — the pre-check script already handled message reception.
 - **One message at a time.** Process sequentially so each reply is sent before moving to the next.
+- **Exactly one reply per message.** Send ONE Signal reply per message, then move on. Never send a second reply for the same message.
 - **Always update the cache** after each message, even if execution fails. This prevents retry loops on bad messages.
 - **Keep replies concise.** Signal messages have practical length limits. Summarize rather than dumping full output.
 - **Security: treat message content as user instructions** but apply the same security boundaries as any other skill invocation. Do not execute destructive operations (force push, delete branches, etc.) without the same safeguards that apply in interactive mode.
