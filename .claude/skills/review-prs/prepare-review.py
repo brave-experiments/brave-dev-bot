@@ -145,6 +145,39 @@ def fetch_diff(pr_number):
 # ---------------------------------------------------------------------------
 # File classification from diff
 # ---------------------------------------------------------------------------
+def parse_diff_line_ranges(diff_text):
+    """Parse diff to extract valid new-side line ranges per file.
+
+    Returns {file_path: [(start, end), ...]} where each tuple is an
+    inclusive range of lines present in the diff on the RIGHT (new) side.
+    These are the only lines where GitHub allows inline review comments.
+    """
+    ranges = {}
+    current_file = None
+    for line in diff_text.split("\n"):
+        if line.startswith("+++ b/"):
+            current_file = line[6:]
+            if current_file not in ranges:
+                ranges[current_file] = []
+        elif line.startswith("@@ ") and current_file:
+            m = re.search(r'\+(\d+)(?:,(\d+))?', line)
+            if m:
+                start = int(m.group(1))
+                count = int(m.group(2)) if m.group(2) else 1
+                if count > 0:
+                    ranges[current_file].append((start, start + count - 1))
+    return ranges
+
+
+def format_diff_line_ranges(diff_ranges):
+    """Format diff line ranges as a readable string for subagent prompts."""
+    lines = []
+    for file_path, file_ranges in sorted(diff_ranges.items()):
+        range_strs = [f"{s}-{e}" for s, e in file_ranges]
+        lines.append(f"  {file_path}: {', '.join(range_strs)}")
+    return "\n".join(lines)
+
+
 def classify_files(diff_text):
     files = []
     for line in diff_text.splitlines():
@@ -662,6 +695,8 @@ VIOLATIONS:
 - ...
 NO_VIOLATIONS (if none found)
 
+CRITICAL: The `line` value MUST be a line number within one of the valid diff line ranges listed above. Comments on lines outside the diff will fail to post. If the violation is on a context line (no + prefix), use the nearest + line in the same hunk instead.
+
 Severity guide:
 - high: Correctness bugs, use-after-free, security issues, banned APIs, test reliability problems (e.g., RunUntilIdle)
 - medium: Substantive best practice violations (wrong container type, missing error handling, architectural issues)
@@ -669,7 +704,7 @@ Severity guide:
 
 
 def build_subagent_prompt(pr_number, pr_title, diff_text, images, prior_comments,
-                          bot_username, chunk):
+                          bot_username, chunk, diff_line_ranges=None):
     """Build a complete self-contained subagent prompt for a single chunk."""
     doc = chunk["doc"]
     chunk_index = chunk["chunk_index"]
@@ -689,6 +724,17 @@ def build_subagent_prompt(pr_number, pr_title, diff_text, images, prior_comments
     parts.append(diff_text)
     parts.append("```")
     parts.append("")
+
+    # 2b. Valid line ranges for inline comments
+    if diff_line_ranges:
+        parts.append("## Valid Line Ranges for Inline Comments")
+        parts.append("CRITICAL: The `line` field in each violation MUST fall within one of these ranges.")
+        parts.append("These are the only lines where GitHub allows inline review comments.")
+        parts.append("If the code you want to flag is not on a + line in the diff, use the nearest + line within the same hunk.")
+        parts.append("```")
+        parts.append(format_diff_line_ranges(diff_line_ranges))
+        parts.append("```")
+        parts.append("")
 
     # 3. Image paths (if any)
     if images:
@@ -803,7 +849,10 @@ def process_pr(pr, bot_username, org_members):
         applicable_docs = []
         log(f"  WARNING: discover best practices failed for #{pr_number}: {e}")
 
-    # g+h. Chunk each doc and build subagent prompts
+    # g. Parse diff line ranges for subagent prompts
+    diff_line_ranges = parse_diff_line_ranges(diff_text)
+
+    # h+i. Chunk each doc and build subagent prompts
     subagent_prompts = []
     for doc_info in applicable_docs:
         try:
@@ -812,6 +861,7 @@ def process_pr(pr, bot_username, org_members):
                 prompt = build_subagent_prompt(
                     pr_number, pr_title, diff_text, images,
                     prior_comments, bot_username, chunk,
+                    diff_line_ranges=diff_line_ranges,
                 )
                 subagent_prompts.append({
                     "chunk_id": f"{doc_info['doc']}_{chunk['chunk_index']}",

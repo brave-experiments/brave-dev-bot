@@ -45,6 +45,9 @@ NITS_THRESHOLD = 3  # Drop nits if >= this many higher-severity comments
 
 SEVERITY_ORDER = {"high": 0, "medium": 1, "low": 2}
 
+# Diff line range cache: {pr_number: {file_path: [(start, end), ...]}}
+_diff_line_cache = {}
+
 
 def log(msg):
     """Print to stderr."""
@@ -71,6 +74,75 @@ def run_cmd(cmd, input_data=None, timeout=30, check=False):
         return -1, "", "timeout"
     except FileNotFoundError:
         return -1, "", f"command not found: {cmd[0]}"
+
+
+def fetch_diff_line_ranges(repo, pr_number):
+    """Fetch PR diff and parse valid new-side line ranges per file.
+
+    Returns {file_path: [(start, end), ...]} where each tuple is an
+    inclusive range of lines present in the diff on the RIGHT side.
+    """
+    if pr_number in _diff_line_cache:
+        return _diff_line_cache[pr_number]
+
+    rc, out, err = run_cmd(
+        ["gh", "pr", "diff", "--repo", repo, str(pr_number)],
+        timeout=120,
+    )
+    if rc != 0:
+        log(f"WARNING: failed to fetch diff for PR #{pr_number}: {err}")
+        _diff_line_cache[pr_number] = {}
+        return {}
+
+    ranges = {}
+    current_file = None
+    for line in out.split("\n"):
+        # Track current file from diff headers
+        if line.startswith("+++ b/"):
+            current_file = line[6:]
+            if current_file not in ranges:
+                ranges[current_file] = []
+        elif line.startswith("@@ ") and current_file:
+            # Parse hunk header: @@ -old_start,old_count +new_start,new_count @@
+            m = re.search(r'\+(\d+)(?:,(\d+))?', line)
+            if m:
+                start = int(m.group(1))
+                count = int(m.group(2)) if m.group(2) else 1
+                if count > 0:
+                    ranges[current_file].append((start, start + count - 1))
+
+    _diff_line_cache[pr_number] = ranges
+    return ranges
+
+
+def correct_line_for_diff(repo, pr_number, file_path, line):
+    """If line is not within any diff hunk for the file, find the nearest valid line.
+
+    Returns the corrected line number, or None if the file isn't in the diff.
+    """
+    ranges = fetch_diff_line_ranges(repo, pr_number)
+    file_ranges = ranges.get(file_path)
+    if not file_ranges:
+        return None
+
+    # Check if line is already in a valid range
+    for start, end in file_ranges:
+        if start <= line <= end:
+            return line
+
+    # Find the nearest valid line
+    best_line = None
+    best_dist = float("inf")
+    for start, end in file_ranges:
+        for candidate in (start, end):
+            dist = abs(candidate - line)
+            if dist < best_dist:
+                best_dist = dist
+                best_line = candidate
+
+    if best_line is not None:
+        log(f"LINE_CORRECTED: {file_path}:{line} -> {file_path}:{best_line} (nearest diff line)")
+    return best_line
 
 
 def update_cache(pr_number, head_ref_oid, approve=False):
@@ -243,10 +315,25 @@ def deduplicate_violations(violations, existing_comments):
 def post_batch_review(repo, pr_number, violations, head_sha):
     """Post violations as a single inline review. Returns (review_url, posted_count).
 
+    Corrects line numbers that fall outside diff hunks before posting.
     Falls back to individual comments if batch fails.
     """
     if not violations:
         return None, 0
+
+    # Correct line numbers against the actual diff before posting
+    corrected_violations = []
+    for v in violations:
+        corrected_line = correct_line_for_diff(repo, pr_number, v["file"], v["line"])
+        if corrected_line is None:
+            log(f"DROPPED: {v['file']}:{v['line']} — file not in diff")
+            continue
+        v["line"] = corrected_line
+        corrected_violations.append(v)
+
+    if not corrected_violations:
+        return None, 0
+    violations = corrected_violations
 
     comments = []
     for v in violations:
@@ -304,18 +391,7 @@ def post_batch_review(repo, pr_number, violations, head_sha):
                 except json.JSONDecodeError:
                     pass
         else:
-            # Last resort: issue comment
-            body = f"[{v['file']}:{v['line']}] {v['draft_comment']}"
-            rc3, out3, err3 = run_cmd(
-                ["gh", "pr", "comment", "--repo", repo,
-                 str(pr_number), "--body", body],
-                timeout=30,
-            )
-            if rc3 == 0:
-                posted += 1
-                log(f"WARNING: posted {v['file']}:{v['line']} as issue comment (will block future approval)")
-            else:
-                log(f"ERROR: failed to post comment for {v['file']}:{v['line']}: {err3}")
+            log(f"ERROR: failed to post inline comment for {v['file']}:{v['line']}: {err2}")
 
     return review_url, posted
 
