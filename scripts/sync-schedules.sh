@@ -50,14 +50,14 @@ PATH=$CLAUDE_BIN_DIR:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bi
 # Main agent run — skip if no actionable stories
 # Gate check runs before git sync to avoid wasted fetches
 # Weekdays: 2x/day
-10 8,16 * * 1-5 cd $PROJECT_ROOT && source .envrc && ./scripts/check-has-work.sh && git fetch origin && git checkout $BOT_REPO_BRANCH && git reset --hard origin/$BOT_REPO_BRANCH && ./run.sh 3 >> $LOG_DIR/run-cron.log 2>&1
+10 8 * * 1-5 cd $PROJECT_ROOT && source .envrc && ./scripts/check-has-work.sh && git fetch origin && git checkout $BOT_REPO_BRANCH && git reset --hard origin/$BOT_REPO_BRANCH && ./run.sh 3 >> $LOG_DIR/run-cron.log 2>&1
 # Weekends: once/day at 14:10
 10 14 * * 0,6 cd $PROJECT_ROOT && source .envrc && ./scripts/check-has-work.sh && git fetch origin && git checkout $BOT_REPO_BRANCH && git reset --hard origin/$BOT_REPO_BRANCH && ./run.sh 3 >> $LOG_DIR/run-cron.log 2>&1
 
 # Review PRs — skip if no recent open PRs
 # Gate check runs before git sync to avoid wasted fetches
 # Weekdays: 3x/day
-0 4,14,20 * * 1-5 cd $PROJECT_ROOT && source .envrc && ./scripts/check-new-prs.sh && git fetch origin && git checkout $BOT_REPO_BRANCH && git reset --hard origin/$BOT_REPO_BRANCH && ./scripts/with-lock.sh review-prs -- $TIMEOUT_TREE 7200 $CLAUDE_BIN --model $BOT_CLAUDE_MODEL -p '/review-prs 1d open auto reviewer-priority' --allowedTools '$CLAUDE_TOOLS' >> $LOG_DIR/review-prs-cron.log 2>&1
+0 13,20 * * 1-5 cd $PROJECT_ROOT && source .envrc && ./scripts/check-new-prs.sh && git fetch origin && git checkout $BOT_REPO_BRANCH && git reset --hard origin/$BOT_REPO_BRANCH && ./scripts/with-lock.sh review-prs -- $TIMEOUT_TREE 7200 $CLAUDE_BIN --model $BOT_CLAUDE_MODEL -p '/review-prs 1d open auto reviewer-priority' --allowedTools '$CLAUDE_TOOLS' >> $LOG_DIR/review-prs-cron.log 2>&1
 # Weekends: once/day at noon
 0 12 * * 0,6 cd $PROJECT_ROOT && source .envrc && ./scripts/check-new-prs.sh && git fetch origin && git checkout $BOT_REPO_BRANCH && git reset --hard origin/$BOT_REPO_BRANCH && ./scripts/with-lock.sh review-prs -- $TIMEOUT_TREE 7200 $CLAUDE_BIN --model $BOT_CLAUDE_MODEL -p '/review-prs 1d open auto reviewer-priority' --allowedTools '$CLAUDE_TOOLS' >> $LOG_DIR/review-prs-cron.log 2>&1
 
@@ -100,9 +100,9 @@ echo "Cron jobs installed successfully."
 echo ""
 echo "Current schedule:"
 echo "  Weekdays (Mon-Fri):"
-echo "    08:10, 16:10 - run.sh (3 iterations)"
+echo "    08:10 - run.sh (3 iterations)"
 echo "    07:45 - /add-backlog-to-prd (sonnet)"
-echo "    04:00, 14:00, 20:00 - /review-prs"
+echo "    13:00, 20:00 - /review-prs"
 echo "  Weekends (Sat-Sun):"
 echo "    14:10 - run.sh (3 iterations)"
 echo "    11:45 - /add-backlog-to-prd (sonnet)"
