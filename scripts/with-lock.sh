@@ -63,7 +63,7 @@ echo "[$(date -u '+%Y-%m-%dT%H:%M:%SZ')] $LOCK_NAME starting (model=${_model:-un
 
 # Run the command with a timeout (use timeout-tree to kill entire process tree)
 SCRIPT_DIR_LOCK="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-"$SCRIPT_DIR_LOCK/timeout-tree.sh" "$TIMEOUT" "$@"
+"$SCRIPT_DIR_LOCK/timeout-tree.sh" "$TIMEOUT" "$@" 200>&-
 EXIT_CODE=$?
 
 if [ $EXIT_CODE -eq 124 ]; then
