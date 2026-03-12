@@ -57,9 +57,9 @@ PATH=$CLAUDE_BIN_DIR:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bi
 # Review PRs — skip if no recent open PRs
 # Gate check runs before git sync to avoid wasted fetches
 # Weekdays: 3x/day
-0 13,20 * * 1-5 cd $PROJECT_ROOT && source .envrc && ./scripts/check-new-prs.sh && git fetch origin && git checkout $BOT_REPO_BRANCH && git reset --hard origin/$BOT_REPO_BRANCH && ./scripts/with-lock.sh review-prs -- $TIMEOUT_TREE 7200 $CLAUDE_BIN --model $BOT_CLAUDE_MODEL -p '/review-prs 1d open auto reviewer-priority' --allowedTools '$CLAUDE_TOOLS' >> $LOG_DIR/review-prs-cron.log 2>&1
+0 13,20 * * 1-5 cd $PROJECT_ROOT && source .envrc && ./scripts/check-new-prs.sh && git fetch origin && git checkout $BOT_REPO_BRANCH && git reset --hard origin/$BOT_REPO_BRANCH && ./scripts/with-lock.sh review-prs -- $TIMEOUT_TREE 7200 $CLAUDE_BIN --model sonnet -p '/review-prs 1d open auto reviewer-priority' --allowedTools '$CLAUDE_TOOLS' >> $LOG_DIR/review-prs-cron.log 2>&1
 # Weekends: once/day at noon
-0 12 * * 0,6 cd $PROJECT_ROOT && source .envrc && ./scripts/check-new-prs.sh && git fetch origin && git checkout $BOT_REPO_BRANCH && git reset --hard origin/$BOT_REPO_BRANCH && ./scripts/with-lock.sh review-prs -- $TIMEOUT_TREE 7200 $CLAUDE_BIN --model $BOT_CLAUDE_MODEL -p '/review-prs 1d open auto reviewer-priority' --allowedTools '$CLAUDE_TOOLS' >> $LOG_DIR/review-prs-cron.log 2>&1
+0 12 * * 0,6 cd $PROJECT_ROOT && source .envrc && ./scripts/check-new-prs.sh && git fetch origin && git checkout $BOT_REPO_BRANCH && git reset --hard origin/$BOT_REPO_BRANCH && ./scripts/with-lock.sh review-prs -- $TIMEOUT_TREE 7200 $CLAUDE_BIN --model sonnet -p '/review-prs 1d open auto reviewer-priority' --allowedTools '$CLAUDE_TOOLS' >> $LOG_DIR/review-prs-cron.log 2>&1
 
 # Learnable pattern search — skip if no recent merged PRs
 # Gate check runs before git sync to avoid wasted fetches
