@@ -160,3 +160,66 @@ while IFS= read -r line; do
   comment=""
   gate=""
 done < "$SCHEDULE_FILE"
+
+# Show currently running jobs
+# Detect via two methods:
+# 1. Lock files (with-lock.sh jobs) — try flock; if we can't acquire, it's held
+# 2. Process scan (run.sh) — run.sh releases its lock before children finish,
+#    so we look for timeout-tree.sh processes spawned from the bot directory
+BOT_DIR="$SCRIPT_DIR/.."
+BOT_DIR_ABS="$(cd "$BOT_DIR" && pwd)"
+LOCK_DIR="$BOT_DIR_ABS/.ignore"
+LOCK_NAMES=("add-backlog" "review-prs" "learnable-pattern-search" "check-signal" "update-best-practices")
+
+has_running=false
+
+# Check run.sh — look for timeout-tree.sh processes from this bot directory
+run_pid=$(ps -eo pid,args | grep "[t]imeout-tree.sh.*claude.*workflow" | head -1 | awk '{print $1}')
+if [ -n "$run_pid" ]; then
+  has_running=true
+  echo -e "${BOLD}Running Jobs${RESET}"
+  elapsed=$(ps -o etime= -p "$run_pid" 2>/dev/null | tr -d ' ')
+  # Extract story ID from the command args
+  story=""
+  args=$(ps -o args= -p "$run_pid" 2>/dev/null)
+  if [[ "$args" =~ story\ (US-[0-9]+) ]]; then
+    story=" (${BASH_REMATCH[1]})"
+  fi
+  echo -e "  ${GREEN}run.sh${story}${RESET}  running for ${CYAN}${elapsed}${RESET}  (pid $run_pid)"
+fi
+
+# Check with-lock.sh jobs via lock files
+for name in "${LOCK_NAMES[@]}"; do
+  lockfile="$LOCK_DIR/.${name}.lock"
+  [ -f "$lockfile" ] || continue
+
+  # Try to acquire the lock — if we can't, something is holding it
+  if ! ( flock -n 9 ) 9<"$lockfile" 2>/dev/null; then
+    if [ "$has_running" = false ]; then
+      echo -e "${BOLD}Running Jobs${RESET}"
+      has_running=true
+    fi
+
+    # Find the with-lock.sh process
+    pid=$(ps -eo pid,args | grep "[w]ith-lock\\.sh $name " | head -1 | awk '{print $1}')
+    if [ -n "$pid" ]; then
+      elapsed=$(ps -o etime= -p "$pid" 2>/dev/null | tr -d ' ')
+      echo -e "  ${GREEN}$name${RESET}  running for ${CYAN}${elapsed}${RESET}  (pid $pid)"
+    else
+      # Lock held but can't find process — find timeout-tree child instead
+      pid=$(ps -eo pid,args | grep "[t]imeout-tree.sh.*$name" | head -1 | awk '{print $1}')
+      if [ -n "$pid" ]; then
+        elapsed=$(ps -o etime= -p "$pid" 2>/dev/null | tr -d ' ')
+        echo -e "  ${GREEN}$name${RESET}  running for ${CYAN}${elapsed}${RESET}  (pid $pid)"
+      else
+        echo -e "  ${GREEN}$name${RESET}  running  ${DIM}(pid unknown)${RESET}"
+      fi
+    fi
+  fi
+done
+
+if [ "$has_running" = false ]; then
+  echo -e "${BOLD}Running Jobs${RESET}"
+  echo -e "  ${DIM}(none)${RESET}"
+fi
+echo ""
