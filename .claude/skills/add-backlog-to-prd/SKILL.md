@@ -88,6 +88,23 @@ If `./data/prd.json` doesn't exist yet, the script creates a new PRD. If it alre
 
 ---
 
+## Step 3.5: Run check-best-practices from the source directory
+
+After updating the PRD, run the check-best-practices skill to ensure the source repo's best practices are current before stories are worked on.
+
+1. **Determine the target repo path** from `config.json`:
+   ```bash
+   TARGET_REPO_REL=$(jq -r '.project.targetRepoPath' config.json)
+   # Resolve to absolute path (relative paths are relative to bot repo root)
+   TARGET_REPO="$(cd "$(dirname $(realpath config.json))/$TARGET_REPO_REL" && pwd)"
+   ```
+
+2. **Read and follow** `$TARGET_REPO/.claude/skills/check-best-practices/SKILL.md` — execute the full skill as defined there.
+
+Skip this step if the target repo path cannot be resolved or the SKILL.md does not exist.
+
+---
+
 ## Step 4: Provide Recap
 
 Generate a comprehensive recap showing:
