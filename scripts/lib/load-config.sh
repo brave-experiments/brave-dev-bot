@@ -55,6 +55,11 @@ if [ -n "$_missing" ]; then
   return 1 2>/dev/null || exit 1
 fi
 
+# Fall back to 'opus' if claudeModel is not set
+if [ -z "$BOT_CLAUDE_MODEL" ]; then
+  BOT_CLAUDE_MODEL="opus[1m]"
+fi
+
 # Fall back to 'claude' if claudeBin is not set
 if [ -z "$BOT_CLAUDE_BIN" ]; then
   BOT_CLAUDE_BIN="$(which claude 2>/dev/null || echo "claude")"
