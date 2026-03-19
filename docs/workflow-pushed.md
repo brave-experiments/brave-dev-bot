@@ -296,6 +296,19 @@ Before implementing changes, analyze review comments to detect if the reviewer i
 - ALL tests MUST pass before proceeding
 - See [testing-requirements.md](./testing-requirements.md) for complete requirements
 
+### 6b. REQUIRED: Self-review using the target repo's `/review` skill (local mode)
+
+After tests pass, run the `/review` skill from the target repo in local mode to self-review your changes before committing. This checks best practices, root cause analysis quality, timing-based fix detection, and more.
+
+1. `cd [targetRepoPath from bot config]`
+2. Read the review skill instructions at `[targetRepoPath]/.claude/skills/review/SKILL.md`
+3. Follow the **Local Mode** steps (Steps L1–L3, then Common Analysis Steps 3–9)
+4. **Fix all violations automatically** — do not prompt for confirmation, treat every validated violation as "fix all"
+5. If the review verdict is **FAIL**, fix the issues and re-run the review until it passes
+6. Skip Step 10 (report generation), Step 2 (previous fix research), and any GitHub posting steps — this is a self-review
+
+If violations are found, fix them and re-run only the affected chunks to confirm. Do NOT proceed to commit until the review passes.
+
 ### 7. If ALL Tests Pass
 
 - **ALWAYS create a NEW separate commit** for review feedback changes (never amend existing commits)

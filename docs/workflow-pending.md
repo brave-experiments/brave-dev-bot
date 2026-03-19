@@ -226,62 +226,31 @@
 
 8. Update CLAUDE.md files if you discover reusable patterns (see below)
 
-9. **REQUIRED: Verify implementation against best practices (chunked parallel subagents):**
+9. **REQUIRED: Self-review using the target repo's `/review` skill (local mode):**
 
-   **CRITICAL: Do NOT read best practices docs in the main context — they are 1000+ lines each and will fill the context window, causing compaction. Use the same chunked parallel subagent approach as `/review-prs` and `/check-best-practices`.**
+   **CRITICAL: Do NOT read best practices docs in the main context — they are 1000+ lines each and will fill the context window, causing compaction. The review skill handles this via chunked parallel subagents.**
 
-   ### Step 9.1: Gather the diff
+   After implementing and passing tests, run the `/review` skill from the target repo in local mode to self-review your changes. This checks best practices (via auto-discovery and chunked subagents), root cause analysis quality, timing-based fix detection, and more.
 
-   ```bash
-   cd [targetRepoPath from bot config]
-   DIFF=$(git diff HEAD)
-   # If changes are already committed:
-   DIFF=$(git diff HEAD~1..HEAD)
-   ```
+   ### How to run
 
-   ### Step 9.2: Classify files and determine applicable docs
+   1. `cd [targetRepoPath from bot config]`
+   2. Read the review skill instructions at `[targetRepoPath]/.claude/skills/review/SKILL.md`
+   3. Follow the **Local Mode** steps (Steps L1–L3, then Common Analysis Steps 3–9)
+   4. **Fix all violations automatically** — do not prompt for confirmation, treat every validated violation as "fix all"
+   5. If the review verdict is **FAIL**, fix the issues and re-run the review until it passes
 
-   Follow the exact same process as Steps 4 and 5 of the `/check-best-practices` skill (`$TARGET_REPO/.claude/skills/check-best-practices/SKILL.md`): classify changed files, determine applicable best practices documents using the applicability table defined there, and skip documents whose category has no matching files.
+   ### What to skip from the review skill
 
-   **For filter-file-only changes** (`test/filters/*.filter` and nothing else): Only `testing-isolation.md` and `documentation.md` apply. Skip all other documents.
+   - Skip Step 10 (Generate Review Report) — you don't need to produce a formatted report for yourself
+   - Skip any "post to GitHub" steps — this is a self-review, not a PR review
+   - Skip Step 2 (Research Previous Fix Attempts) — you already did this in step 4 above
 
-   ### Step 9.3: Chunk documents and launch parallel subagents
+   ### What to do with results
 
-   For each applicable document, run the chunking script:
-   ```bash
-   python3 $TARGET_REPO/.claude/skills/check-best-practices/chunk-best-practices.py \
-     $TARGET_REPO/docs/best-practices/<doc>.md
-   ```
-
-   This outputs JSON with chunks of ~20 rules each. Launch one Agent subagent (`subagent_type: "general-purpose"`) per chunk, **all in parallel**. Each subagent prompt MUST include:
-
-   1. **The chunk content** (from the `content` field) — embedded directly, the subagent does NOT read any files
-   2. **The diff** — embedded directly, the subagent does NOT re-gather it
-   3. **Instructions**: Only flag violations in ADDED lines (+ lines). Every claim must be backed by a specific rule in the provided chunk. Do NOT flag existing code or make claims based on general knowledge.
-   4. **Required output format**:
-      ```
-      AUDIT:
-      PASS: <rule heading>
-      N/A: <rule heading>
-      FAIL: <rule heading>
-      ... (one line per ## heading in the chunk)
-
-      VIOLATIONS:
-      - file: <path>, line: <N>, rule: "<heading>", issue: <description>, fix: <suggestion>
-      NO_VIOLATIONS (if none found)
-      ```
-
-   ### Step 9.5: Aggregate and validate
-
-   After all subagents return:
-   1. Collect all FAIL entries with their violations
-   2. **Validate each violation** — read the actual source file at the flagged line to confirm the claim is accurate in context. Drop false positives.
-   3. Fix confirmed violations before committing
-
-   **If no violations after validation:** Proceed to commit.
-   **If violations found:** Fix them, then re-run only the affected chunks to confirm the fix.
-
-   This step is mandatory — it catches issues that are easy to miss when focused on implementation. Do NOT skip it.
+   - **If no violations after validation:** Proceed to commit
+   - **If violations found:** Fix them, re-run only the affected chunks to confirm the fix
+   - This step is mandatory — it catches issues that are easy to miss when focused on implementation. Do NOT skip it.
 
 10. **If ALL tests pass:**
    - Commit ALL changes (must be in `[targetRepoPath from bot config]`)
