@@ -142,7 +142,7 @@ def build_test_story(story_id, priority, issue):
         )
 
     acceptance_criteria = [
-        f"Read {_best_practices_path} for async testing patterns and common pitfalls",
+        f"Read {_best_practices_path} to identify which best practice sub-documents apply, then read those sub-documents",
         f"Fetch issue #{issue_num} details from {_issue_repo} GitHub API",
         "Analyze stack trace and identify root cause - determine whether this is a real bug in production code, a test-only issue, or both. Read the production code being tested, not just the test. If the test is catching a genuine bug, fix the production code",
         "Implement fix targeting the correct layer (production code, test code, or both)",
@@ -196,7 +196,7 @@ def build_disabled_test_story(story_id, priority, issue):
         )
 
     acceptance_criteria = [
-        f"Read {_best_practices_path} for async testing patterns and common pitfalls",
+        f"Read {_best_practices_path} to identify which best practice sub-documents apply, then read those sub-documents",
         f"Fetch issue #{issue_num} details from {_issue_repo} GitHub API",
         f"Find where the test is disabled by searching for DISABLED_{extract_disabled_search_term(test_name)} in the source code using git grep",
         "Use git blame on the line that disables the test to find the commit that disabled it, and read the commit message to understand WHY it was disabled",
@@ -231,6 +231,7 @@ def build_generic_story(story_id, priority, issue):
     title = issue["title"]
 
     acceptance_criteria = [
+        f"Read {_best_practices_path} to identify which best practice sub-documents apply, then read those sub-documents",
         f"Fetch issue #{issue_num} details from {_issue_repo} GitHub API",
         "Analyze the issue and identify what needs to change",
         "Implement the fix or feature",
