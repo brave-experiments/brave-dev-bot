@@ -4,6 +4,8 @@
 
 **YOU MUST RUN ALL ACCEPTANCE CRITERIA TESTS - NO EXCEPTIONS**
 
+**Exception: Filter-file-only changes** — If the ONLY changed files are test filter files (`test/filters/*.filter`), skip acceptance criteria tests entirely. No build is needed either. Proceed directly to presubmit (`npm run format` and `npm run presubmit` only).
+
 - **NEVER skip tests** because they "take too long" - this is NOT acceptable
 - If tests take hours, that's expected - run them anyway
 - Use `run_in_background: true` for long-running commands (builds, test suites)
@@ -456,7 +458,7 @@ npm run test-unit        # Run front-end unit tests
 npm run build-storybook  # Verify Storybook builds
 ```
 
-**Skip `gn_check`** if the only changes are to test filter files (`test/filters/*.filter`) — filter files don't affect GN build configuration.
+**For filter-file-only changes** (only `test/filters/*.filter` modified): run only `npm run format` and `npm run presubmit`. Skip `gn_check`, `build`, and all acceptance criteria test runs.
 
 **If presubmit fails:**
 1. Fix the issues identified by presubmit

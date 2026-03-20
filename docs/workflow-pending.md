@@ -170,6 +170,8 @@
 
 6. **CRITICAL**: Run **ALL** acceptance criteria tests - **YOU MUST NOT SKIP ANY**
 
+   **Exception: Filter-file-only changes** — If the ONLY changed files are test filter files (`test/filters/*.filter`), skip this step entirely. Do not run tests or build. Proceed to step 9 (self-review).
+
    See [testing-requirements.md](./testing-requirements.md) for complete test execution requirements.
 
 7. **CHROMIUM TEST DETECTION** (for filter file modifications only):
@@ -268,13 +270,13 @@
    npm run format      # Check/fix formatting
    npm run presubmit   # Run presubmit checks
    npm run gn_check    # Verify GN configuration (skip for filter-file-only changes)
-   npm run build       # Verify build succeeds
+   npm run build       # Verify build succeeds (skip for filter-file-only changes)
    # If any .ts/.tsx/.js files were changed:
    npm run test-unit        # Run front-end unit tests
    npm run build-storybook  # Verify Storybook builds
    ```
 
-   **Skip `gn_check`** if the only changes are to test filter files (`test/filters/*.filter`) — filter files don't affect GN build configuration.
+   **For filter-file-only changes** (only `test/filters/*.filter` modified): run only `npm run format` and `npm run presubmit`. Skip `gn_check`, `build`, and all test runs — filter files don't affect build configuration or compiled code.
 
    **If presubmit or any verification fails:**
    - Fix the issues
@@ -285,10 +287,10 @@
    **IMPORTANT: Multiple iterations require full re-verification.** If you make ANY changes after initial commit (including formatting fixes, presubmit fixes, or any other modifications), you MUST re-run:
    1. `npm run format`
    2. `npm run presubmit`
-   3. `npm run gn_check`
-   4. `npm run build`
+   3. `npm run gn_check` (skip for filter-file-only changes)
+   4. `npm run build` (skip for filter-file-only changes)
    5. If any `.ts`/`.tsx`/`.js` files changed: `npm run test-unit` and `npm run build-storybook`
-   6. ALL acceptance criteria tests
+   6. ALL acceptance criteria tests (skip for filter-file-only changes)
 
    This ensures the final committed state is fully verified. Do NOT create a PR until all checks pass on the final committed state.
 
