@@ -161,7 +161,7 @@ Successfully fetched 15 open issues from the `bot/type/test` label and added 7 m
 ## Important Notes
 
 - Always preserve the exact structure of existing user stories
-- Test issues include the BEST-PRACTICES.md read step in acceptance criteria
+- Test issues include a best_practices.md read step in acceptance criteria; the path is derived from `bestPractices.docsDir` + `bestPractices.indexFile` in `config.json` (e.g. `../src/brave/docs/best_practices.md`)
 - Test type determination is critical for generating correct test commands
 - Priority numbers must be sequential and not conflict with existing ones
 - All new stories start in "pending" status

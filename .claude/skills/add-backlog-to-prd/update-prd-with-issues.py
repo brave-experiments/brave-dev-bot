@@ -9,11 +9,14 @@ import sys
 _script_dir = os.path.dirname(os.path.abspath(__file__))
 _bot_dir = os.path.join(_script_dir, "..", "..", "..")
 sys.path.insert(0, os.path.join(_bot_dir, "scripts"))
-from lib.load_config import load_config, require_config
+from lib.load_config import load_config, get_config, require_config
 
 _config = load_config()
 _issue_repo = require_config(_config, "project.issueRepository")
 _project_name = require_config(_config, "project.name")
+_bp_docs_dir = get_config(_config, "bestPractices.docsDir", ".")
+_bp_index_file = get_config(_config, "bestPractices.indexFile", "best_practices.md")
+_best_practices_path = os.path.join(_bp_docs_dir, _bp_index_file)
 
 
 def find_test_location(test_class_name):
@@ -139,7 +142,7 @@ def build_test_story(story_id, priority, issue):
         )
 
     acceptance_criteria = [
-        "Read ./BEST-PRACTICES.md for async testing patterns and common pitfalls",
+        f"Read {_best_practices_path} for async testing patterns and common pitfalls",
         f"Fetch issue #{issue_num} details from {_issue_repo} GitHub API",
         "Analyze stack trace and identify root cause - determine whether this is a real bug in production code, a test-only issue, or both. Read the production code being tested, not just the test. If the test is catching a genuine bug, fix the production code",
         "Implement fix targeting the correct layer (production code, test code, or both)",
@@ -193,7 +196,7 @@ def build_disabled_test_story(story_id, priority, issue):
         )
 
     acceptance_criteria = [
-        "Read ./BEST-PRACTICES.md for async testing patterns and common pitfalls",
+        f"Read {_best_practices_path} for async testing patterns and common pitfalls",
         f"Fetch issue #{issue_num} details from {_issue_repo} GitHub API",
         f"Find where the test is disabled by searching for DISABLED_{extract_disabled_search_term(test_name)} in the source code using git grep",
         "Use git blame on the line that disables the test to find the commit that disabled it, and read the commit message to understand WHY it was disabled",

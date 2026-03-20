@@ -135,7 +135,7 @@ Both must pass before committing. These are in addition to any C++ tests or othe
 
 **CRITICAL: Follow these guidelines when writing C++ tests for Chromium/Brave codebase.**
 
-**📖 READ FIRST:** Before implementing any test fixes, read BEST-PRACTICES.md (in `$TARGET_REPO/docs/`) for comprehensive async testing patterns, including:
+**📖 READ FIRST:** Before implementing any test fixes, read best_practices.md (in `$TARGET_REPO/docs/`) for comprehensive async testing patterns, including:
 - Avoiding nested run loops (EvalJs inside RunUntil)
 - JavaScript evaluation patterns
 - Navigation and timing issues

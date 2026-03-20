@@ -74,7 +74,7 @@ After pushing review-requested changes, answer these questions:
 
 | Pattern Type | Document Location |
 |-------------|-------------------|
-| Async testing, RunUntil patterns | `$TARGET_REPO/docs/BEST-PRACTICES.md` |
+| Async testing, RunUntil patterns | `$TARGET_REPO/docs/best_practices.md` |
 | Git workflow, branch naming | `$BOT_DIR/docs/git-repository.md` |
 | Test execution requirements | `$BOT_DIR/docs/testing-requirements.md` |
 | Problem-solving approaches | `$BOT_DIR/docs/workflow-pending.md` (Problem-Solving Approach section) |

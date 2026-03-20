@@ -116,7 +116,7 @@ config = {
     },
     'bestPractices': {
         'docsDir': '../' + sys.argv[6] + '/docs',
-        'indexFile': 'BEST-PRACTICES.md',
+        'indexFile': 'best_practices.md',
         'securityFile': 'SECURITY.md',
     },
     'schedules': {

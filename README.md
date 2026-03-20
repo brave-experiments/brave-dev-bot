@@ -270,7 +270,7 @@ The bot enforces a comprehensive set of best practices organized by category:
 - **Chromium src/ Overrides** — Override patterns, minimizing duplication
 - **Documentation** — Inline comments, method docs
 
-See `BEST-PRACTICES.md` in the target repo's docs directory (configured via `bestPractices.docsDir`) for the full index and quick checklist.
+See `best_practices.md` in the target repo's docs directory (configured via `bestPractices.docsDir`) for the full index and quick checklist.
 
 ## Git Workflow
 

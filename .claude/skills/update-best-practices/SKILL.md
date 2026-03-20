@@ -52,7 +52,7 @@ python3 $BOT_DIR/.claude/skills/review-prs/discover-best-practices.py $TARGET_RE
 
 This returns a JSON array of all best-practice documents. Read every file listed to build a complete picture of current rules.
 
-Also read `$TARGET_REPO/docs/BEST-PRACTICES.md` (the index file).
+Also read `$TARGET_REPO/docs/best_practices.md` (the index file).
 
 For each file, catalog every rule by its heading/title so you can check for duplicates and conflicts.
 
@@ -141,9 +141,9 @@ Scan ALL best practices files for internal contradictions. Common conflict patte
 
 ---
 
-## Step 6: Update BEST-PRACTICES.md
+## Step 6: Update best_practices.md
 
-If new upstream reference URLs were processed, add them to the References section in `$TARGET_REPO/docs/BEST-PRACTICES.md`.
+If new upstream reference URLs were processed, add them to the References section in `$TARGET_REPO/docs/best_practices.md`.
 
 ---
 
@@ -206,7 +206,7 @@ If changes were made to best practices files, commit them and create a PR so the
    ```
 3. **Stage and commit** only the changed best practices files:
    ```bash
-   git add docs/BEST-PRACTICES.md docs/best-practices/
+   git add docs/best_practices.md docs/best-practices/
    git commit -m "Update best practices from upstream Chromium docs"
    ```
 4. **Push and create a PR**:

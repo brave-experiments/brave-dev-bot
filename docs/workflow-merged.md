@@ -212,7 +212,7 @@ Create a new story entry following the same format as existing stories:
   "title": "Brief title matching the GitHub issue",
   "description": "Follow-up from US-[original] PR #[pr-number]: [Description of what needs to be done]",
   "acceptanceCriteria": [
-    "Read $TARGET_REPO/docs/BEST-PRACTICES.md",
+    "Read [bestPractices.docsDir]/[bestPractices.indexFile] (path from config.json)",
     "[Specific test or verification step]",
     "[Additional requirements]"
   ],
@@ -229,7 +229,7 @@ Create a new story entry following the same format as existing stories:
 - `id`: Next available US-XXX number in sequence
 - `title`: Clear, concise title matching the GitHub issue
 - `description`: Include context from original story and PR
-- `acceptanceCriteria`: Start with BEST-PRACTICES.md, then specific requirements from the post-merge request
+- `acceptanceCriteria`: Start with the best practices index file (path = `bestPractices.docsDir` + `bestPractices.indexFile` from config.json), then specific requirements from the post-merge request
 - `status`: Always `"pending"` for new stories
 - `priority`: Set based on urgency (if blocker/critical: low number, if enhancement: higher number)
 - `issueUrl`: Full URL to the GitHub issue you just created
