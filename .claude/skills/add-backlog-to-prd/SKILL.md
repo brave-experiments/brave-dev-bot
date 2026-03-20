@@ -1,12 +1,12 @@
 ---
 name: add-backlog-to-prd
-description: "Fetch open issues from the configured issue repository (by label or assignee) and add missing ones to the PRD backlog. Triggers on: add backlog to prd, update prd with issues, sync backlog, fetch issues for prd, add intermittent tests."
+description: "Fetch open issues assigned to the bot from the configured issue repository and add missing ones to the PRD backlog. Triggers on: add backlog to prd, update prd with issues, sync backlog, fetch issues for prd."
 allowed-tools: Bash, Read, Grep, Glob
 ---
 
 # PRD - Add Backlog Issues
 
-Automatically fetch open issues from the configured issue repository and add any missing ones to the PRD.
+Automatically fetch open issues assigned to the bot from the configured issue repository and add any missing ones to the PRD.
 
 ---
 
@@ -14,15 +14,13 @@ Automatically fetch open issues from the configured issue repository and add any
 
 **Step 0: Read project config.** Read `config.json` (in the bot repo root) to determine:
 - `project.issueRepository` — the repo to fetch issues from (e.g. `brave/brave-browser`)
-- `labels.issueLabels` — array of labels to filter by (e.g. `["bot/type/test"]`)
+- `bot.username` — the GitHub username of the bot
 
-1. Get the bot username from `config.json` (used as the GitHub username)
-2. Fetch all open issues with the configured issue labels from the issue repository
-3. Fetch all open issues assigned to the bot username from the issue repository
-4. Combine both sets of issues (deduplicated)
-5. Compare with existing issues in the PRD (`./data/prd.json`)
-6. Add any missing issues as new user stories
-7. Provide a recap of what was added
+1. Get the bot username from `config.json`
+2. Fetch all open issues assigned to the bot username from the issue repository
+3. Compare with existing issues in the PRD (`./data/prd.json`)
+4. Add any missing issues as new user stories
+5. Provide a recap of what was added
 
 ---
 
@@ -34,21 +32,10 @@ The bot username is already available from `config.json` (read in Step 0) via `b
 
 ## Step 2: Fetch GitHub Issues
 
-Read `config.json` to get the issue repository and labels. Then fetch issues from TWO sources and combine them:
+Read `config.json` to get the issue repository and bot username. Fetch issues assigned to the bot:
 
-1. **Labeled issues** (using each label from `labels.issueLabels`):
-```bash
-gh issue list --repo <issueRepository> --label "<label>" --state open --json number,title,url,labels --limit 100
-```
-
-2. **Assigned issues** (assigned to `bot.username` from config.json):
 ```bash
 gh issue list --repo <issueRepository> --assignee "$BOT_USER" --state open --json number,title,url,labels --limit 100
-```
-
-3. **Combine and deduplicate** by issue number:
-```bash
-jq -s '[.[][] | {number, title, url, labels}] | unique_by(.number)' <(gh issue list --repo <issueRepository> --label "<label>" --state open --json number,title,url,labels --limit 100) <(gh issue list --repo <issueRepository> --assignee "$BOT_USER" --state open --json number,title,url,labels --limit 100)
 ```
 
 ---
@@ -59,12 +46,9 @@ A single helper script handles both new and existing PRDs:
 
 ```bash
 ISSUE_REPO=$(jq -r '.project.issueRepository' config.json)
-ISSUE_LABEL=$(jq -r '.labels.issueLabels[0]' config.json)
 BOT_USER=$(jq -r '.bot.username' config.json)
-# Note: all three values above come from config.json (already read in Step 0)
-jq -s '[.[][] | {number, title, url, labels}] | unique_by(.number)' \
-  <(gh issue list --repo "$ISSUE_REPO" --label "$ISSUE_LABEL" --state open --json number,title,url,labels --limit 100) \
-  <(gh issue list --repo "$ISSUE_REPO" --assignee "$BOT_USER" --state open --json number,title,url,labels --limit 100) | \
+# Note: both values above come from config.json (already read in Step 0)
+gh issue list --repo "$ISSUE_REPO" --assignee "$BOT_USER" --state open --json number,title,url,labels --limit 100 | \
   .claude/skills/add-backlog-to-prd/update-prd-with-issues.py ./data/prd.json > /tmp/prd_updated.json && \
   mv /tmp/prd_updated.json ./data/prd.json
 ```
@@ -118,7 +102,7 @@ Generate a comprehensive recap showing:
 # PRD Update Recap
 
 ## Summary
-Successfully fetched 15 open issues from the `bot/type/test` label and added 7 missing issues to the PRD.
+Successfully fetched 15 open issues assigned to the bot and added 7 missing issues to the PRD.
 
 ## New Issues Added (US-016 to US-022)
 
