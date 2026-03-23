@@ -168,6 +168,8 @@
 
    Every changed line must be **directly justified** by the fix. If a reviewer would ask "why was this changed?" and the answer isn't the fix itself, don't change it. Unnecessary changes obscure the important ones and make it harder to verify correctness.
 
+   **SCOPE CHANGES TO YOUR PR ONLY**: All code changes must be confined to the current story's feature branch and PR. Do not make changes to other branches, other PRs, or unrelated code outside the scope of the current task, unless presubmit or format requires the changes.
+
 6. **CRITICAL**: Run **ALL** acceptance criteria tests - **YOU MUST NOT SKIP ANY**
 
    **Exception: Filter-file-only changes** — If the ONLY changed files are test filter files (`test/filters/*.filter`), skip this step entirely. Do not run tests or build. Proceed to step 9 (self-review).
