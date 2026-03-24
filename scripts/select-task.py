@@ -134,7 +134,7 @@ def filter_stories(stories, run_state):
     return candidates
 
 
-def llm_select(candidates, extra_prompt):
+def llm_select(candidates, extra_prompt, claude_bin="claude"):
     """Use Claude CLI (haiku) to interpret extra_prompt and select a story."""
     summary_lines = []
     for s in candidates:
@@ -153,12 +153,13 @@ def llm_select(candidates, extra_prompt):
 
     try:
         result = subprocess.run(
-            ["claude", "--print", "--model", "haiku", prompt],
+            [claude_bin, "--print", "--model", "haiku", prompt],
             capture_output=True,
             text=True,
             timeout=30,
         )
         response = result.stdout.strip()
+        print(f"LLM selection response: {response}", file=sys.stderr)
         # Extract US-XXX pattern from response
         match = re.search(r"US-\d+", response)
         if match:
@@ -166,8 +167,15 @@ def llm_select(candidates, extra_prompt):
             valid_ids = {s.get("id") for s in candidates}
             if selected_id in valid_ids:
                 return selected_id
-    except (subprocess.TimeoutExpired, FileNotFoundError, OSError):
-        pass
+            else:
+                print(
+                    f"LLM selected {selected_id} but it's not a valid candidate",
+                    file=sys.stderr,
+                )
+        else:
+            print(f"LLM response didn't contain a story ID", file=sys.stderr)
+    except (subprocess.TimeoutExpired, FileNotFoundError, OSError) as e:
+        print(f"LLM selection failed: {e}", file=sys.stderr)
 
     return None
 
@@ -208,6 +216,9 @@ def main():
     parser.add_argument("--iteration-log", help="Log path to record in story")
     parser.add_argument(
         "--extra-prompt", default="", help="Extra prompt for LLM selection"
+    )
+    parser.add_argument(
+        "--claude-bin", default="claude", help="Path to claude CLI binary"
     )
     args = parser.parse_args()
 
@@ -254,9 +265,24 @@ def main():
 
     # Try LLM-assisted selection if extra prompt provided
     if args.extra_prompt.strip():
-        llm_choice = llm_select(candidates, args.extra_prompt)
+        # Use all non-terminal stories for LLM selection so the user can
+        # override run-state filters (e.g. pick an already-checked story)
+        all_active = [
+            s
+            for s in stories
+            if s.get("status") not in ("skipped", "invalid")
+            and not (
+                s.get("status") == "merged"
+                and s.get("mergedCheckFinalState") is True
+            )
+        ]
+        llm_choice = llm_select(
+            all_active, args.extra_prompt, claude_bin=args.claude_bin
+        )
         if llm_choice:
-            selected = next((s for s in candidates if s.get("id") == llm_choice), None)
+            selected = next(
+                (s for s in all_active if s.get("id") == llm_choice), None
+            )
 
     # Fall back to deterministic tier-based selection
     if not selected:

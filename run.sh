@@ -126,6 +126,7 @@ while [ $loop_count -lt $MAX_ITERATIONS ]; do
       --prd "$PRD_FILE" \
       --run-state "$RUN_STATE_FILE" \
       --iteration-log "$ITERATION_LOG" \
+      --claude-bin "$BOT_CLAUDE_BIN" \
       --extra-prompt "$EXTRA_PROMPT") || true
   else
     TASK_JSON=$(python3 "$SCRIPT_DIR/scripts/select-task.py" \
