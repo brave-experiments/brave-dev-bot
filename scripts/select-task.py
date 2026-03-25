@@ -20,17 +20,21 @@ from datetime import datetime, timezone
 
 TIER_URGENT = 1  # pushed + lastActivityBy == "reviewer"
 TIER_HIGH = 2  # committed
-TIER_NORMAL = 3  # pending
-TIER_MEDIUM = 4  # pushed + lastActivityBy != "reviewer"
-TIER_LOW = 5  # merged (needs recheck)
+TIER_STALE = 3  # pushed + lastActivityBy != "reviewer" + not checked in >1 day
+TIER_NORMAL = 4  # pending
+TIER_MEDIUM = 5  # pushed + lastActivityBy != "reviewer" + checked within last day
+TIER_LOW = 6  # merged (needs recheck)
 
 TIER_NAMES = {
     TIER_URGENT: "URGENT",
     TIER_HIGH: "HIGH",
-    TIER_MEDIUM: "MEDIUM",
+    TIER_STALE: "STALE",
     TIER_NORMAL: "NORMAL",
+    TIER_MEDIUM: "MEDIUM",
     TIER_LOW: "LOW",
 }
+
+STALE_THRESHOLD_SECONDS = 86400  # 1 day
 
 # Sentinel for missing timestamps (sorts before everything = oldest)
 EPOCH = datetime(1970, 1, 1, tzinfo=timezone.utc)
@@ -53,14 +57,19 @@ def now_iso():
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
-def assign_tier(story):
+def assign_tier(story, now=None):
     """Assign a priority tier to a story based on its status and lastActivityBy."""
+    if now is None:
+        now = datetime.now(timezone.utc)
     status = story.get("status", "pending")
     last_activity = story.get("lastActivityBy")
 
     if status == "pushed":
         if last_activity == "reviewer":
             return TIER_URGENT
+        last_processed = parse_iso(story.get("lastProcessedDate"))
+        if (now - last_processed).total_seconds() > STALE_THRESHOLD_SECONDS:
+            return TIER_STALE
         return TIER_MEDIUM
     elif status == "committed":
         return TIER_HIGH
@@ -72,14 +81,16 @@ def assign_tier(story):
     return TIER_NORMAL
 
 
-def sort_key(story):
+def sort_key(story, now=None):
     """Generate a sort key for a story within its tier.
 
-    - Pushed stories (tiers 1, 4): sort by lastProcessedDate asc, then priority
-    - Merged stories (tier 5): sort by nextMergedCheck asc, then priority
+    - Pushed stories (tiers 1, 3, 5): sort by lastProcessedDate asc, then priority
+    - Merged stories (tier 6): sort by nextMergedCheck asc, then priority
     - Other stories: sort by priority only
     """
-    tier = assign_tier(story)
+    if now is None:
+        now = datetime.now(timezone.utc)
+    tier = assign_tier(story, now)
     priority = story.get("priority", 999)
 
     if story.get("status") == "pushed":
@@ -286,12 +297,14 @@ def main():
 
     # Fall back to deterministic tier-based selection
     if not selected:
-        candidates.sort(key=sort_key)
+        now = datetime.now(timezone.utc)
+        candidates.sort(key=lambda s: sort_key(s, now))
         selected = candidates[0]
 
+    now = datetime.now(timezone.utc)
     story_id = selected.get("id", "?")
     status = selected.get("status", "pending")
-    tier = assign_tier(selected)
+    tier = assign_tier(selected, now)
 
     # Update run-state.json
     update_run_state(run_state_path, run_state, story_id)
