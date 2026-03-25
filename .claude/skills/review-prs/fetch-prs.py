@@ -22,6 +22,7 @@ Output: JSON with "prs" array and "summary" stats.
 
 import json
 import os
+import re
 import subprocess
 import sys
 from datetime import datetime, timedelta, timezone
@@ -39,6 +40,8 @@ CACHE_PATH = ".ignore/review-prs-cache.json"
 ORG_MEMBERS_PATH = ".ignore/org-members.txt"
 SKIP_PREFIXES = ["CI run for", "Backport", "Update l10n"]
 SKIP_CONTAINS = ["uplift to", "Just to test CI"]
+# Regex to detect version/release branches (e.g. "1.76.x", "brave-browser-release/1.76.x")
+VERSION_BRANCH_RE = re.compile(r'\d+\.\d+')
 
 
 def parse_args():
@@ -96,8 +99,13 @@ def has_any_approval(pr):
     return False
 
 
+def save_cache(cache):
+    with open(CACHE_PATH, "w") as f:
+        json.dump(cache, f, indent=2)
+
+
 def fetch_single_pr(pr_number):
-    fields = "number,title,updatedAt,author,isDraft,headRefOid,reviewDecision,latestReviews,reviewRequests"
+    fields = "number,title,updatedAt,author,isDraft,headRefOid,baseRefName,reviewDecision,latestReviews,reviewRequests"
     result = subprocess.run(
         [
             "gh",
@@ -133,7 +141,7 @@ def fetch_prs(mode, days, page, pr_number, state):
     if mode == "single":
         return fetch_single_pr(pr_number)
 
-    fields = "number,title,updatedAt,author,isDraft,headRefOid,reviewDecision,latestReviews,reviewRequests"
+    fields = "number,title,updatedAt,author,isDraft,headRefOid,baseRefName,reviewDecision,latestReviews,reviewRequests"
     base_cmd = [
         "gh",
         "pr",
@@ -229,13 +237,26 @@ def filter_prs(prs, mode, days, cache, org_members, reviewer_priority=None):
     skipped_cached = 0
     skipped_approved = 0
     skipped_external = 0
+    cache_dirty = False
 
     for pr in prs:
+        pr_num = str(pr["number"])
+        head_sha = pr.get("headRefOid", "")
+
         if pr.get("isDraft"):
             skipped_filtered += 1
             continue
 
         if should_skip_title(pr.get("title", "")):
+            skipped_filtered += 1
+            continue
+
+        # Skip uplift PRs (base branch targets a version/release branch)
+        base_ref = pr.get("baseRefName", "")
+        if VERSION_BRANCH_RE.search(base_ref):
+            if cache.get(pr_num) != head_sha:
+                cache[pr_num] = head_sha
+                cache_dirty = True
             skipped_filtered += 1
             continue
 
@@ -257,14 +278,11 @@ def filter_prs(prs, mode, days, cache, org_members, reviewer_priority=None):
                     skipped_filtered += 1
                     continue
 
-        pr_num = str(pr["number"])
-
         # Bot previously approved this PR — don't come back
         if pr_num in approved:
             skipped_approved += 1
             continue
 
-        head_sha = pr.get("headRefOid", "")
         if cache.get(pr_num) == head_sha:
             # If the bot is a requested reviewer, force a full re-review
             # even if the SHA hasn't changed (explicit re-request)
@@ -276,6 +294,9 @@ def filter_prs(prs, mode, days, cache, org_members, reviewer_priority=None):
                 continue
 
         to_review.append(pr)
+
+    if cache_dirty:
+        save_cache(cache)
 
     return (
         to_review,
