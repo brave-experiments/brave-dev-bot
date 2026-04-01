@@ -55,6 +55,44 @@ Check if PR is mergeable:
 - Has required approvals from Brave org members
 - No unresolved review comments
 
+### Check for Merge Conflicts
+
+Before checking approvals, check if the PR has merge conflicts:
+
+```bash
+gh pr view <pr-number> --json mergeable -q '.mergeable'
+```
+
+**If `mergeable` is `CONFLICTING`:**
+
+The PR branch is behind and has conflicts. Sync the bot fork's master with upstream and rebase:
+
+1. **Fetch upstream and sync the bot fork's master:**
+   ```bash
+   cd [targetRepoPath from bot config]
+   git fetch upstream
+   git push origin upstream/master:master
+   ```
+   This keeps `origin/master` (the bot fork) in sync with upstream before rebasing.
+
+2. **Checkout the story's branch and rebase:**
+   ```bash
+   git checkout <branchName>
+   git rebase origin/master
+   ```
+   If there are conflicts during the rebase, resolve them, then `git rebase --continue`.
+
+3. **Force-push the rebased branch:**
+   ```bash
+   git push --force-with-lease
+   ```
+
+4. Document the rebase in `$BOT_DIR/data/progress.txt`, then **continue the normal merge readiness check below** — the PR may now be mergeable.
+
+**If `mergeable` is `UNKNOWN`:** GitHub hasn't computed mergeability yet. Treat as non-conflicting and proceed with the normal workflow.
+
+**If `mergeable` is `MERGEABLE`:** No conflicts, proceed normally.
+
 ### If PR is Ready to Merge
 
 Before merging, verify ALL of the following:
