@@ -40,8 +40,8 @@ CACHE_PATH = ".ignore/review-prs-cache.json"
 ORG_MEMBERS_PATH = ".ignore/org-members.txt"
 SKIP_PREFIXES = ["CI run for", "Backport", "Update l10n"]
 SKIP_CONTAINS = ["uplift to", "Just to test CI"]
-# Regex to detect version/release branches (e.g. "1.76.x", "brave-browser-release/1.76.x")
-VERSION_BRANCH_RE = re.compile(r'\d+\.\d+')
+# Pattern for version branches like "1.90.x"
+VERSION_BRANCH_RE = r"^\d+\.\d+\.x$"
 
 
 def parse_args():
@@ -253,7 +253,7 @@ def filter_prs(prs, mode, days, cache, org_members, reviewer_priority=None):
 
         # Skip uplift PRs (base branch targets a version/release branch)
         base_ref = pr.get("baseRefName", "")
-        if VERSION_BRANCH_RE.search(base_ref):
+        if re.match(VERSION_BRANCH_RE, base_ref or ""):
             if cache.get(pr_num) != head_sha:
                 cache[pr_num] = head_sha
                 cache_dirty = True
