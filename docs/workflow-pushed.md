@@ -103,15 +103,22 @@ Before merging, verify ALL of the following:
    ```
    Should return `APPROVED`
 
-2. **Verify No Unresolved Comments:**
+2. **Check for post-approval reviewer activity:**
+   From the filtered PR data already fetched, check `timestamp_analysis.who_went_last`.
+
+   **If `who_went_last` is "reviewer":** Reviewers have commented or reviewed AFTER the last push — even if `reviewDecision` is `APPROVED`. Do NOT merge. Go to Step 2 to address the new reviewer activity.
+
+   Approvals are not a permanent green light. A reviewer who approved and then posts follow-up comments is requesting changes. Treat any post-push reviewer activity as blocking.
+
+3. **Verify No Unresolved Comments:**
    Check the filtered PR data to ensure all review comments have been addressed
 
-3. **Merge with SQUASH strategy:**
+4. **Merge with SQUASH strategy:**
    ```bash
    gh pr merge <pr-number> --squash
    ```
 
-4. **Set nightly milestone on the PR and linked issue:**
+5. **Set nightly milestone on the PR and linked issue:**
 
    Use the nightly version provided in the prompt (e.g., `1.89.x`). The milestone name is `<nightly-version> - Nightly` (e.g., `1.89.x - Nightly`). Only run `python3 $BOT_DIR/scripts/get-nightly-version.py` to fetch the nightly version if none was provided in the prompt.
 
@@ -142,7 +149,7 @@ Before merging, verify ALL of the following:
 
    If setting the milestone fails (e.g., milestone doesn't exist yet), note it in progress.txt but continue — do not block the merge workflow.
 
-5. **Update State:**
+6. **Update State:**
    - Update the PRD status:
      ```bash
      python3 $BOT_DIR/scripts/update-prd-status.py merged <story-id>
@@ -151,7 +158,7 @@ Before merging, verify ALL of the following:
 
 **IMPORTANT**: Always use `--squash` merge strategy to keep git history clean.
 
-6. **Send Signal notification** (no-op if not configured):
+7. **Send Signal notification** (no-op if not configured):
    ```bash
    $BOT_DIR/scripts/signal-notify.sh "PR merged: #<pr-number> - <title> https://github.com/$PR_REPO/pull/<pr-number>"
    ```
