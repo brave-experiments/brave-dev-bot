@@ -139,6 +139,17 @@ def resolve_bot_username():
 # ---------------------------------------------------------------------------
 # Diff fetching
 # ---------------------------------------------------------------------------
+def is_feature_branch(base_ref):
+    """Return True if base_ref is a non-default, non-version feature branch."""
+    if not base_ref:
+        return False
+    if base_ref == DEFAULT_BRANCH:
+        return False
+    if re.match(VERSION_BRANCH_RE, base_ref):
+        return False
+    return True
+
+
 def fetch_diff(pr_number):
     result = subprocess.run(
         ["gh", "pr", "diff", "--repo", PR_REPO, str(pr_number)],
@@ -641,6 +652,7 @@ Review Rules:
 - Do NOT flag: existing code the PR isn't changing, template functions defined in headers, simple inline getters in headers, style preferences not in the documented best practices, include/import ordering (this is handled by formatting tools and linters, not this bot).
 - Every claim must be verified in the best practices source document. Do NOT make claims based on general knowledge or assumptions about what "should" be a best practice. If the best practices docs do not contain a rule about something, do NOT flag it as a violation — even if you believe it to be true. For example, do NOT claim an API is "deprecated" or a pattern is "banned" unless the best practices doc explicitly says so. Hallucinated rules erode trust and waste developer time. When in doubt, do not comment.
 - Do NOT make claims about what upstream Chromium code does (e.g., "the upstream class overrides X" or "upstream uses pattern Y") unless you read the actual upstream file during validation. Upstream behavior claims are a common hallucination vector. If your violation depends on an upstream comparison, verify it by reading the file -- if you cannot confirm it, drop the violation.
+- Base branch awareness: if the PR targets a non-master feature branch (stated at the top of this prompt), do NOT claim that a symbol, file, include, or dependency is missing or doesn't exist just because it isn't in the source tree. It may have been introduced by the base branch. Use the GitHub API to verify it before flagging: `gh api repos/<repo>/contents/<path>?ref=<base_branch>`. Drop the violation if you cannot confirm the absence.
 - Comment style: short (1-3 sentences), targeted, acknowledge context. Use "nit:" for genuinely minor/stylistic issues (including missing comments/documentation). Substantive issues (test reliability, correctness, banned APIs) should be direct without "nit:" prefix."""
 
 _BEST_PRACTICE_LINK_REQUIREMENT = """\
@@ -727,7 +739,7 @@ For each violation:
 - Deprecation claims require header verification — read the actual header file to confirm.
 - Check surrounding context for justification — comments, TODOs, or patterns that explain the code.
 - If surrounding code uses the same pattern being flagged, the violation may be invalid.
-- If the violation claims upstream code has or lacks something (e.g., "upstream overrides X", "upstream class uses Y"), you MUST read the actual upstream file to confirm. Do not rely on your training data for upstream code state. If you cannot locate and read the upstream file, drop the violation.
+- If the violation claims upstream code has or lacks something (e.g., "upstream overrides X", "upstream class uses Y"), you MUST read the actual upstream file to confirm. Do not rely on your training data for upstream code state. If you cannot locate and read the upstream file, drop the violation.{base_branch_validation_note}
 - Sanitize @mentions — validate against actual PR participants. Fix or strip hallucinated usernames.
 - Drop false positives. If reading the source reveals the violation is incorrect, drop it.
 - Log each result:
@@ -752,7 +764,7 @@ CRITICAL: NEVER post reviews, comments, or approvals to GitHub. NEVER use `gh ap
 
 def build_subagent_prompt(pr_number, pr_title, diff_text, images, prior_comments,
                           bot_username, chunk, diff_line_ranges=None,
-                          results_file=None, target_repo_path=None):
+                          results_file=None, target_repo_path=None, base_ref=None):
     """Build a complete self-contained subagent prompt for a single chunk."""
     doc = chunk["doc"]
     chunk_index = chunk["chunk_index"]
@@ -769,6 +781,15 @@ def build_subagent_prompt(pr_number, pr_title, diff_text, images, prior_comments
     # 1. PR number and repo
     parts.append(f"Review PR #{pr_number} in {PR_REPO}.")
     parts.append(f"PR title: {pr_title}")
+    if base_ref and is_feature_branch(base_ref):
+        parts.append(
+            f"NOTE: This PR targets base branch `{base_ref}`, not `{DEFAULT_BRANCH}`. "
+            f"Code introduced by `{base_ref}` will not appear in this diff and may not "
+            f"be present in the source tree (which reflects `{DEFAULT_BRANCH}`). "
+            f"When validating, do not assume something is missing just because it is "
+            f"absent from the source tree — look it up in the base branch first using: "
+            f"`gh api repos/{PR_REPO}/contents/<path>?ref={base_ref}`"
+        )
     parts.append("")
 
     # 2. The FULL PR diff (shared prefix for cache efficiency)
@@ -842,10 +863,21 @@ def build_subagent_prompt(pr_number, pr_title, diff_text, images, prior_comments
 
     # 11. Validation instructions (subagent validates its own findings)
     if results_file and target_repo_path:
+        if base_ref and is_feature_branch(base_ref):
+            base_branch_validation_note = (
+                f"\n- Base branch: The source tree at `{{target_repo_path}}` reflects "
+                f"`{DEFAULT_BRANCH}`, not `{base_ref}`. Files or symbols added by `{base_ref}` "
+                f"will NOT be present here. Before claiming something doesn't exist, check: "
+                f"`gh api repos/{PR_REPO}/contents/<path>?ref={base_ref}`. "
+                f"If found, the violation is a false positive — drop it."
+            )
+        else:
+            base_branch_validation_note = ""
         parts.append("")
         parts.append(_VALIDATION_INSTRUCTIONS.format(
             target_repo_path=target_repo_path,
             results_file=results_file,
+            base_branch_validation_note=base_branch_validation_note,
         ))
 
     return "\n".join(parts)
@@ -861,6 +893,7 @@ def process_pr(pr, bot_username, org_members, work_dir):
     pr_title = pr["title"]
     head_sha = pr["headRefOid"]
     author = pr["author"]
+    base_ref = pr.get("baseRefName", "")
     has_approval = pr.get("hasApproval", False)
     is_external = pr.get("isExternalContributor", False)
 
@@ -936,6 +969,7 @@ def process_pr(pr, bot_username, org_members, work_dir):
                     diff_line_ranges=diff_line_ranges,
                     results_file=results_file,
                     target_repo_path=TARGET_REPO_PATH,
+                    base_ref=base_ref,
                 )
 
                 # Write prompt to file (not embedded in JSON)
@@ -1122,6 +1156,7 @@ def main():
             "number": pr["number"],
             "title": pr["title"],
             "headRefOid": pr["headRefOid"],
+            "baseRefName": pr.get("baseRefName", ""),
             "author": author,
             "hasApproval": _fp_mod.has_any_approval(pr),
             "isExternalContributor": bool(
