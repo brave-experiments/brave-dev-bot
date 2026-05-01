@@ -90,6 +90,9 @@ The upstream rule covers something we don't have at all. Add it to the appropria
 ### E. Not Applicable (Skip)
 The rule is about Chromium-internal processes that don't apply to Brave's workflow.
 
+### F. Covered by Tooling (Skip)
+The rule is already enforced automatically by linting, presubmit checks, or code formatters (e.g., clang-format, cpplint, PRESUBMIT.py). Don't add rules that tools already catch — they add noise and go stale when tooling changes.
+
 ---
 
 ## Step 4: Detect Inter-Rule Conflicts
@@ -184,6 +187,7 @@ Output a summary to the user with:
 ## Important
 
 - **Upstream docs are authoritative** - when our docs conflict with Chromium docs, fix ours (unless it's a deliberate Brave-specific deviation, which should be documented as such)
+- **Skip rules covered by tooling** - don't add best practices that are already enforced by linting, presubmit checks, or formatters (clang-format, cpplint, PRESUBMIT.py, etc.); these rules are redundant and become misleading when tooling evolves
 - **Keep entries concise** - link to upstream for full details rather than duplicating everything
 - **Preserve existing format** - match the `## <emoji> <Title>` heading style with BAD/GOOD examples
 - **Don't remove Brave-specific rules** - rules about Brave patterns (e.g., `Brave*` prefix convention) have no upstream equivalent and should be kept
