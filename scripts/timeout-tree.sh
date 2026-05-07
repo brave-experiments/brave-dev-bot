@@ -51,8 +51,8 @@ WATCHDOG_PID=$!
 wait "$CMD_PID" 2>/dev/null
 EXIT_CODE=$?
 
-# Cancel the watchdog
-kill "$WATCHDOG_PID" 2>/dev/null
+# Cancel the watchdog and its children (e.g. orphaned sleep subprocess)
+kill_tree TERM "$WATCHDOG_PID" 2>/dev/null || true
 wait "$WATCHDOG_PID" 2>/dev/null || true
 
 if [ $EXIT_CODE -eq 137 ] || [ $EXIT_CODE -eq 143 ]; then
