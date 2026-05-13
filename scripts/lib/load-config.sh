@@ -7,7 +7,8 @@
 # Exports:
 #   BOT_PROJECT_NAME, BOT_ORG, BOT_PR_REPO, BOT_ISSUE_REPO,
 #   BOT_DEFAULT_BRANCH, BOT_USERNAME, BOT_EMAIL,
-#   BOT_CLAUDE_MODEL, BOT_CLAUDE_BIN, BOT_BP_DOCS_DIR
+#   BOT_AGENT, BOT_CLAUDE_MODEL, BOT_CLAUDE_BIN,
+#   BOT_CODEX_MODEL, BOT_CODEX_BIN, BOT_BP_DOCS_DIR
 #
 # Also provides:
 #   bot_config '.some.jq.path'  — raw jq query against the config file
@@ -37,8 +38,17 @@ BOT_TARGET_REPO_PATH=$(bot_config '.project.targetRepoPath')
 
 BOT_USERNAME=$(bot_config '.bot.username')
 BOT_EMAIL=$(bot_config '.bot.email')
+# BOT_AGENT env var (if set) takes precedence over config
+_BOT_AGENT_ENV="${BOT_AGENT:-}"
+BOT_AGENT=$(bot_config '.bot.agent')
+if [ -n "$_BOT_AGENT_ENV" ]; then
+  BOT_AGENT="$_BOT_AGENT_ENV"
+fi
+unset _BOT_AGENT_ENV
 BOT_CLAUDE_MODEL=$(bot_config '.bot.claudeModel')
 BOT_CLAUDE_BIN=$(bot_config '.bot.claudeBin')
+BOT_CODEX_MODEL=$(bot_config '.bot.codexModel')
+BOT_CODEX_BIN=$(bot_config '.bot.codexBin')
 
 BOT_BP_DOCS_DIR=$(bot_config '.bestPractices.docsDir')
 
@@ -65,7 +75,16 @@ if [ -z "$BOT_CLAUDE_BIN" ]; then
   BOT_CLAUDE_BIN="$(which claude 2>/dev/null || echo "claude")"
 fi
 
+# Fall back to 'codex' if codexBin is not set
+if [ -z "$BOT_CODEX_BIN" ]; then
+  BOT_CODEX_BIN="$(which codex 2>/dev/null || echo "codex")"
+fi
+
+# Default agent is 'claude' if not configured. BOT_AGENT env var overrides config.
+BOT_AGENT="${BOT_AGENT:-claude}"
+
 export BOT_DIR BOT_CONFIG_FILE
 export BOT_PROJECT_NAME BOT_ORG BOT_PR_REPO BOT_ISSUE_REPO BOT_DEFAULT_BRANCH BOT_TARGET_REPO_PATH
-export BOT_USERNAME BOT_EMAIL BOT_CLAUDE_MODEL BOT_CLAUDE_BIN
+export BOT_USERNAME BOT_EMAIL
+export BOT_AGENT BOT_CLAUDE_MODEL BOT_CLAUDE_BIN BOT_CODEX_MODEL BOT_CODEX_BIN
 export BOT_BP_DOCS_DIR

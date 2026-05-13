@@ -1,6 +1,12 @@
 #!/bin/bash
 # Long-running AI agent loop
-# Usage: ./run.sh [max_iterations] [tui] [extra_prompt_info...]
+# Usage: ./run.sh [max_iterations] [tui] [--agent claude|codex] [extra_prompt_info...]
+#
+# Agent selection precedence (highest wins):
+#   1. --agent <name> CLI flag
+#   2. BOT_AGENT env var
+#   3. bot.agent in config.json
+#   4. "claude" default
 
 set -e
 
@@ -15,10 +21,25 @@ MAX_ITERATIONS=10
 USE_TUI=false
 EXTRA_PROMPT=""
 PAST_TUI=false
+CLI_AGENT=""
+EXPECT_AGENT_VALUE=false
 
 for arg in "$@"; do
+  if [ "$EXPECT_AGENT_VALUE" = true ]; then
+    CLI_AGENT="$arg"
+    EXPECT_AGENT_VALUE=false
+    continue
+  fi
+  # --agent is recognized regardless of position (before or after `tui`).
+  if [[ "$arg" == "--agent" ]]; then
+    EXPECT_AGENT_VALUE=true
+    continue
+  elif [[ "$arg" == --agent=* ]]; then
+    CLI_AGENT="${arg#--agent=}"
+    continue
+  fi
   if [ "$PAST_TUI" = true ]; then
-    # Everything after 'tui' is extra prompt info
+    # Everything else after 'tui' is extra prompt info
     if [ -n "$EXTRA_PROMPT" ]; then
       EXTRA_PROMPT="$EXTRA_PROMPT $arg"
     else
@@ -33,6 +54,18 @@ for arg in "$@"; do
 done
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/scripts/lib/load-config.sh"
+
+# CLI --agent flag has the final say (overrides env + config)
+if [ -n "$CLI_AGENT" ]; then
+  BOT_AGENT="$CLI_AGENT"
+fi
+case "$BOT_AGENT" in
+  claude|codex) ;;
+  *)
+    echo "Error: unsupported agent '$BOT_AGENT' (expected: claude | codex)" >&2
+    exit 1
+    ;;
+esac
 
 PRD_FILE="$SCRIPT_DIR/data/prd.json"
 PROGRESS_FILE="$SCRIPT_DIR/data/progress.txt"
@@ -84,7 +117,11 @@ if [ ! -f "$ORG_MEMBERS_FILE" ]; then
   exit 1
 fi
 
-echo "Starting Claude Code agent - Max iterations: $MAX_ITERATIONS"
+if [ "$BOT_AGENT" = "codex" ]; then
+  echo "Starting Codex agent - Max iterations: $MAX_ITERATIONS"
+else
+  echo "Starting Claude Code agent - Max iterations: $MAX_ITERATIONS"
+fi
 echo "Logs will be saved to: $LOGS_DIR"
 
 # Fetch nightly version once per run (avoids redundant WebFetch in each iteration)
@@ -182,18 +219,26 @@ while [ $loop_count -lt $MAX_ITERATIONS ]; do
   BRAVE_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
   cd "$BRAVE_ROOT"
 
-  # Pre-generate session ID so we can print the resume command before Claude starts
-  SESSION_ID=$(uuidgen | tr '[:upper:]' '[:lower:]')
-  echo ""
-  echo "To monitor this session (read-only): claude --resume $SESSION_ID"
-  echo ""
+  # Pre-generate session ID for monitoring/resume (Claude only — Codex has no --session-id).
+  SESSION_ID=""
+  if [ "$BOT_AGENT" = "claude" ]; then
+    SESSION_ID=$(uuidgen | tr '[:upper:]' '[:lower:]')
+    echo ""
+    echo "To monitor this session (read-only): claude --resume $SESSION_ID"
+    echo ""
+  else
+    echo ""
+    echo "Codex session: resume with 'codex resume --last' after the iteration."
+    echo ""
+  fi
 
-  # Claude Code: use --dangerously-skip-permissions for autonomous operation
-  # In print mode: use stream-json output format with verbose flag to capture detailed execution logs
-  # In TUI mode: omit --print to show the interactive TUI
+  # Build the agent prompt. Both agents pick up project instructions from disk:
+  #   - Claude reads .claude/CLAUDE.md from the bot dir.
+  #   - Codex reads AGENTS.md (project) / ~/.codex/AGENTS.md (user).
+  # We point both at the same workflow docs via the prompt itself.
   BOT_DIRNAME=$(basename "$SCRIPT_DIR")
   BOT_CONFIG=$(cat "$SCRIPT_DIR/config.json")
-  CLAUDE_PROMPT="You are working on story $STORY_ID (current status: $STORY_STATUS).
+  AGENT_PROMPT="You are working on story $STORY_ID (current status: $STORY_STATUS).
 Follow ./$BOT_DIRNAME/docs/workflow-${STORY_STATUS}.md for the workflow.
 Follow the general instructions in ./$BOT_DIRNAME/.claude/CLAUDE.md.
 
@@ -203,44 +248,61 @@ $STORY_DETAILS
 Bot config (from config.json — do NOT read this file):
 $BOT_CONFIG"
   if [ -n "$NIGHTLY_VERSION" ]; then
-    CLAUDE_PROMPT="$CLAUDE_PROMPT
+    AGENT_PROMPT="$AGENT_PROMPT
 
 Nightly version: $NIGHTLY_VERSION (use this for milestone names like '$NIGHTLY_VERSION - Nightly', do NOT fetch the release schedule)."
   fi
   if [ -n "$EXTRA_PROMPT" ]; then
-    CLAUDE_PROMPT="$CLAUDE_PROMPT
+    AGENT_PROMPT="$AGENT_PROMPT
 
 Additional context: $EXTRA_PROMPT"
   fi
 
   # Log the prompt to the iteration log so it can be audited later
   if [ "$USE_TUI" != true ]; then
-    jq -n --arg storyId "$STORY_ID" --arg status "$STORY_STATUS" --arg tier "$TIER_NAME" --arg prompt "$CLAUDE_PROMPT" \
-      '{"type":"prompt","storyId":$storyId,"status":$status,"tier":$tier,"prompt":$prompt}' >> "$ITERATION_LOG"
+    jq -n --arg storyId "$STORY_ID" --arg status "$STORY_STATUS" --arg tier "$TIER_NAME" \
+          --arg agent "$BOT_AGENT" --arg prompt "$AGENT_PROMPT" \
+      '{"type":"prompt","storyId":$storyId,"status":$status,"tier":$tier,"agent":$agent,"prompt":$prompt}' >> "$ITERATION_LOG"
   fi
 
-  # Build optional model flag
-  CLAUDE_MODEL_FLAG=""
-  if [ -n "$BOT_CLAUDE_MODEL" ]; then
-    CLAUDE_MODEL_FLAG="--model $BOT_CLAUDE_MODEL"
-  fi
-
-  # Run Claude from the bot directory so it picks up .claude/CLAUDE.md as project settings
-  if [ "$USE_TUI" = true ]; then
-    # TUI mode: let Claude own the terminal directly (no piping)
-    (cd "$SCRIPT_DIR" && "$SCRIPT_DIR/scripts/timeout-tree.sh" 7200 $BOT_CLAUDE_BIN $CLAUDE_MODEL_FLAG --dangerously-skip-permissions --session-id "$SESSION_ID" "$CLAUDE_PROMPT") 200>&- || true
+  # Run the agent from the bot directory so it picks up project instructions.
+  if [ "$BOT_AGENT" = "codex" ]; then
+    CODEX_MODEL_FLAG=""
+    if [ -n "$BOT_CODEX_MODEL" ]; then
+      CODEX_MODEL_FLAG="--model $BOT_CODEX_MODEL"
+    fi
+    if [ "$USE_TUI" = true ]; then
+      # TUI mode: let codex own the terminal directly (no piping).
+      (cd "$SCRIPT_DIR" && "$SCRIPT_DIR/scripts/timeout-tree.sh" 7200 $BOT_CODEX_BIN $CODEX_MODEL_FLAG --dangerously-bypass-approvals-and-sandbox "$AGENT_PROMPT") 200>&- || true
+    else
+      # Non-interactive: stream JSONL events to the iteration log.
+      (cd "$SCRIPT_DIR" && "$SCRIPT_DIR/scripts/timeout-tree.sh" 7200 $BOT_CODEX_BIN exec $CODEX_MODEL_FLAG --dangerously-bypass-approvals-and-sandbox --json --skip-git-repo-check "$AGENT_PROMPT") 200>&- </dev/null 2>&1 | tee -a "$ITERATION_LOG" > "$TEMP_OUTPUT" || true
+    fi
   else
-    (cd "$SCRIPT_DIR" && "$SCRIPT_DIR/scripts/timeout-tree.sh" 7200 $BOT_CLAUDE_BIN $CLAUDE_MODEL_FLAG --dangerously-skip-permissions --print --verbose --output-format stream-json --session-id "$SESSION_ID" "$CLAUDE_PROMPT") 200>&- </dev/null 2>&1 | tee -a "$ITERATION_LOG" > "$TEMP_OUTPUT" || true
+    CLAUDE_MODEL_FLAG=""
+    if [ -n "$BOT_CLAUDE_MODEL" ]; then
+      CLAUDE_MODEL_FLAG="--model $BOT_CLAUDE_MODEL"
+    fi
+    if [ "$USE_TUI" = true ]; then
+      # TUI mode: let Claude own the terminal directly (no piping)
+      (cd "$SCRIPT_DIR" && "$SCRIPT_DIR/scripts/timeout-tree.sh" 7200 $BOT_CLAUDE_BIN $CLAUDE_MODEL_FLAG --dangerously-skip-permissions --session-id "$SESSION_ID" "$AGENT_PROMPT") 200>&- || true
+    else
+      (cd "$SCRIPT_DIR" && "$SCRIPT_DIR/scripts/timeout-tree.sh" 7200 $BOT_CLAUDE_BIN $CLAUDE_MODEL_FLAG --dangerously-skip-permissions --print --verbose --output-format stream-json --session-id "$SESSION_ID" "$AGENT_PROMPT") 200>&- </dev/null 2>&1 | tee -a "$ITERATION_LOG" > "$TEMP_OUTPUT" || true
+    fi
   fi
 
-  echo "To continue this session: claude --resume $SESSION_ID"
+  if [ "$BOT_AGENT" = "claude" ]; then
+    echo "To continue this session: claude --resume $SESSION_ID"
+  else
+    echo "To continue this session: codex resume --last"
+  fi
 
-  # Check for completion signal (print mode only — TUI mode skips this since user is watching)
+  # Check for completion signal (print mode only — TUI mode skips this since user is watching).
+  # The <promise>COMPLETE</promise> marker is unique and intentional; a literal grep is safe
+  # across both Claude's stream-json and Codex's JSONL output formats.
   COMPLETION_CHECK=0
   if [ "$USE_TUI" != true ]; then
-    # Extract text from stream-json, check for completion signal.
-    # Use tail -1 to guarantee a single integer (jq on mixed stderr/json can produce multiline output).
-    COMPLETION_CHECK=$(jq -r 'select(.type == "assistant") | .message.content[]? | select(.type == "text") | .text' "$TEMP_OUTPUT" 2>/dev/null | grep -c "<promise>COMPLETE</promise>" 2>/dev/null | tail -1)
+    COMPLETION_CHECK=$(grep -c -F "<promise>COMPLETE</promise>" "$TEMP_OUTPUT" 2>/dev/null | tail -1)
     COMPLETION_CHECK=$((COMPLETION_CHECK + 0))
   fi
   if [ "$COMPLETION_CHECK" -gt 0 ]; then
