@@ -15,6 +15,7 @@ import re
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
@@ -75,6 +76,40 @@ TARGET_REPO_PATH = os.path.normpath(
 
 def log(msg):
     print(msg, file=sys.stderr)
+
+
+# Serializes concurrent git fetches to the same repo (git locks packed-refs).
+_git_fetch_lock = threading.Lock()
+
+
+def fetch_and_create_worktree(pr_number, head_sha, worktree_path):
+    """Fetch PR head commit and create an isolated git worktree for it.
+
+    Returns worktree_path on success, None on failure (caller falls back to
+    TARGET_REPO_PATH so validation still runs, just against master).
+    """
+    # Serialize fetches — git fetch takes a pack-refs lock.
+    with _git_fetch_lock:
+        result = subprocess.run(
+            ["git", "-C", TARGET_REPO_PATH, "fetch", "origin",
+             f"pull/{pr_number}/head", "--no-tags"],
+            capture_output=True, text=True, timeout=180,
+        )
+        if result.returncode != 0:
+            log(f"  WARNING: fetch for PR #{pr_number} failed: {result.stderr.strip()}")
+            return None
+
+    # Worktree creation doesn't need the lock.
+    result = subprocess.run(
+        ["git", "-C", TARGET_REPO_PATH, "worktree", "add",
+         worktree_path, "--detach", head_sha],
+        capture_output=True, text=True, timeout=60,
+    )
+    if result.returncode != 0:
+        log(f"  WARNING: worktree add for PR #{pr_number} failed: {result.stderr.strip()}")
+        return None
+
+    return worktree_path
 
 
 # ---------------------------------------------------------------------------
@@ -946,10 +981,22 @@ def process_pr(pr, bot_username, org_members, work_dir):
     # g. Parse diff line ranges for subagent prompts
     diff_line_ranges = parse_diff_line_ranges(diff_text)
 
-    # h+i. Chunk each doc, build subagent prompts, write to files
+    # h. Create an isolated git worktree at the PR's head commit so subagents
+    #    read source files that match the diff (line numbers agree).
     pr_work_dir = os.path.join(work_dir, f"pr_{pr_number}")
     os.makedirs(pr_work_dir, exist_ok=True)
 
+    worktree_path = fetch_and_create_worktree(
+        pr_number, head_sha, os.path.join(pr_work_dir, "source")
+    )
+    effective_repo_path = worktree_path if worktree_path else TARGET_REPO_PATH
+    if worktree_path:
+        log(f"  Worktree created for PR #{pr_number}: {worktree_path}")
+    else:
+        log(f"  WARNING: worktree unavailable for PR #{pr_number}, "
+            f"falling back to {TARGET_REPO_PATH}")
+
+    # i. Chunk each doc, build subagent prompts, write to files
     subagent_prompts = []
     total_prompt_chars = 0
     diff_chars = len(diff_text)
@@ -968,7 +1015,7 @@ def process_pr(pr, bot_username, org_members, work_dir):
                     prior_comments, bot_username, chunk,
                     diff_line_ranges=diff_line_ranges,
                     results_file=results_file,
-                    target_repo_path=TARGET_REPO_PATH,
+                    target_repo_path=effective_repo_path,
                     base_ref=base_ref,
                 )
 
@@ -1008,6 +1055,7 @@ def process_pr(pr, bot_username, org_members, work_dir):
         "images": images,
         "thread_resolution": thread_resolution,
         "subagent_prompts": subagent_prompts,
+        "worktree_path": worktree_path,
     }
 
     # Cost logging
@@ -1250,6 +1298,7 @@ def main():
     output = {
         "bot_username": bot_username,
         "pr_repo": PR_REPO,
+        "target_repo_path": TARGET_REPO_PATH,
         "auto_mode": auto_mode,
         "reviewer_priority": reviewer_priority,
         "fetch_summary": fetch_summary,
