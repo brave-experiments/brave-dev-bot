@@ -52,6 +52,7 @@ Read the manifest file at `{work_dir}/manifest.json`. It contains:
 - **`auto_mode`**: whether to post without approval
 - **`bot_username`**: the bot's GitHub username
 - **`pr_repo`**: the target PR repository
+- **`target_repo_path`**: absolute path to the local target repo checkout (used for branch checkout)
 - **`fetch_summary`**: stats on how many PRs were fetched/filtered/skipped
 - **`progress_lines`**: pre-formatted progress messages — print these to stdout for cron logs
 - **`prs`**: array of PRs to review, each containing:
@@ -69,6 +70,8 @@ For each cached PR, log:
 If no PRs to review (empty `prs` array), skip to Step 4.
 
 ### Step 3: Launch subagents
+
+`prepare-review.py` already fetched each PR's head commit and created an isolated `git worktree` for it. Subagent prompts reference those worktrees as the source tree, so file contents and line numbers match the diff. No checkout work needed here.
 
 For every PR in `prs`, for every entry in that PR's `subagent_prompts`, launch a **Task subagent** (subagent_type: "general-purpose") with this prompt:
 

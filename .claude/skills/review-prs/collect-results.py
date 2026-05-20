@@ -88,6 +88,29 @@ def build_post_review_input(manifest):
     return {"pr_results": pr_results}
 
 
+def cleanup_worktrees(manifest):
+    """Remove git worktrees created by prepare-review.py for each PR."""
+    target_repo_path = manifest.get("target_repo_path", "")
+    if not target_repo_path:
+        return
+    for pr in manifest.get("prs", []):
+        worktree_path = pr.get("worktree_path")
+        if not worktree_path:
+            continue
+        if not os.path.isdir(worktree_path):
+            continue
+        result = subprocess.run(
+            ["git", "-C", target_repo_path, "worktree", "remove",
+             worktree_path, "--force"],
+            capture_output=True, text=True, timeout=30,
+        )
+        if result.returncode != 0:
+            log(f"WARNING: failed to remove worktree {worktree_path}: "
+                f"{result.stderr.strip()}")
+        else:
+            log(f"Removed worktree: {worktree_path}")
+
+
 def print_cached_and_progress(manifest):
     """Print cached PR results and progress lines to stderr."""
     for cached in manifest.get("cached_prs", []):
@@ -197,6 +220,8 @@ def main():
     # Pass through stdout (result JSON)
     if result.stdout:
         print(result.stdout, end="")
+
+    cleanup_worktrees(manifest)
 
     sys.exit(result.returncode)
 
