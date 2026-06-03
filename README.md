@@ -144,6 +144,14 @@ Follow the prompts, then use `/prd-json` to convert to `data/prd.json`.
 ./run.sh 10 tui       # TUI mode (interactive terminal UI)
 ```
 
+The bot runs on Claude Code by default. To use Codex instead, pass `--agent codex`,
+set `BOT_AGENT=codex`, or set `bot.agent` to `codex` in `config.json` (precedence:
+flag > env var > config). Codex must be installed and authenticated (`codex login`).
+
+```bash
+./run.sh --agent codex
+```
+
 Skills (like `/review-prs`) are run interactively from the bot directory:
 
 ```bash
@@ -227,7 +235,11 @@ Project-specific configuration (gitignored, created by `make setup`). Keys:
 - `project.targetRepoPath`: Path to the target git repo (relative to parent dir or absolute)
 - `bot.username`: Bot's GitHub username
 - `bot.email`: Bot's email for git commits
+- `bot.agent`: Which agent to run, `claude` (default) or `codex`
 - `bot.claudeModel`: Claude model to use (`opus`, `sonnet`, etc.)
+- `bot.claudeBin`: Path to the `claude` binary (`null` = found on PATH)
+- `bot.codexModel`: Codex model to use (`null` = Codex default)
+- `bot.codexBin`: Path to the `codex` binary (`null` = found on PATH)
 - `labels.prLabels`: Labels applied to bot-created PRs
 - `labels.issueLabels`: Labels used for backlog issue fetching
 - `bestPractices.docsDir`: Path to the docs directory containing best practices (relative to bot dir)
