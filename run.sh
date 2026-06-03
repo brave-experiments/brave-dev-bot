@@ -214,6 +214,9 @@ while [ $loop_count -lt $MAX_ITERATIONS ]; do
   # Run Claude Code with the agent prompt
   # Use a temp file to capture output while allowing real-time streaming
   TEMP_OUTPUT=$(mktemp)
+  # Codex writes only its final agent message here (used for completion detection,
+  # so file contents read mid-iteration can never trip the <promise>COMPLETE</promise> check).
+  TEMP_LAST_MSG=$(mktemp)
 
   # Change to the parent directory (brave-browser) so relative paths in .claude/CLAUDE.md work
   BRAVE_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
@@ -275,8 +278,9 @@ Additional context: $EXTRA_PROMPT"
       # TUI mode: let codex own the terminal directly (no piping).
       (cd "$SCRIPT_DIR" && "$SCRIPT_DIR/scripts/timeout-tree.sh" 7200 $BOT_CODEX_BIN $CODEX_MODEL_FLAG --dangerously-bypass-approvals-and-sandbox "$AGENT_PROMPT") 200>&- || true
     else
-      # Non-interactive: stream JSONL events to the iteration log.
-      (cd "$SCRIPT_DIR" && "$SCRIPT_DIR/scripts/timeout-tree.sh" 7200 $BOT_CODEX_BIN exec $CODEX_MODEL_FLAG --dangerously-bypass-approvals-and-sandbox --json --skip-git-repo-check "$AGENT_PROMPT") 200>&- </dev/null 2>&1 | tee -a "$ITERATION_LOG" > "$TEMP_OUTPUT" || true
+      # Non-interactive: stream JSONL events to the iteration log; capture the
+      # final agent message separately for the completion check.
+      (cd "$SCRIPT_DIR" && "$SCRIPT_DIR/scripts/timeout-tree.sh" 7200 $BOT_CODEX_BIN exec $CODEX_MODEL_FLAG --dangerously-bypass-approvals-and-sandbox --json --skip-git-repo-check --output-last-message "$TEMP_LAST_MSG" "$AGENT_PROMPT") 200>&- </dev/null 2>&1 | tee -a "$ITERATION_LOG" > "$TEMP_OUTPUT" || true
     fi
   else
     CLAUDE_MODEL_FLAG=""
@@ -298,22 +302,29 @@ Additional context: $EXTRA_PROMPT"
   fi
 
   # Check for completion signal (print mode only — TUI mode skips this since user is watching).
-  # The <promise>COMPLETE</promise> marker is unique and intentional; a literal grep is safe
-  # across both Claude's stream-json and Codex's JSONL output formats.
+  # Match ONLY the agent's own final message, never raw tool/file output: the marker is
+  # documented verbatim in .claude/CLAUDE.md and docs/WORKFLOW.md, so grepping the full
+  # stream would false-positive the moment the agent reads one of those files.
   COMPLETION_CHECK=0
   if [ "$USE_TUI" != true ]; then
-    COMPLETION_CHECK=$(grep -c -F "<promise>COMPLETE</promise>" "$TEMP_OUTPUT" 2>/dev/null | tail -1)
+    if [ "$BOT_AGENT" = "codex" ]; then
+      # Codex's --output-last-message file holds just the final agent message.
+      COMPLETION_CHECK=$(grep -c -F "<promise>COMPLETE</promise>" "$TEMP_LAST_MSG" 2>/dev/null | tail -1)
+    else
+      # Claude stream-json: extract assistant text only, excluding tool_result events.
+      COMPLETION_CHECK=$(jq -r 'select(.type == "assistant") | .message.content[]? | select(.type == "text") | .text' "$TEMP_OUTPUT" 2>/dev/null | grep -c -F "<promise>COMPLETE</promise>" 2>/dev/null | tail -1)
+    fi
     COMPLETION_CHECK=$((COMPLETION_CHECK + 0))
   fi
   if [ "$COMPLETION_CHECK" -gt 0 ]; then
     echo ""
     echo "Agent completed all tasks!"
     echo "Completed at work iteration $work_iteration (loop $loop_count of $MAX_ITERATIONS)"
-    rm -f "$TEMP_OUTPUT"
+    rm -f "$TEMP_OUTPUT" "$TEMP_LAST_MSG"
     exit 0
   fi
 
-  rm -f "$TEMP_OUTPUT"
+  rm -f "$TEMP_OUTPUT" "$TEMP_LAST_MSG"
 
   echo "Loop $loop_count complete. Starting fresh context..."
   sleep 2
