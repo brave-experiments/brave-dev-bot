@@ -82,7 +82,7 @@ if [ "$WRITE_CONFIG" = true ]; then
   if [ -f "$CONFIG_FILE" ]; then
     PREV_TARGET_REPO=$(jq -r '.project.targetRepoPath // empty' "$CONFIG_FILE" 2>/dev/null || echo "")
   fi
-  prompt_required CFG_TARGET_REPO "Target repo path (e.g. src/brave, ../my-project): " "$PREV_TARGET_REPO"
+  prompt_required CFG_TARGET_REPO "Target repo path (e.g. ../src/brave, /abs/path/to/repo): " "$PREV_TARGET_REPO"
 
   echo ""
   echo "─── Bot Identity ───"
