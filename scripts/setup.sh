@@ -84,6 +84,13 @@ if [ "$WRITE_CONFIG" = true ]; then
   fi
   prompt_required CFG_TARGET_REPO "Target repo path (e.g. ../src/brave, /abs/path/to/repo): " "$PREV_TARGET_REPO"
 
+  PREV_OWNER_HANDLE=""
+  if [ -f "$CONFIG_FILE" ]; then
+    PREV_OWNER_HANDLE=$(jq -r '.project.botOwnerGithubHandle // empty' "$CONFIG_FILE" 2>/dev/null || echo "")
+  fi
+  read -p "Owner GitHub handle for stalled-review escalation (optional) [${PREV_OWNER_HANDLE:-}]: " CFG_OWNER_HANDLE
+  CFG_OWNER_HANDLE="${CFG_OWNER_HANDLE:-$PREV_OWNER_HANDLE}"
+
   echo ""
   echo "─── Bot Identity ───"
   prompt_required CFG_BOT_USER "GitHub username the bot commits as: " "$PREV_BOT_USER"
@@ -102,6 +109,7 @@ config = {
         'issueRepository': sys.argv[4],
         'defaultBranch': sys.argv[5],
         'targetRepoPath': sys.argv[6],
+        'botOwnerGithubHandle': sys.argv[11],
     },
     'bot': {
         'username': sys.argv[7],
@@ -129,7 +137,7 @@ with open(sys.argv[10], 'w') as f:
     f.write('\n')
 " "$CFG_PROJECT_NAME" "$CFG_ORG" "$CFG_PR_REPO" "$CFG_ISSUE_REPO" \
   "$CFG_DEFAULT_BRANCH" "$CFG_TARGET_REPO" "$CFG_BOT_USER" "$CFG_BOT_EMAIL" "$CFG_LABELS_RAW" \
-  "$CONFIG_FILE"
+  "$CONFIG_FILE" "$CFG_OWNER_HANDLE"
   echo ""
   echo "✓ Config written to $CONFIG_FILE"
   echo ""

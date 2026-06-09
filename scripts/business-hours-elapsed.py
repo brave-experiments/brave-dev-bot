@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
-"""Check if 24 business hours have elapsed since a given timestamp.
+"""Check if a threshold of business hours has elapsed since a given timestamp.
 
 Weekend days (Saturday and Sunday) are excluded from the count entirely.
 Only weekday (Mon-Fri) hours are counted.
 
-Usage: business-hours-elapsed.py <iso-timestamp>
+Usage: business-hours-elapsed.py <iso-timestamp> [threshold-hours]
+  threshold-hours defaults to 24.
 Prints the number of business hours elapsed.
-Exit code 0 if >= 24 business hours, 1 if not, 2 on error.
+Exit code 0 if >= threshold business hours, 1 if not, 2 on error.
 """
 
 import sys
@@ -37,9 +38,9 @@ def business_hours_between(ref, now):
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print("Usage: business-hours-elapsed.py <iso-timestamp>", file=sys.stderr)
+        print("Usage: business-hours-elapsed.py <iso-timestamp> [threshold-hours]", file=sys.stderr)
         print("Prints business hours elapsed (weekdays only).", file=sys.stderr)
-        print("Exits 0 if >= 24h, 1 if not.", file=sys.stderr)
+        print("Exits 0 if >= threshold (default 24h), 1 if not.", file=sys.stderr)
         sys.exit(2)
 
     try:
@@ -48,8 +49,16 @@ if __name__ == "__main__":
         print(f"Error: Invalid timestamp: {e}", file=sys.stderr)
         sys.exit(2)
 
+    threshold = 24.0
+    if len(sys.argv) >= 3:
+        try:
+            threshold = float(sys.argv[2])
+        except ValueError as e:
+            print(f"Error: Invalid threshold-hours: {e}", file=sys.stderr)
+            sys.exit(2)
+
     now = datetime.now(timezone.utc)
     hours = business_hours_between(ref, now)
 
     print(f"{hours:.1f}")
-    sys.exit(0 if hours >= 24.0 else 1)
+    sys.exit(0 if hours >= threshold else 1)

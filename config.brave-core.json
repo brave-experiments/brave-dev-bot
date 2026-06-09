@@ -5,7 +5,8 @@
     "prRepository": "brave/brave-core",
     "issueRepository": "brave/brave-browser",
     "defaultBranch": "master",
-    "targetRepoPath": "src/brave"
+    "targetRepoPath": "src/brave",
+    "botOwnerGithubHandle": "bbondy"
   },
   "bot": {
     "username": "netzenbot",

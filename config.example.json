@@ -5,7 +5,8 @@
     "prRepository": "my-org/my-project",
     "issueRepository": "my-org/my-project",
     "defaultBranch": "main",
-    "targetRepoPath": "../my-project"
+    "targetRepoPath": "../my-project",
+    "botOwnerGithubHandle": ""
   },
   "bot": {
     "username": "my-bot",

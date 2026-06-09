@@ -36,6 +36,7 @@ VALID_CURRENT_STATUSES = {
     "invalid": None,
     "set-activity": {"pushed"},
     "set-ping": {"pushed"},
+    "set-escalation": {"pushed"},
     "set-branch": {"pending", "committed"},
     "merged-check": {"merged"},
     "fix-status": None,  # any -> valid status
@@ -213,6 +214,20 @@ def handle_set_ping(story, args):
     changes = {}
     story["lastReviewerPing"] = now
     changes["lastReviewerPing"] = now
+    count = story.get("reviewerPingCount", 0) + 1
+    story["reviewerPingCount"] = count
+    changes["reviewerPingCount"] = count
+    return changes
+
+
+def handle_set_escalation(story, args):
+    now = now_iso()
+    changes = {}
+    story["lastOwnerEscalation"] = now
+    changes["lastOwnerEscalation"] = now
+    count = story.get("ownerEscalationCount", 0) + 1
+    story["ownerEscalationCount"] = count
+    changes["ownerEscalationCount"] = count
     return changes
 
 
@@ -280,6 +295,7 @@ HANDLER_MAP = {
     "invalid": handle_invalid,
     "set-activity": handle_set_activity,
     "set-ping": handle_set_ping,
+    "set-escalation": handle_set_escalation,
     "set-branch": handle_set_branch,
     "merged-check": handle_merged_check,
     "fix-status": handle_fix_status,
@@ -318,7 +334,10 @@ def main():
     p.add_argument("story_id")
     p.add_argument("--who", required=True, choices=["bot", "reviewer"])
 
-    p = sub.add_parser("set-ping", help="Set lastReviewerPing to now")
+    p = sub.add_parser("set-ping", help="Set lastReviewerPing to now and increment reviewerPingCount")
+    p.add_argument("story_id")
+
+    p = sub.add_parser("set-escalation", help="Set lastOwnerEscalation to now and increment ownerEscalationCount")
     p.add_argument("story_id")
 
     p = sub.add_parser("set-branch", help="Set branchName")

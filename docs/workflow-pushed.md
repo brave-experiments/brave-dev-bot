@@ -197,33 +197,38 @@ Before merging, verify ALL of the following:
   python3 $BOT_DIR/scripts/update-prd-status.py set-activity <story-id> --who bot
   ```
 
-**Check if reviewer reminder is needed (1 business day rule):**
+**Check if a reminder or escalation is needed (1 business day rule):**
 
-Reminders use **business hours only** — weekends (Saturday and Sunday) do not count toward the 24-hour threshold. Use the helper script to check:
+Reminders use **business hours only** — weekends (Saturday and Sunday) do not count toward the threshold. The bot posts at most **2 reminders on the PR itself** (`MAX_PR_PINGS`). After that it stops nagging reviewers on the PR and **escalates to the bot owner** so the owner can chase the reviewer directly (e.g. relay on Slack). Escalation uses two best-effort channels: a Signal push **and** a GitHub comment @-mentioning the owner (`project.botOwnerGithubHandle`) — so escalation still reaches the owner even when Signal isn't set up. This prevents the "7 pings over many days with no response" problem — the owner is looped in after ~2 business days instead.
+
+Use the helper script to check elapsed business hours (optional second arg overrides the 24h threshold):
 
 ```bash
-python3 $BOT_DIR/scripts/business-hours-elapsed.py <reference-timestamp>
-# Exit code 0 = 24+ business hours elapsed (send reminder)
-# Exit code 1 = less than 24 business hours (skip reminder)
+python3 $BOT_DIR/scripts/business-hours-elapsed.py <reference-timestamp> [threshold-hours]
+# Exit code 0 = threshold+ business hours elapsed (action due)
+# Exit code 1 = less than threshold business hours (skip)
 # Prints elapsed business hours for logging
 ```
 
-1. **Get the reference timestamp:**
-   - If `lastReviewerPing` exists in the story's prd.json data, use that as the reference
-   - Otherwise, use the last push timestamp from filtered PR data (`timestamp_analysis.latest_push_timestamp`)
+1. **Read the ping/escalation state from the story's prd.json data:**
+   - `reviewerPingCount` — number of reminders already posted on the PR (default 0)
+   - `lastReviewerPing` — timestamp of the last PR reminder (may be absent)
+   - `lastOwnerEscalation` — timestamp of the last escalation to the owner (Signal + GitHub @mention; may be absent)
 
-2. **Check if 24 business hours have elapsed:**
-   ```bash
-   python3 $BOT_DIR/scripts/business-hours-elapsed.py "<reference-timestamp>"
-   ```
-   - If exit code is 1 (less than 24 business hours), skip the reminder
+2. **Decide whether to ping the PR or escalate to the owner, based on `reviewerPingCount`:**
 
-3. **If 24+ business hours have elapsed (exit code 0):**
-   - Get the list of requested reviewers:
+   **Case A — `reviewerPingCount < 2` (still allowed to remind on the PR):**
+   - Reference timestamp = `lastReviewerPing` if it exists, otherwise the last push timestamp (`timestamp_analysis.latest_push_timestamp`)
+   - Check if 24 business hours have elapsed:
+     ```bash
+     python3 $BOT_DIR/scripts/business-hours-elapsed.py "<reference-timestamp>"
+     ```
+   - If exit code is 1 (less than 24 business hours), skip — nothing due.
+   - If exit code is 0, get the requested reviewers:
      ```bash
      gh pr view <pr-number> --json reviewRequests -q '.reviewRequests[].login'
      ```
-   - If there are reviewers assigned, post a polite reminder:
+   - If reviewers are assigned, post a polite reminder on the PR:
      ```bash
      gh pr comment <pr-number> --body "$(cat <<'EOF'
      👋 Friendly reminder: This PR has been waiting for review for over 1 business day.
@@ -234,14 +239,51 @@ python3 $BOT_DIR/scripts/business-hours-elapsed.py <reference-timestamp>
      EOF
      )"
      ```
-   - Update reviewer ping timestamp:
+   - Update reviewer ping state (increments `reviewerPingCount`):
      ```bash
      python3 $BOT_DIR/scripts/update-prd-status.py set-ping <story-id>
      ```
-   - Document the ping in progress.txt (include the elapsed business hours from script output)
+   - If no reviewers are assigned, skip (nothing to ping).
+   - Document the ping in progress.txt (include the elapsed business hours from script output and the new ping count).
 
-4. **If less than 24 business hours have passed OR no reviewers are assigned:**
-   - Skip the reminder (normal status check)
+   **Case B — `reviewerPingCount >= 2` (PR reminders exhausted, escalate to owner):**
+   - Do **NOT** post another nagging reminder aimed at the reviewers. They have already been pinged twice.
+   - Reference timestamp = `lastOwnerEscalation` if it exists, otherwise `lastReviewerPing`.
+   - Escalate at most once every **48 business hours** to avoid spamming the owner:
+     ```bash
+     python3 $BOT_DIR/scripts/business-hours-elapsed.py "<reference-timestamp>" 48
+     ```
+   - If exit code is 1 (less than 48 business hours since the last escalation), skip — nothing due.
+   - If exit code is 0, escalate to the bot owner over **both** available channels (each is best-effort and independently no-ops if not configured), then record the escalation. Get the requested reviewers first:
+     ```bash
+     REVIEWERS=$(gh pr view <pr-number> --json reviewRequests -q '[.reviewRequests[].login] | join(", ")')
+     ```
+
+     **Channel 1 — Signal push** (no-op if Signal env vars / signal-cli are not configured):
+     ```bash
+     $BOT_DIR/scripts/signal-notify.sh "⏳ Review stalled: PR #<pr-number> - <title> has had 2 reminders with no review. Requested reviewers: ${REVIEWERS:-none}. Can you nudge them? https://github.com/$PR_REPO/pull/<pr-number>"
+     ```
+
+     **Channel 2 — GitHub @mention** (the durable fallback; works even when Signal is not set up). Read `project.botOwnerGithubHandle` from the bot config provided in the prompt:
+       - **If `botOwnerGithubHandle` is set** (non-empty), post a comment on the PR that @-mentions the owner (not the reviewers) asking them to chase the review:
+         ```bash
+         gh pr comment <pr-number> --body "$(cat <<'EOF'
+         @<botOwnerGithubHandle> This PR has been waiting on review for a while — 2 reminders to the requested reviewers (REVIEWERS_PLACEHOLDER) have gone unanswered. Could you help chase it up? Thanks!
+
+         (Automated escalation: reviewers were already reminded twice with no response.)
+         EOF
+         )"
+         ```
+         Replace `<botOwnerGithubHandle>` with the configured handle and `REVIEWERS_PLACEHOLDER` with `$REVIEWERS` (or "none assigned"). This guarantees the owner is notified via GitHub even when Signal is unavailable.
+       - **If `botOwnerGithubHandle` is empty/absent**, skip the GitHub @mention. Signal is then the only escalation channel; if Signal is also unconfigured, the escalation cannot reach anyone — note this loudly in progress.txt as a misconfiguration so the owner knows escalation is effectively disabled.
+   - Record the escalation (increments `ownerEscalationCount`):
+     ```bash
+     python3 $BOT_DIR/scripts/update-prd-status.py set-escalation <story-id>
+     ```
+   - Document the escalation in progress.txt (include elapsed business hours and which channels actually notified the owner — Signal, GitHub @mention, or both).
+
+3. **If nothing is due** (threshold not reached, or no reviewers assigned in Case A):
+   - Skip the reminder (normal status check).
 
 - Append to `$BOT_DIR/data/progress.txt` documenting the status check (no new comments, and whether reminder was sent)
 - **END THE ITERATION** - Stop processing, don't continue to the next story
