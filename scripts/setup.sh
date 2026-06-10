@@ -114,8 +114,11 @@ config = {
     'bot': {
         'username': sys.argv[7],
         'email': sys.argv[8],
+        'agent': 'claude',
         'claudeModel': 'opus',
         'claudeBin': None,
+        'codexModel': None,
+        'codexBin': None,
     },
     'labels': {
         'prLabels': ['ai-generated'],

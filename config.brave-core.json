@@ -11,8 +11,11 @@
   "bot": {
     "username": "netzenbot",
     "email": "netzenbot@agentmail.to",
+    "agent": "claude",
     "claudeModel": "opus",
-    "claudeBin": null
+    "claudeBin": null,
+    "codexModel": null,
+    "codexBin": null
   },
   "labels": {
     "prLabels": ["ai-generated"],
