@@ -1,12 +1,15 @@
 #!/bin/bash
 # Long-running AI agent loop
-# Usage: ./run.sh [max_iterations] [tui] [--agent claude|codex] [extra_prompt_info...]
+# Usage: ./run.sh [max_iterations] [tui] [--agent claude|codex] [--model model] [extra_prompt_info...]
 #
 # Agent selection precedence (highest wins):
 #   1. --agent <name> CLI flag
 #   2. BOT_AGENT env var
 #   3. bot.agent in config.json
 #   4. "claude" default
+#
+# Model selection:
+#   --model <name> overrides bot.claudeModel or bot.codexModel for the selected agent.
 
 set -e
 
@@ -22,12 +25,19 @@ USE_TUI=false
 EXTRA_PROMPT=""
 PAST_TUI=false
 CLI_AGENT=""
+CLI_MODEL=""
 EXPECT_AGENT_VALUE=false
+EXPECT_MODEL_VALUE=false
 
 for arg in "$@"; do
   if [ "$EXPECT_AGENT_VALUE" = true ]; then
     CLI_AGENT="$arg"
     EXPECT_AGENT_VALUE=false
+    continue
+  fi
+  if [ "$EXPECT_MODEL_VALUE" = true ]; then
+    CLI_MODEL="$arg"
+    EXPECT_MODEL_VALUE=false
     continue
   fi
   # --agent is recognized regardless of position (before or after `tui`).
@@ -36,6 +46,12 @@ for arg in "$@"; do
     continue
   elif [[ "$arg" == --agent=* ]]; then
     CLI_AGENT="${arg#--agent=}"
+    continue
+  elif [[ "$arg" == "--model" ]]; then
+    EXPECT_MODEL_VALUE=true
+    continue
+  elif [[ "$arg" == --model=* ]]; then
+    CLI_MODEL="${arg#--model=}"
     continue
   fi
   if [ "$PAST_TUI" = true ]; then
@@ -52,6 +68,16 @@ for arg in "$@"; do
     PAST_TUI=true
   fi
 done
+
+if [ "$EXPECT_AGENT_VALUE" = true ]; then
+  echo "Error: --agent requires a value (expected: claude | codex)" >&2
+  exit 1
+fi
+if [ "$EXPECT_MODEL_VALUE" = true ]; then
+  echo "Error: --model requires a value" >&2
+  exit 1
+fi
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/scripts/lib/load-config.sh"
 
@@ -66,6 +92,13 @@ case "$BOT_AGENT" in
     exit 1
     ;;
 esac
+if [ -n "$CLI_MODEL" ]; then
+  if [ "$BOT_AGENT" = "codex" ]; then
+    BOT_CODEX_MODEL="$CLI_MODEL"
+  else
+    BOT_CLAUDE_MODEL="$CLI_MODEL"
+  fi
+fi
 
 PRD_FILE="$SCRIPT_DIR/data/prd.json"
 PROGRESS_FILE="$SCRIPT_DIR/data/progress.txt"
