@@ -67,6 +67,7 @@ If ALL stories are merged, skipped, or invalid (no active stories remain), reply
 - **NO ATTRIBUTION** - Never add "Co-Authored-By", "Generated with Claude Code", or any AI attribution to commits or PR descriptions
 - **NO FORCE MERGE** - Never ask for admin privileges to force merge PRs. Never merge PRs yourself — wait for the maintainer/reviewer to merge
 - **SCOPE CHANGES TO YOUR PR ONLY** - All code changes must be confined to the current story's feature branch and PR. Do not make changes to other branches, other PRs, or unrelated code outside the scope of the current task, unless presubmit or format requires the changes
+- **NEVER HALLUCINATE @-MENTIONS** - Never @-mention, tag, or ping a person in any PR, issue, or comment unless that exact GitHub login comes from a verified source for *this* PR/issue (e.g. `gh pr view --json reviewRequests`/`author`/`assignees`, CODEOWNERS, or a handle the user explicitly gave you). Do not invent, guess, or pull a username from memory, the issue body, or commit history. If you cannot verify a handle is a real, relevant person, tag no one and post no mention
 
 ## First Steps for Each Iteration
 

@@ -228,7 +228,9 @@ python3 $BOT_DIR/scripts/business-hours-elapsed.py <reference-timestamp> [thresh
      ```bash
      gh pr view <pr-number> --json reviewRequests -q '.reviewRequests[].login'
      ```
-   - If reviewers are assigned, post a polite reminder on the PR:
+   - **NEVER hallucinate, guess, or invent a username to @-mention.** The ONLY handles you may tag are the exact logins printed by the command above. `@reviewer1 @reviewer2` in the template below are placeholders — replace them verbatim with the real logins from the command output, prefixing each with `@`. Do not add any name from memory, the issue body, commit history, or anywhere else.
+   - **If the command returns no logins (empty output), do NOT post a reminder and do NOT @-mention anyone.** Skip — there is nothing to ping. Tagging the wrong or a non-existent person spams real users and breaks trust.
+   - If reviewers are assigned, post a polite reminder on the PR using only those logins:
      ```bash
      gh pr comment <pr-number> --body "$(cat <<'EOF'
      👋 Friendly reminder: This PR has been waiting for review for over 1 business day.
