@@ -17,6 +17,15 @@ APPEND to $BOT_DIR/data/progress.txt (never replace, always append).
 - **Test Results** (REQUIRED):
   - [List all acceptance criteria tests and their results]
   - All tests MUST pass before transitioning to "committed"
+- **Verification** (REQUIRED for every story):
+  - Testability: [browser-verifiable / automated-test-only / not-verifiable-here] — [one-line justification]
+  - Test plan: [preconditions; the concrete steps that exercise the behavior — URLs/elements for browser, or the tests/commands for automated-test-only]
+  - Expected: [the behavior the story specifies]
+  - Observed: [what actually happened — browser observations for the browser path, or test results; "N/A — not verifiable here" with the reason for not-verifiable-here]
+  - Screenshots: [paths to screenshots captured during browser verification, or "none"]
+  - Verdict: [PASS / FAIL / NOT-VERIFIABLE-HERE]
+    - PASS required before transitioning to "committed" for browser-verifiable and automated-test-only stories.
+    - NOT-VERIFIABLE-HERE is allowed only for not-verifiable-here (or browser-verifiable when the debug browser was unavailable this run); it MUST state why and that manual verification is still needed.
 - **Learnings for future iterations:**
   - Patterns discovered
   - Gotchas encountered
