@@ -176,6 +176,25 @@
 
    See [testing-requirements.md](./testing-requirements.md) for complete test execution requirements.
 
+6b. **BROWSER VERIFICATION** (only when the story sets `"browserVerify": true`):
+
+   When a story opts in via `"browserVerify": true`, `run.sh` launches a remote-debuggable
+   dev Brave on `http://127.0.0.1:9223` before this session starts, and the `chrome-devtools`
+   MCP is attached to it. The prompt for this iteration will say so explicitly. When that is the
+   case, you MUST functionally verify the change in the real browser — automated tests alone are
+   not sufficient.
+
+   **Invoke the `browser-verify` skill** — it is the canonical procedure: define a test plan,
+   drive the browser via the chrome-devtools MCP, judge PASS/FAIL, and record the **Browser
+   Verification** block in the `pending → committed` progress.txt template (see
+   [progress-reporting.md](./progress-reporting.md)). The Verdict must be PASS before transitioning
+   to "committed"; a FAIL means the story is NOT done.
+
+   Notes:
+   - The browser is a throwaway profile; do not rely on existing logins or state.
+   - If the prompt does NOT mention browser verification (e.g. the dev binary was unavailable and
+     `run.sh` logged a warning), skip this step and rely on the acceptance-criteria tests.
+
 7. **CHROMIUM TEST DETECTION** (for filter file modifications only):
 
    If your fix involves adding a test to a filter file (e.g., `test/filters/browser_tests.filter`), determine if it's a Chromium test:

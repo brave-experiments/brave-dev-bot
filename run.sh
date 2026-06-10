@@ -116,8 +116,14 @@ if [[ "$GIT_REPO" != /* ]]; then
   GIT_REPO="$PARENT_ROOT/$GIT_REPO"
 fi
 
+# Helper that manages the throwaway remote-debuggable Brave for browser verification
+DEBUG_BROWSER_SCRIPT="$SCRIPT_DIR/scripts/launch-brave-debug.sh"
+
 # Function to switch back to master branch on exit
 cleanup_and_return_to_master() {
+  # Best-effort: tear down any debug browser this run started so we never leak it.
+  "$DEBUG_BROWSER_SCRIPT" stop >/dev/null 2>&1 || true
+
   if [ -n "$GIT_REPO" ] && [ -d "$GIT_REPO/.git" ]; then
     echo ""
     echo "Switching back to $BOT_DEFAULT_BRANCH branch in $GIT_REPO..."
@@ -219,6 +225,23 @@ while [ $loop_count -lt $MAX_ITERATIONS ]; do
   STORY_DETAILS=$(echo "$TASK_JSON" | jq -c '.storyDetails')
   echo "Selected: $STORY_ID - $STORY_TITLE (status: $STORY_STATUS, tier: $TIER_NAME)"
 
+  # Browser verification: a story opts in with "browserVerify": true. When set,
+  # bring up a remote-debuggable Brave on 9223 BEFORE the Claude session starts,
+  # so chrome-devtools-mcp (which attaches at session start) can drive it.
+  # Best-effort: if the browser can't start, log it and run without verification
+  # rather than failing the whole iteration.
+  BROWSER_VERIFY=$(echo "$STORY_DETAILS" | jq -r '.browserVerify // false' 2>/dev/null || echo "false")
+  BROWSER_STARTED=false
+  if [ "$BROWSER_VERIFY" = "true" ]; then
+    echo "Story opts into browser verification — starting debug Brave on 9223..."
+    if "$DEBUG_BROWSER_SCRIPT" start >>"$ITERATION_LOG" 2>&1; then
+      BROWSER_STARTED=true
+      echo "Debug Brave is up; chrome-devtools-mcp can attach."
+    else
+      echo "Warning: could not start debug Brave — running WITHOUT browser verification."
+    fi
+  fi
+
   # Task confirmed — proceed with iteration setup
   # Store the current iteration log path in run-state.json
   TMP_RUN_STATE=$(mktemp)
@@ -293,6 +316,11 @@ Nightly version: $NIGHTLY_VERSION (use this for milestone names like '$NIGHTLY_V
 
 Additional context: $EXTRA_PROMPT"
   fi
+  if [ "$BROWSER_STARTED" = "true" ]; then
+    AGENT_PROMPT="$AGENT_PROMPT
+
+Browser verification is ENABLED for this story. A remote-debuggable build of the locally-built dev Brave is running at http://127.0.0.1:9223 and the chrome-devtools MCP is attached to it. Before you mark development complete, you MUST functionally verify the change in the browser by invoking the browser-verify skill, which defines a test plan, drives the browser via the chrome-devtools MCP, and records a PASS/FAIL verdict in the Browser Verification block of the pending → committed progress.txt template. The Verdict must be PASS before committing — if the feature does not behave as specified, the story is NOT done."
+  fi
 
   # Log the prompt to the iteration log so it can be audited later
   if [ "$USE_TUI" != true ]; then
@@ -326,6 +354,13 @@ Additional context: $EXTRA_PROMPT"
     else
       (cd "$SCRIPT_DIR" && "$SCRIPT_DIR/scripts/timeout-tree.sh" 7200 $BOT_CLAUDE_BIN $CLAUDE_MODEL_FLAG --dangerously-skip-permissions --print --verbose --output-format stream-json --session-id "$SESSION_ID" "$AGENT_PROMPT") 200>&- </dev/null 2>&1 | tee -a "$ITERATION_LOG" > "$TEMP_OUTPUT" || true
     fi
+  fi
+
+  # Tear down the debug browser if we started one for this iteration (the exit
+  # trap also calls stop, but doing it here frees port 9223 between iterations).
+  if [ "$BROWSER_STARTED" = "true" ]; then
+    "$DEBUG_BROWSER_SCRIPT" stop >/dev/null 2>&1 || true
+    BROWSER_STARTED=false
   fi
 
   if [ "$BOT_AGENT" = "claude" ]; then
