@@ -213,7 +213,18 @@ If changes were made to best practices files, commit them and create a PR so the
    git add docs/best_practices.md docs/best-practices/
    git commit -m "Update best practices from upstream Chromium docs"
    ```
-4. **Push and create a PR**:
+4. **Run format and presubmit**, then amend any resulting changes into the commit. Both must pass before the PR is created:
+   ```bash
+   npm run format
+   npm run presubmit
+   ```
+   If either command modifies files (e.g. formatting fixes), stage and amend them into the commit:
+   ```bash
+   git add -A
+   git commit --amend --no-edit
+   ```
+   If presubmit reports errors that aren't auto-fixed, resolve them and amend before proceeding. Do not create the PR until `npm run presubmit` passes cleanly.
+5. **Push and create a PR**:
    ```bash
    git push -u origin HEAD
    gh pr create --title "Update best practices from upstream Chromium docs" --body "$(cat <<'EOF'
@@ -225,7 +236,7 @@ If changes were made to best practices files, commit them and create a PR so the
    EOF
    )"
    ```
-5. **Return to the bot directory**:
+6. **Return to the bot directory**:
    ```bash
    cd $BOT_DIR
    ```
