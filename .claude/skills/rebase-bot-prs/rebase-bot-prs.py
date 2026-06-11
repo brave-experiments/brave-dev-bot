@@ -2,9 +2,11 @@
 """Rebase all open PRs by the bot account onto the upstream default branch.
 
 Reads the bot config, fetches the upstream remote, then for every open PR
-authored by the bot (whose branch lives in the PR repo) checks out the branch,
-rebases it onto <upstream>/<defaultBranch>, and force-pushes with
---force-with-lease.
+authored by the bot checks out its head branch, rebases it onto
+<upstream>/<defaultBranch>, and force-pushes with --force-with-lease. The branch
+may live in the PR repo directly or in a fork (e.g. the bot's own fork); the
+script resolves whichever configured remote hosts the branch and pushes there.
+A PR is skipped only when no configured remote points at its head repo.
 
 Default mode is a dry-run plan. Pass --execute to actually rebase and push.
 
@@ -84,10 +86,24 @@ def list_bot_prs(pr_repo, bot):
         "--repo", pr_repo,
         "--author", bot,
         "--state", "open",
-        "--json", "number,headRefName,title,isCrossRepository",
+        "--json", "number,headRefName,title,isCrossRepository,headRepositoryOwner,headRepository",
         "--limit", "200",
     ])
     return json.loads(out)
+
+
+def head_repo_slug(pr, pr_repo):
+    """`owner/name` of the repo the PR branch actually lives in.
+
+    For a same-repo PR this is the PR repo; for a fork PR it is the fork
+    (e.g. `netzenbot/brave-core`). Falls back to the PR repo if gh omits the
+    head repo fields.
+    """
+    owner = (pr.get("headRepositoryOwner") or {}).get("login")
+    name = (pr.get("headRepository") or {}).get("name")
+    if owner and name:
+        return f"{owner}/{name}"
+    return pr_repo
 
 
 def working_tree_clean(target):
@@ -117,11 +133,9 @@ def main():
         sys.exit(f"Target repo not found at {target}")
 
     upstream = resolve_upstream_remote(target, pr_repo)
-    pr_remote = resolve_remote_for_repo(target, pr_repo) or upstream
 
     print(f"Target repo:     {target}")
     print(f"Upstream remote: {upstream} (rebase onto {upstream}/{base_branch})")
-    print(f"Push remote:     {pr_remote}")
     print(f"PR repo:         {pr_repo}")
     print(f"Bot:             {cfg['bot']}")
     print()
@@ -130,27 +144,37 @@ def main():
     if only:
         prs = [p for p in prs if p["number"] in only]
 
-    skipped_forks = [p for p in prs if p["isCrossRepository"]]
-    prs = [p for p in prs if not p["isCrossRepository"]]
+    # A PR branch may live in the PR repo directly or in a fork. Resolve the
+    # remote that actually hosts each branch and push there. Skip a PR only when
+    # no configured remote points at its head repo (then it genuinely can't be
+    # pushed from this checkout).
+    eligible = []  # (pr, push_remote)
+    skipped = []   # (pr, reason)
+    for p in prs:
+        slug = head_repo_slug(p, pr_repo)
+        remote = resolve_remote_for_repo(target, slug)
+        if remote:
+            eligible.append((p, remote))
+        else:
+            skipped.append((p, f"no remote points at {slug} — add one with `git remote add`"))
 
-    for p in skipped_forks:
-        print(f"SKIP (fork branch, cannot push): #{p['number']} {p['title']}")
+    for p, reason in skipped:
+        print(f"SKIP ({reason}): #{p['number']} {p['title']}")
 
-    if not prs:
+    if not eligible:
         print("No eligible open bot PRs to rebase.")
         return
 
-    # Always fetch upstream (and push remote) so master and branch refs are current.
-    print(f"Fetching {upstream} ...")
-    run(["git", "fetch", upstream], cwd=target, capture=False)
-    if pr_remote != upstream:
-        print(f"Fetching {pr_remote} ...")
-        run(["git", "fetch", pr_remote], cwd=target, capture=False)
+    # Always fetch upstream and every push remote so master and branch refs are current.
+    fetch_remotes = [upstream] + sorted({r for _, r in eligible if r != upstream})
+    for r in fetch_remotes:
+        print(f"Fetching {r} ...")
+        run(["git", "fetch", r], cwd=target, capture=False)
     print()
 
-    print(f"{'Will rebase' if not execute else 'Rebasing'} {len(prs)} PR(s) onto {upstream}/{base_branch}:")
-    for p in prs:
-        print(f"  #{p['number']}  {p['headRefName']}  ({p['title']})")
+    print(f"{'Will rebase' if not execute else 'Rebasing'} {len(eligible)} PR(s) onto {upstream}/{base_branch}:")
+    for p, remote in eligible:
+        print(f"  #{p['number']}  {p['headRefName']}  -> push to {remote}  ({p['title']})")
     print()
 
     if not execute:
@@ -167,10 +191,10 @@ def main():
     results = []  # (number, branch, status, detail)
 
     try:
-        for p in prs:
+        for p, pr_remote in eligible:
             num = p["number"]
             branch = p["headRefName"]
-            print(f"\n=== PR #{num}  {branch} ===")
+            print(f"\n=== PR #{num}  {branch} (push: {pr_remote}) ===")
             try:
                 # Point a local branch at the remote head and rebase it.
                 run(["git", "checkout", "-B", branch, f"{pr_remote}/{branch}"], cwd=target, capture=False)
@@ -202,8 +226,8 @@ def main():
                 print(f"  PUSH FAILED: {detail}")
                 continue
 
-            results.append((num, branch, "REBASED", "force-pushed"))
-            print("  REBASED and force-pushed.")
+            results.append((num, branch, "REBASED", f"force-pushed to {pr_remote}"))
+            print(f"  REBASED and force-pushed to {pr_remote}.")
     finally:
         print(f"\nRestoring original branch: {original}")
         run(["git", "checkout", original], cwd=target, check=False, capture=False)

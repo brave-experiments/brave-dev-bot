@@ -16,12 +16,18 @@ arguments are required.
 
 ## Remote resolution
 
-The project docs call the canonical remote `upstream`, but a given checkout may
-only have `origin` pointing at the PR repo. The script resolves this
-automatically: it prefers a literal `upstream` remote, otherwise uses whichever
-remote's URL matches `prRepository`, otherwise `origin`. It rebases onto
-`<resolved-remote>/<defaultBranch>` and force-pushes branches to the remote that
-hosts them.
+**Rebase base.** The project docs call the canonical remote `upstream`, but a
+given checkout may only have `origin` pointing at the PR repo. The script
+resolves the rebase base automatically: it prefers a literal `upstream` remote,
+otherwise uses whichever remote's URL matches `prRepository`, otherwise
+`origin`, and rebases onto `<resolved-remote>/<defaultBranch>`.
+
+**Push target (per PR).** A bot PR's head branch may live in the PR repo
+directly or in a fork (e.g. the bot's own `netzenbot/brave-core` fork). For each
+PR the script reads the head repo from GitHub (`headRepositoryOwner/headRepository`)
+and pushes to whichever configured remote URL points at that repo. A PR is
+skipped only when no configured remote points at its head repo — add one with
+`git remote add` and re-run.
 
 ## Safety properties
 
@@ -34,8 +40,9 @@ hosts them.
   handling.
 - **`--force-with-lease`**, never a bare `--force`, so a branch that moved on the
   remote since the fetch is not clobbered.
-- **Fork PRs skipped.** Cross-repository (fork) PR branches can't be pushed to
-  and are listed as skipped.
+- **Fork PRs handled.** A PR branch in a fork is rebased and force-pushed to the
+  remote that hosts the fork (resolved per PR). Only PRs whose head repo has no
+  configured remote are skipped and reported.
 - **Original branch restored** at the end (even on error).
 
 ## Steps
