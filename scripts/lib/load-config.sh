@@ -52,6 +52,10 @@ BOT_CODEX_BIN=$(bot_config '.bot.codexBin')
 
 BOT_BP_DOCS_DIR=$(bot_config '.bestPractices.docsDir')
 
+# Optional: explicit path to the built Brave binary for browser verification.
+# Empty by default — launch-brave-debug.sh falls back to auto-detection.
+BOT_BRAVE_BIN=$(bot_config '.browserVerify.braveBinary')
+
 # Validate required fields
 _missing=""
 [ -z "$BOT_PROJECT_NAME" ] && _missing="$_missing project.name"
@@ -87,4 +91,5 @@ export BOT_DIR BOT_CONFIG_FILE
 export BOT_PROJECT_NAME BOT_ORG BOT_PR_REPO BOT_ISSUE_REPO BOT_DEFAULT_BRANCH BOT_TARGET_REPO_PATH
 export BOT_USERNAME BOT_EMAIL
 export BOT_AGENT BOT_CLAUDE_MODEL BOT_CLAUDE_BIN BOT_CODEX_MODEL BOT_CODEX_BIN
+export BOT_BRAVE_BIN
 export BOT_BP_DOCS_DIR

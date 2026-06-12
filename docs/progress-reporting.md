@@ -17,6 +17,12 @@ APPEND to $BOT_DIR/data/progress.txt (never replace, always append).
 - **Test Results** (REQUIRED):
   - [List all acceptance criteria tests and their results]
   - All tests MUST pass before transitioning to "committed"
+- **Browser Verification** (REQUIRED only if story has `browserVerify: true`):
+  - Test plan: [the concrete steps to observe the behavior — URLs visited, elements interacted with]
+  - Expected: [the behavior the story specifies]
+  - Observed: [what actually happened when driving the browser via chrome-devtools MCP]
+  - Screenshots: [paths to screenshots captured during verification, or "none"]
+  - Verdict: [PASS / FAIL] — must be PASS before transitioning to "committed"
 - **Learnings for future iterations:**
   - Patterns discovered
   - Gotchas encountered
