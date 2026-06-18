@@ -14,15 +14,23 @@
 
 3. Push the branch: `git push -u origin <branch-name>`
 
-4. **Scan other open issues assigned to the bot for overlap with this fix:**
+4. **Scan other open issues for overlap with this fix:**
 
-   Before writing the PR, check whether this same fix resolves (or is substantially similar to) other issues currently assigned to the bot account. This avoids duplicate PRs and surfaces issues that can be closed together.
+   Before writing the PR, check whether this same fix resolves (or is substantially similar to) other open issues. This avoids duplicate PRs and surfaces issues that can be closed together. Check both issues assigned to the bot AND a broader search of the issue repo — a related issue may not be assigned to the bot account.
 
    ```bash
-   # List other open issues assigned to the bot account
+   # 1. Open issues assigned to the bot account
    gh issue list --repo $ISSUE_REPO --assignee @me --state open \
      --json number,title,labels --limit 100
+
+   # 2. Broader search of the issue repo for related open issues.
+   #    Search by the key terms of THIS fix — e.g. the test/suite name,
+   #    the file or component, or the crash/flake signature.
+   gh issue list --repo $ISSUE_REPO --state open --search "<key terms>" \
+     --json number,title,labels --limit 50
    ```
+
+   Pick search terms from the fix itself: the failing test or suite name, the source file or component, or the crash/flake signature. Skim the results for genuine matches; don't over-broaden the query.
 
    For each candidate issue (excluding the one this story already addresses), decide:
 
