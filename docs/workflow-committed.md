@@ -14,7 +14,25 @@
 
 3. Push the branch: `git push -u origin <branch-name>`
 
-4. Create PR using gh CLI with structured format:
+4. **Scan other open issues assigned to the bot for overlap with this fix:**
+
+   Before writing the PR, check whether this same fix resolves (or is substantially similar to) other issues currently assigned to the bot account. This avoids duplicate PRs and surfaces issues that can be closed together.
+
+   ```bash
+   # List other open issues assigned to the bot account
+   gh issue list --repo $ISSUE_REPO --assignee @me --state open \
+     --json number,title,labels --limit 100
+   ```
+
+   For each candidate issue (excluding the one this story already addresses), decide:
+
+   - **Same fix closes it too** — the change in this PR also resolves the other issue (e.g. same root cause, same test, same flaky target). Add an additional `Closes #<other-issue>` line to the PR body so it is closed on merge, and apply the same labels to that issue in step 7.
+   - **Substantially similar / should be combined** — the other issue is not closed by the current diff but is close enough that fixing both together is clearly better than two separate PRs (e.g. adjacent tests in the same file, same subsystem, same disable mechanism). Expand the current branch to cover it, note it in the PR Summary, and add a `Closes #<other-issue>` line. Keep the combined scope coherent — do not bundle unrelated fixes just because they are assigned to the same account.
+   - **Unrelated** — leave it alone.
+
+   When in doubt, keep PRs separate. Only combine when the fixes genuinely share a root cause or change the same code, and the combined PR stays reviewable. Record any issues you decide to combine or co-close in `$BOT_DIR/data/progress.txt`.
+
+5. Create PR using gh CLI with structured format:
 
    **SECURITY NOTE**: If this PR fixes a security-sensitive issue, use discretion in the title and description. See [SECURITY.md](../SECURITY.md#public-security-messaging) for detailed guidance on avoiding detailed vulnerability disclosure in public messages.
 
@@ -61,9 +79,10 @@ EOF
    - Keep the last checkbox "CI passes cleanly" unchecked
    - Do NOT add "Generated with Claude Code" or similar attribution
    - Capture the PR number from the output
-   - **The `--label` flags above are an example for test fixes.** Adjust labels based on the rules in step 6 below. The `ai-generated` label is ALWAYS required.
+   - **The `--label` flags above are an example for test fixes.** Adjust labels based on the rules in step 7 below. The `ai-generated` label is ALWAYS required.
+   - If step 4 identified other issues this fix also closes, add a `Closes #<number>` line for each one to the PR body (in addition to the issue this story addresses).
 
-5. **Assign the PR to yourself (the bot account):**
+6. **Assign the PR to yourself (the bot account):**
 
    ```bash
    gh pr edit <pr-number> --add-assignee @me
@@ -71,9 +90,9 @@ EOF
 
    This makes it clear who is responsible for the PR and helps with tracking.
 
-6. **Set appropriate labels on the PR and linked issues:**
+7. **Set appropriate labels on the PR and linked issues:**
 
-   Labels should have been applied during PR creation in step 4 via `--label` flags. If any labels were missed, add them now:
+   Labels should have been applied during PR creation in step 5 via `--label` flags. If any labels were missed, add them now:
 
    ```bash
    # Add missing labels to PR (if not already applied during creation)
@@ -97,7 +116,7 @@ EOF
    - `release-notes/exclude` — add to both PR and linked issue for changes typical users wouldn't care about (code cleanup, refactors, internal tooling, etc.)
    - `QA/No` — use judgment based on whether manual QA testing is needed
 
-7. **If push or PR creation succeeds:**
+8. **If push or PR creation succeeds:**
    - Update the PRD status:
      ```bash
      python3 $BOT_DIR/scripts/update-prd-status.py pushed <story-id> --pr-number <number>
@@ -109,7 +128,7 @@ EOF
      ```
    - **END THE ITERATION** - Stop processing
 
-8. **If push or PR creation fails:**
+9. **If push or PR creation fails:**
    - DO NOT update status in prd.json (keep as "committed")
    - Document failure in `$BOT_DIR/data/progress.txt`
    - **END THE ITERATION** - Stop processing
