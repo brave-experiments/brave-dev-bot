@@ -54,6 +54,8 @@
      --label "QA/No" \
      --label "release-notes/exclude" \
      --body "$(cat <<'EOF'
+Closes $ISSUE_REPO#<issue-number>
+
 ## Summary
 [Brief description of what this PR does and why]
 
@@ -82,13 +84,14 @@ EOF
    ```
 
    **IMPORTANT**:
+   - **The `Closes` line MUST be the very first line of the PR body**, above `## Summary`. Use the fully-qualified cross-repo form `Closes $ISSUE_REPO#<issue-number>` (substitute `$ISSUE_REPO` with the `issueRepository` value from the bot config). Issues live in the issue repository and PRs in the PR repository, so a bare `Closes #<n>` will NOT auto-close the cross-repo issue. Put the closing keyword + issue link at the TOP, never at the bottom.
    - Fill in actual test commands and results from acceptance criteria
    - If `.ts`/`.tsx`/`.js` files were changed, add checkboxes for `npm run test-unit` and `npm run build-storybook` to the test plan
    - Keep the last checkbox "CI passes cleanly" unchecked
    - Do NOT add "Generated with Claude Code" or similar attribution
    - Capture the PR number from the output
    - **The `--label` flags above are an example for test fixes.** Adjust labels based on the rules in step 7 below. The `ai-generated` label is ALWAYS required.
-   - If step 4 identified other issues this fix also closes, add a `Closes #<number>` line for each one to the PR body (in addition to the issue this story addresses).
+   - If step 4 identified other issues this fix also closes, add an additional `Closes $ISSUE_REPO#<number>` line for each one at the TOP of the PR body (one per line, immediately below the primary `Closes` line, above `## Summary`).
 
 6. **Assign the PR to yourself (the bot account):**
 
