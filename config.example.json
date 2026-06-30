@@ -27,6 +27,9 @@
     "indexFile": "best_practices.md",
     "securityFile": "SECURITY.md"
   },
+  "browserVerify": {
+    "braveBinary": ""
+  },
   "schedules": {
     "syncRepo": false,
     "syncRepoPath": null

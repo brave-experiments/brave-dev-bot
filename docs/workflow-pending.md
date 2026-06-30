@@ -176,6 +176,59 @@
 
    See [testing-requirements.md](./testing-requirements.md) for complete test execution requirements.
 
+6b. **DEFINE A TEST PLAN AND VERIFY THE FIX** (always — every story):
+
+   Passing the acceptance-criteria tests is necessary but not sufficient. You must also reason
+   explicitly about *how this fix can be observed to work* and verify it through the strongest
+   means available in this environment. Do this in three parts.
+
+   **(1) Write a concrete test plan.** From the story description and acceptance criteria (not
+   from assumptions about the code), write down:
+   - **Preconditions** — required state/flags (a verification browser profile is throwaway; do
+     not assume logins or saved state).
+   - **Steps** — the exact actions that exercise the changed behavior (URLs to visit, elements
+     to click, text to enter, or the tests/commands that cover it).
+   - **Expected** — the behavior the story specifies.
+
+   **(2) Triage testability.** Classify the story into exactly one class and record which one,
+   with a one-line justification:
+
+   - **`browser-verifiable`** — the change is observable in a running browser: WebUI / settings
+     (`brave://...`), page behavior, extension/popup UI, rendering, network behavior. → Go to the
+     browser path below.
+   - **`automated-test-only`** — not directly observable by driving the browser, but fully
+     covered by unit / browser / integration tests (most C++ logic changes and intermittent-test
+     fixes). → The acceptance-criteria tests from step 6 **are** the verification. Record which
+     specific tests exercise the changed behavior.
+   - **`not-verifiable-here`** — cannot be functionally verified in this environment: requires
+     another OS/platform (e.g. a **Windows-only registry / shell integration** bug), specific
+     hardware, a native OS UI that can't be driven, or release/build infrastructure. → Do **not**
+     fabricate a result. Record *why* it can't be verified here, rely on the acceptance-criteria
+     tests plus the self-review (step 9), and explicitly flag that manual verification on the
+     target platform is still required.
+
+   When unsure between `browser-verifiable` and `automated-test-only`, prefer the browser path if
+   any user-facing surface changed — a real-browser check catches integration gaps that unit
+   tests miss.
+
+   **Browser path (`browser-verifiable`).** Functionally verify in a **real** browser — automated
+   tests alone are not sufficient. When a story sets `"browserVerify": true`, `run.sh` launches a
+   remote-debuggable dev Brave on `http://127.0.0.1:9223` before this session starts and attaches
+   the `chrome-devtools` MCP; the iteration prompt says so explicitly. **Invoke the
+   `browser-verify` skill** — it is the canonical procedure: it can start/stop the browser itself
+   when needed, drives it via the chrome-devtools MCP, and judges PASS/FAIL. The Verdict must be
+   PASS before transitioning to "committed"; a FAIL means the story is NOT done.
+   - If you classified the story `browser-verifiable` but the debug browser is **not** available
+     this run (the prompt didn't mention it / the dev binary was missing and `run.sh` logged a
+     warning), record the test plan and a verdict of `NOT-VERIFIABLE-HERE` with the reason
+     "browser-verifiable but debug browser unavailable this run — set `browserVerify: true` or run
+     the browser-verify skill manually". Do not silently downgrade to tests-only without saying so.
+
+   **(3) Record the result.** Append the **Verification** block to the `pending → committed`
+   progress.txt entry (see [progress-reporting.md](./progress-reporting.md)) for **every** story,
+   regardless of class. The Verdict is `PASS` / `FAIL` / `NOT-VERIFIABLE-HERE`. Do not rationalize
+   a near-miss or an unverifiable change into a PASS.
+
 7. **CHROMIUM TEST DETECTION** (for filter file modifications only):
 
    If your fix involves adding a test to a filter file (e.g., `test/filters/browser_tests.filter`), determine if it's a Chromium test:
@@ -410,12 +463,11 @@ Only update CLAUDE.md if you have **genuinely reusable knowledge** that would he
 
 See **[docs/learnable-patterns.md](./learnable-patterns.md)** for the complete guide on identifying and capturing reusable patterns, including how to use `progress.txt` for lightweight patterns and when to create documentation PRs.
 
-## Browser Testing (If Available)
+## Browser Testing
 
-For any story that changes UI, verify it works in the browser if you have browser testing tools configured (e.g., via MCP):
-
-1. Navigate to the relevant page
-2. Verify the UI changes work as expected
-3. Take a screenshot if helpful for the progress log
-
-If no browser tools are available, note in your progress report that manual browser verification is needed.
+Browser testing is not a separate, optional step — it is the **browser-verifiable** branch of the
+mandatory verification triage in **step 6b** above. Define the test plan, classify testability,
+and (for browser-verifiable stories) drive the change in a real browser via the `browser-verify`
+skill, recording the Verification block. If browser tools are unavailable for a story you judged
+browser-verifiable, record that manual browser verification is still needed rather than silently
+relying on tests alone.
