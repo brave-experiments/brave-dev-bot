@@ -127,6 +127,19 @@ EOF
    - `release-notes/exclude` — add to both PR and linked issue for changes typical users wouldn't care about (code cleanup, refactors, internal tooling, etc.)
    - `QA/No` — use judgment based on whether manual QA testing is needed
 
+   **OS/platform labels (ALWAYS add to the linked issue):**
+
+   Determine which platform(s) the fix relates to, then add the matching OS label(s) to the linked issue:
+   - `OS/Desktop` — the fix targets desktop (Windows, macOS, Linux)
+   - `OS/Android` — the fix targets Android
+   - `OS/iOS` — the fix targets iOS
+
+   Add all that apply (a cross-platform fix may span multiple platforms). Base the decision on the affected code's location, platform-specific build flags/guards (e.g. `BUILDFLAG(IS_ANDROID)`, `BUILDFLAG(IS_IOS)`, desktop-only code paths), and where the issue was reported.
+
+   ```bash
+   gh issue edit <issue-number> --add-label "OS/Desktop" --repo $ISSUE_REPO
+   ```
+
 8. **If push or PR creation succeeds:**
    - Update the PRD status:
      ```bash
