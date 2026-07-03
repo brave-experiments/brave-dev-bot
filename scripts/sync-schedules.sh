@@ -64,6 +64,12 @@ PATH=$CLAUDE_BIN_DIR:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bi
 # Gate check runs before git sync to avoid wasted fetches
 0 6 * * * cd $PROJECT_ROOT && source .envrc && ./scripts/check-bot-prs.sh && git fetch origin && git checkout $BOT_REPO_BRANCH && git reset --hard origin/$BOT_REPO_BRANCH && ./scripts/sync-brave-core.sh && ./scripts/with-lock.sh learnable-pattern-search -- $CLAUDE_BIN -p '/learnable-pattern-search 2d' --allowedTools '$CLAUDE_TOOLS' >> $LOG_DIR/learnable-pattern-search-cron.log 2>&1
 
+# Discover bugs (static scan) — skip if no scannable source changes since last scan
+# Gate check runs before git sync to avoid wasted fetches.
+# REPORT-ONLY: writes logs/discover-bugs-*.md, files NO issues. Add 'file-issues'
+# to the skill args below only once the false-positive rate is acceptable.
+0 5 * * * cd $PROJECT_ROOT && source .envrc && ./scripts/check-scan-candidates.sh && git fetch origin && git checkout $BOT_REPO_BRANCH && git reset --hard origin/$BOT_REPO_BRANCH && ./scripts/sync-brave-core.sh && ./scripts/with-lock.sh discover-bugs -- $CLAUDE_BIN -p '/discover-bugs --since-cache auto' --allowedTools '$CLAUDE_TOOLS' >> $LOG_DIR/discover-bugs-cron.log 2>&1
+
 # Check Signal messages (every 5 min, offset to avoid git lock contention with other jobs)
 # Gate check runs before git sync to avoid wasted fetches (288 runs/day, most exit early)
 1,6,11,16,21,26,31,36,41,46,51,56 * * * * cd $PROJECT_ROOT && source .envrc && ./scripts/check-signal-messages.sh && git fetch origin && git checkout $BOT_REPO_BRANCH && git reset --hard origin/$BOT_REPO_BRANCH && ./scripts/with-lock.sh check-signal -- $CLAUDE_BIN -p '/check-signal' --allowedTools '$CLAUDE_TOOLS' >> $LOG_DIR/check-signal-cron.log 2>&1
@@ -107,6 +113,7 @@ echo "    14:10 - run.sh (3 iterations)"
 echo "    11:45 - /add-backlog-to-prd"
 echo "    12:00 - /review-prs"
 echo "  Daily:"
+echo "    05:00 - /discover-bugs (report-only; only if source changed)"
 echo "    06:00 - /learnable-pattern-search"
 echo "    Every 5 min at :01,:06,...,:56 - /check-signal (only if messages pending)"
 echo "    1st of month, 04:15 - /update-best-practices"

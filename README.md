@@ -200,6 +200,7 @@ Bot-only skills are available as slash commands in Claude Code. 8 bot-specific s
 | Skill | Description |
 |-------|-------------|
 | `/review-prs` | Batch review PRs for best practices violations. Supports auto mode for cron. Deduplicates against existing bot comments. Tracks prior comment context |
+| `/discover-bugs` | Static scan of recently-changed target-repo code for likely bugs (lifetime/UAF, threading, null-deref, mojo/IPC, uninitialized). Verify-first; report-only by default, files `ai-generated` issues with `file-issues`. Deduplicates across runs |
 | `/learnable-pattern-search` | Analyze PR review comments to discover learnable patterns. Supports self-review mode to identify overly strict rules |
 | `/update-best-practices` | Fetch and merge upstream Chromium documentation guidelines |
 
@@ -511,6 +512,7 @@ brave-dev-bot/                 # (or your clone name)
 │       ├── prd-clean/         # Archive merged/invalid stories
 │       ├── add-backlog-to-prd/  # Fetch issues from GitHub
 │       ├── review-prs/        # Batch PR review with caching
+│       ├── discover-bugs/     # Static bug scan of changed code
 │       ├── check-signal/      # Check incoming Signal messages
 │       ├── update-best-practices/ # Merge upstream Chromium guidelines
 │       └── learnable-pattern-search/  # Analyze PR reviews for patterns
