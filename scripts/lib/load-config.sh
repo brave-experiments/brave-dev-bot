@@ -8,7 +8,8 @@
 #   BOT_PROJECT_NAME, BOT_ORG, BOT_PR_REPO, BOT_ISSUE_REPO,
 #   BOT_DEFAULT_BRANCH, BOT_USERNAME, BOT_EMAIL,
 #   BOT_AGENT, BOT_CLAUDE_MODEL, BOT_CLAUDE_BIN,
-#   BOT_CODEX_MODEL, BOT_CODEX_BIN, BOT_BP_DOCS_DIR
+#   BOT_CODEX_MODEL, BOT_CODEX_BIN,
+#   BOT_CURSOR_MODEL, BOT_CURSOR_BIN, BOT_BP_DOCS_DIR
 #
 # Also provides:
 #   bot_config '.some.jq.path'  — raw jq query against the config file
@@ -49,6 +50,8 @@ BOT_CLAUDE_MODEL=$(bot_config '.bot.claudeModel')
 BOT_CLAUDE_BIN=$(bot_config '.bot.claudeBin')
 BOT_CODEX_MODEL=$(bot_config '.bot.codexModel')
 BOT_CODEX_BIN=$(bot_config '.bot.codexBin')
+BOT_CURSOR_MODEL=$(bot_config '.bot.cursorModel')
+BOT_CURSOR_BIN=$(bot_config '.bot.cursorBin')
 
 BOT_BP_DOCS_DIR=$(bot_config '.bestPractices.docsDir')
 
@@ -80,11 +83,16 @@ if [ -z "$BOT_CODEX_BIN" ]; then
   BOT_CODEX_BIN="$(which codex 2>/dev/null || echo "codex")"
 fi
 
+# Fall back to 'cursor-agent' if cursorBin is not set
+if [ -z "$BOT_CURSOR_BIN" ]; then
+  BOT_CURSOR_BIN="$(which cursor-agent 2>/dev/null || echo "cursor-agent")"
+fi
+
 # Default agent is 'claude' if not configured. BOT_AGENT env var overrides config.
 BOT_AGENT="${BOT_AGENT:-claude}"
 
 export BOT_DIR BOT_CONFIG_FILE
 export BOT_PROJECT_NAME BOT_ORG BOT_PR_REPO BOT_ISSUE_REPO BOT_DEFAULT_BRANCH BOT_TARGET_REPO_PATH
 export BOT_USERNAME BOT_EMAIL
-export BOT_AGENT BOT_CLAUDE_MODEL BOT_CLAUDE_BIN BOT_CODEX_MODEL BOT_CODEX_BIN
+export BOT_AGENT BOT_CLAUDE_MODEL BOT_CLAUDE_BIN BOT_CODEX_MODEL BOT_CODEX_BIN BOT_CURSOR_MODEL BOT_CURSOR_BIN
 export BOT_BP_DOCS_DIR

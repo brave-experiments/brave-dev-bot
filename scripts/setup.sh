@@ -119,6 +119,8 @@ config = {
         'claudeBin': None,
         'codexModel': None,
         'codexBin': None,
+        'cursorModel': None,
+        'cursorBin': None,
     },
     'labels': {
         'prLabels': ['ai-generated'],

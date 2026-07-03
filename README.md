@@ -144,16 +144,20 @@ Follow the prompts, then use `/prd-json` to convert to `data/prd.json`.
 ./run.sh 10 tui       # TUI mode (interactive terminal UI)
 ```
 
-The bot runs on Claude Code by default. To use Codex instead, pass `--agent codex`,
-set `BOT_AGENT=codex`, or set `bot.agent` to `codex` in `config.json` (precedence:
-flag > env var > config). Codex must be installed and authenticated (`codex login`).
-Pass `--model <name>` or `--model=<name>` to override `bot.claudeModel` or
-`bot.codexModel` for the selected agent.
+The bot runs on Claude Code by default. To use Codex or Cursor instead, pass
+`--agent codex` / `--agent cursor`, set `BOT_AGENT=codex` / `BOT_AGENT=cursor`, or set
+`bot.agent` to `codex` / `cursor` in `config.json` (precedence: flag > env var > config).
+Codex must be installed and authenticated (`codex login`). Cursor must be installed
+(`cursor-agent`) and authenticated (`cursor-agent login`, or set `CURSOR_API_KEY`).
+Pass `--model <name>` or `--model=<name>` to override `bot.claudeModel`,
+`bot.codexModel`, or `bot.cursorModel` for the selected agent.
 
 ```bash
 ./run.sh --agent codex
 ./run.sh --agent codex --model gpt-5
 ./run.sh --agent=codex --model=gpt-5
+./run.sh --agent cursor
+./run.sh --agent cursor --model sonnet-4-thinking
 ./run.sh --model opus
 ```
 
@@ -240,11 +244,13 @@ Project-specific configuration (gitignored, created by `make setup`). Keys:
 - `project.targetRepoPath`: Path to the target git repo (relative to parent dir or absolute)
 - `bot.username`: Bot's GitHub username
 - `bot.email`: Bot's email for git commits
-- `bot.agent`: Which agent to run, `claude` (default) or `codex`
+- `bot.agent`: Which agent to run, `claude` (default), `codex`, or `cursor`
 - `bot.claudeModel`: Claude model to use (`opus`, `sonnet`, etc.; overridden by `./run.sh --model` for Claude runs)
 - `bot.claudeBin`: Path to the `claude` binary (`null` = found on PATH)
 - `bot.codexModel`: Codex model to use (`null` = Codex default; overridden by `./run.sh --model` for Codex runs)
 - `bot.codexBin`: Path to the `codex` binary (`null` = found on PATH)
+- `bot.cursorModel`: Cursor model to use (`null` = account default; overridden by `./run.sh --model` for Cursor runs)
+- `bot.cursorBin`: Path to the `cursor-agent` binary (`null` = found on PATH)
 - `labels.prLabels`: Labels applied to bot-created PRs
 - `labels.issueLabels`: Labels used for backlog issue fetching
 - `bestPractices.docsDir`: Path to the docs directory containing best practices (relative to bot dir)
