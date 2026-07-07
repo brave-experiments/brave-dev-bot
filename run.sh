@@ -1,6 +1,6 @@
 #!/bin/bash
 # Long-running AI agent loop
-# Usage: ./run.sh [max_iterations] [tui] [--agent claude|codex] [--model model] [extra_prompt_info...]
+# Usage: ./run.sh [max_iterations] [tui] [--agent claude|codex|cursor] [--model model] [extra_prompt_info...]
 #
 # Agent selection precedence (highest wins):
 #   1. --agent <name> CLI flag
@@ -9,7 +9,7 @@
 #   4. "claude" default
 #
 # Model selection:
-#   --model <name> overrides bot.claudeModel or bot.codexModel for the selected agent.
+#   --model <name> overrides bot.claudeModel, bot.codexModel, or bot.cursorModel for the selected agent.
 
 set -e
 
@@ -70,7 +70,7 @@ for arg in "$@"; do
 done
 
 if [ "$EXPECT_AGENT_VALUE" = true ]; then
-  echo "Error: --agent requires a value (expected: claude | codex)" >&2
+  echo "Error: --agent requires a value (expected: claude | codex | cursor)" >&2
   exit 1
 fi
 if [ "$EXPECT_MODEL_VALUE" = true ]; then
@@ -86,15 +86,17 @@ if [ -n "$CLI_AGENT" ]; then
   BOT_AGENT="$CLI_AGENT"
 fi
 case "$BOT_AGENT" in
-  claude|codex) ;;
+  claude|codex|cursor) ;;
   *)
-    echo "Error: unsupported agent '$BOT_AGENT' (expected: claude | codex)" >&2
+    echo "Error: unsupported agent '$BOT_AGENT' (expected: claude | codex | cursor)" >&2
     exit 1
     ;;
 esac
 if [ -n "$CLI_MODEL" ]; then
   if [ "$BOT_AGENT" = "codex" ]; then
     BOT_CODEX_MODEL="$CLI_MODEL"
+  elif [ "$BOT_AGENT" = "cursor" ]; then
+    BOT_CURSOR_MODEL="$CLI_MODEL"
   else
     BOT_CLAUDE_MODEL="$CLI_MODEL"
   fi
@@ -152,6 +154,8 @@ fi
 
 if [ "$BOT_AGENT" = "codex" ]; then
   echo "Starting Codex agent - Max iterations: $MAX_ITERATIONS"
+elif [ "$BOT_AGENT" = "cursor" ]; then
+  echo "Starting Cursor agent - Max iterations: $MAX_ITERATIONS"
 else
   echo "Starting Claude Code agent - Max iterations: $MAX_ITERATIONS"
 fi
@@ -262,16 +266,21 @@ while [ $loop_count -lt $MAX_ITERATIONS ]; do
     echo ""
     echo "To monitor this session (read-only): claude --resume $SESSION_ID"
     echo ""
+  elif [ "$BOT_AGENT" = "cursor" ]; then
+    echo ""
+    echo "Cursor session: resume with 'cursor-agent resume' after the iteration."
+    echo ""
   else
     echo ""
     echo "Codex session: resume with 'codex resume --last' after the iteration."
     echo ""
   fi
 
-  # Build the agent prompt. Both agents pick up project instructions from disk:
+  # Build the agent prompt. All agents pick up project instructions from disk:
   #   - Claude reads .claude/CLAUDE.md from the bot dir.
   #   - Codex reads AGENTS.md (project) / ~/.codex/AGENTS.md (user).
-  # We point both at the same workflow docs via the prompt itself.
+  #   - Cursor reads AGENTS.md (project) + .cursor/rules.
+  # We point them all at the same workflow docs via the prompt itself.
   BOT_DIRNAME=$(basename "$SCRIPT_DIR")
   BOT_CONFIG=$(cat "$SCRIPT_DIR/config.json")
   AGENT_PROMPT="You are working on story $STORY_ID (current status: $STORY_STATUS).
@@ -315,6 +324,21 @@ Additional context: $EXTRA_PROMPT"
       # final agent message separately for the completion check.
       (cd "$SCRIPT_DIR" && "$SCRIPT_DIR/scripts/timeout-tree.sh" 7200 $BOT_CODEX_BIN exec $CODEX_MODEL_FLAG --dangerously-bypass-approvals-and-sandbox --json --skip-git-repo-check --output-last-message "$TEMP_LAST_MSG" "$AGENT_PROMPT") 200>&- </dev/null 2>&1 | tee -a "$ITERATION_LOG" > "$TEMP_OUTPUT" || true
     fi
+  elif [ "$BOT_AGENT" = "cursor" ]; then
+    CURSOR_MODEL_FLAG=""
+    if [ -n "$BOT_CURSOR_MODEL" ]; then
+      CURSOR_MODEL_FLAG="--model $BOT_CURSOR_MODEL"
+    fi
+    if [ "$USE_TUI" = true ]; then
+      # TUI mode: let cursor-agent own the terminal directly (no piping).
+      # --force bypasses approvals (headless autonomy).
+      (cd "$SCRIPT_DIR" && "$SCRIPT_DIR/scripts/timeout-tree.sh" 7200 $BOT_CURSOR_BIN $CURSOR_MODEL_FLAG --force "$AGENT_PROMPT") 200>&- || true
+    else
+      # Non-interactive: -p/--print with plain-text output. --force bypasses approvals,
+      # --trust trusts the workspace (headless only). cursor-agent has no --output-last-message,
+      # so the completion check greps the full captured output (see below).
+      (cd "$SCRIPT_DIR" && "$SCRIPT_DIR/scripts/timeout-tree.sh" 7200 $BOT_CURSOR_BIN -p --output-format text $CURSOR_MODEL_FLAG --force --trust "$AGENT_PROMPT") 200>&- </dev/null 2>&1 | tee -a "$ITERATION_LOG" > "$TEMP_OUTPUT" || true
+    fi
   else
     CLAUDE_MODEL_FLAG=""
     if [ -n "$BOT_CLAUDE_MODEL" ]; then
@@ -330,6 +354,8 @@ Additional context: $EXTRA_PROMPT"
 
   if [ "$BOT_AGENT" = "claude" ]; then
     echo "To continue this session: claude --resume $SESSION_ID"
+  elif [ "$BOT_AGENT" = "cursor" ]; then
+    echo "To continue this session: cursor-agent resume"
   else
     echo "To continue this session: codex resume --last"
   fi
@@ -343,6 +369,12 @@ Additional context: $EXTRA_PROMPT"
     if [ "$BOT_AGENT" = "codex" ]; then
       # Codex's --output-last-message file holds just the final agent message.
       COMPLETION_CHECK=$(grep -c -F "<promise>COMPLETE</promise>" "$TEMP_LAST_MSG" 2>/dev/null | tail -1)
+    elif [ "$BOT_AGENT" = "cursor" ]; then
+      # cursor-agent has no --output-last-message; -p --output-format text prints the
+      # assistant's response text to stdout, captured in TEMP_OUTPUT. Grep that.
+      # (A logged-in maintainer can switch to --output-format stream-json parsing
+      # once its event schema is known, to avoid false positives from echoed doc text.)
+      COMPLETION_CHECK=$(grep -c -F "<promise>COMPLETE</promise>" "$TEMP_OUTPUT" 2>/dev/null | tail -1)
     else
       # Claude stream-json: extract assistant text only, excluding tool_result events.
       COMPLETION_CHECK=$(jq -r 'select(.type == "assistant") | .message.content[]? | select(.type == "text") | .text' "$TEMP_OUTPUT" 2>/dev/null | grep -c -F "<promise>COMPLETE</promise>" 2>/dev/null | tail -1)
