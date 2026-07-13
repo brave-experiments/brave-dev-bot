@@ -224,7 +224,17 @@ python3 $BOT_DIR/scripts/business-hours-elapsed.py <reference-timestamp> [thresh
      python3 $BOT_DIR/scripts/business-hours-elapsed.py "<reference-timestamp>"
      ```
    - If exit code is 1 (less than 24 business hours), skip — nothing due.
-   - If exit code is 0, get the requested reviewers:
+   - If exit code is 0, **first rebase the branch on the latest upstream so a stale PR gets fresh CI**, then get the reviewers:
+
+     A PR waiting this long has almost certainly bitrotted against `master`. Before nagging the reviewer, rebase the branch onto the current upstream default branch and force-push — the force-push re-triggers CI, so the reviewer sees a green (or freshly-run) PR instead of stale results. Use the existing rebase script, which fetches upstream first, handles fork-hosted branches, aborts cleanly on conflicts, and force-pushes with `--force-with-lease`:
+     ```bash
+     python3 "$BOT_DIR/.claude/skills/rebase-bot-prs/rebase-bot-prs.py" --execute <pr-number>
+     ```
+     - If the script reports the PR was rebased and pushed, CI will re-run automatically on the new head — no empty commit needed. Note the rebase in progress.txt.
+     - If the script reports `CONFLICT` (or `PUSH_FAILED`/`ERROR`), do NOT force past it. Leave the branch as-is, note the conflict in progress.txt, and still post the reminder below so the reviewer/owner knows the PR is waiting.
+     - If the branch was already up to date, the script is a no-op — proceed normally.
+
+     Then get the requested reviewers:
      ```bash
      gh pr view <pr-number> --json reviewRequests -q '.reviewRequests[].login'
      ```
