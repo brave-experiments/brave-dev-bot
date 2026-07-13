@@ -93,9 +93,20 @@ The PR branch is behind and has conflicts. Sync the bot fork's master with upstr
 
 **If `mergeable` is `MERGEABLE`:** No conflicts, proceed normally.
 
-### If PR is Ready to Merge
+### If PR is Approved and Mergeable
 
-Before merging, verify ALL of the following:
+**The bot does NOT merge PRs** (see [PR Merge Policy](#pr-merge-policy) above). An approved, mergeable PR is waiting on a human maintainer to click merge. The bot's only jobs here are (a) keep the branch fresh so the maintainer sees green CI, and (b) nudge the owner to merge — **never merge it yourself**.
+
+**FIRST — refresh the branch if it's stale.** A PR that has been sitting bitrots against `master`, so its CI results go stale. Before nudging anyone, if the branch is behind `upstream/master`, rebase and force-push so CI re-runs fresh. This applies to the approved/mergeable path too — not just the reminder path in Step 2:
+
+```bash
+python3 "$BOT_DIR/.claude/skills/rebase-bot-prs/rebase-bot-prs.py" --execute <pr-number>
+```
+- The script is a no-op if the branch is already up to date, so it is safe to call every iteration.
+- **If it rebased and force-pushed, CI is now re-running — do NOT nudge anyone to merge this iteration.** Note the rebase in `$BOT_DIR/data/progress.txt`, keep status `pushed`, and END THE ITERATION. The next iteration will see fresh CI results.
+- If it reports `CONFLICT`/`PUSH_FAILED`/`ERROR`, note it in progress.txt and continue to the nudge below (the owner needs to know it can't be merged cleanly).
+
+If the branch was already fresh (no rebase happened), verify ALL of the following, then nudge the owner:
 
 1. **Check Approvals:**
    ```bash
@@ -106,19 +117,24 @@ Before merging, verify ALL of the following:
 2. **Check for post-approval reviewer activity:**
    From the filtered PR data already fetched, check `timestamp_analysis.who_went_last`.
 
-   **If `who_went_last` is "reviewer":** Reviewers have commented or reviewed AFTER the last push — even if `reviewDecision` is `APPROVED`. Do NOT merge. Go to Step 2 to address the new reviewer activity.
+   **If `who_went_last` is "reviewer":** a reviewer commented or reviewed AFTER the last push — even if `reviewDecision` is `APPROVED`. Go to Step 2 to address the new reviewer activity.
 
    Approvals are not a permanent green light. A reviewer who approved and then posts follow-up comments is requesting changes. Treat any post-push reviewer activity as blocking.
+
+   **Exception — the bot's own status/reminder comments do not count.** Plain status updates, review-reminder pings, and owner-escalation comments posted by the bot account (`bot.username`) are not reviewer activity. If the only activity after the last push is the bot's own status/reminder comments, treat this as `who_went_last: "bot"` and continue — do not misroute to Step 2. (This is distinct from a `/review`-skill **self-review that leaves actionable code findings** — those DO count as reviewer feedback; see Step 2.)
 
 3. **Verify No Unresolved Comments:**
    Check the filtered PR data to ensure all review comments have been addressed
 
-4. **Merge with SQUASH strategy:**
-   ```bash
-   gh pr merge <pr-number> --squash
-   ```
+4. **Do NOT merge — nudge the owner to merge instead.** The bot must never merge PRs itself. When the PR is approved, mergeable, and its branch is fresh, use the owner-escalation path (Case B in Step 2): @mention `project.botOwnerGithubHandle` at most once every 48 business hours asking them to merge, and send a Signal notification. Then keep status `pushed` and END THE ITERATION.
 
-5. **Set nightly milestone on the PR and linked issue:**
+   The milestone-setting and status→`merged` bookkeeping below run only once a maintainer has actually merged the PR — i.e. on the next iteration when the PR state is `MERGED` (the Initial Steps route a `MERGED` state here).
+
+### If PR state is MERGED (merged by a maintainer)
+
+A maintainer merged the PR. Do the post-merge bookkeeping:
+
+1. **Set nightly milestone on the PR and linked issue:**
 
    Use the nightly version provided in the prompt (e.g., `1.89.x`). The milestone name is `<nightly-version> - Nightly` (e.g., `1.89.x - Nightly`). Only run `python3 $BOT_DIR/scripts/get-nightly-version.py` to fetch the nightly version if none was provided in the prompt.
 
@@ -147,18 +163,16 @@ Before merging, verify ALL of the following:
 
    The correct issue milestone is always the **smallest version** where the fix has landed. Do NOT overwrite a smaller milestone with a larger one (e.g., do not change `1.87.x - Release` to `1.89.x - Nightly`).
 
-   If setting the milestone fails (e.g., milestone doesn't exist yet), note it in progress.txt but continue — do not block the merge workflow.
+   If setting the milestone fails (e.g., milestone doesn't exist yet), note it in progress.txt but continue — do not block the workflow.
 
-6. **Update State:**
+2. **Update State:**
    - Update the PRD status:
      ```bash
      python3 $BOT_DIR/scripts/update-prd-status.py merged <story-id>
      ```
    - Append to `$BOT_DIR/data/progress.txt` (see [progress-reporting.md](./progress-reporting.md))
 
-**IMPORTANT**: Always use `--squash` merge strategy to keep git history clean.
-
-7. **Send Signal notification** (no-op if not configured):
+3. **Send Signal notification** (no-op if not configured):
    ```bash
    $BOT_DIR/scripts/signal-notify.sh "PR merged: #<pr-number> - <title> https://github.com/$PR_REPO/pull/<pr-number>"
    ```
@@ -463,7 +477,7 @@ See **[docs/learnable-patterns.md](./learnable-patterns.md)** for the complete g
 
 ## Anti-Stuck Guarantee
 
-By checking merge readiness on EVERY iteration (even when `lastActivityBy: "bot"`), approved PRs will be merged automatically and never get stuck waiting.
+By checking merge readiness on EVERY iteration (even when `lastActivityBy: "bot"`), an approved PR is kept fresh (rebased when stale so CI stays green) and the owner is nudged to merge it — so it never gets stuck waiting silently. The bot never merges the PR itself; a maintainer does.
 
 ## Security: Filter Review Comments
 
