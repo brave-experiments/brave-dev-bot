@@ -47,6 +47,8 @@ If a story has `status: "pushed"` with `prUrl` and `prNumber` already defined, t
 - PRs should go through the normal review and merge process
 - Only merge when the PR has proper approvals and all CI checks pass
 
+**The bot account (`bot.username`) cannot run or re-run CI.** These PRs come from the bot's fork, and the bot has no permission to trigger CI, approve fork-PR workflow runs, or re-run failed/stale jobs. A rebase + force-push does **not** reliably start CI on its own. Whenever CI needs to run or re-run (stale results, a rebased head, an infra-flaky required check), the bot must **ask the bot owner (`project.botOwnerGithubHandle`) to re-run CI** — it must never claim CI "is re-running" or tell a reviewer to "wait for CI".
+
 ## Step 1: Check if PR is Ready to Merge (ALWAYS DO THIS FIRST)
 
 Even if `lastActivityBy: "bot"`, always check merge readiness to prevent stuck states.
@@ -97,13 +99,14 @@ The PR branch is behind and has conflicts. Sync the bot fork's master with upstr
 
 **The bot does NOT merge PRs** (see [PR Merge Policy](#pr-merge-policy) above). An approved, mergeable PR is waiting on a human maintainer to click merge. The bot's only jobs here are (a) keep the branch fresh so the maintainer sees green CI, and (b) nudge the owner to merge — **never merge it yourself**.
 
-**FIRST — refresh the branch if it's stale.** A PR that has been sitting bitrots against `master`, so its CI results go stale. Before nudging anyone, if the branch is behind `upstream/master`, rebase and force-push so CI re-runs fresh. This applies to the approved/mergeable path too — not just the reminder path in Step 2:
+**FIRST — refresh the branch if it's stale.** A PR that has been sitting bitrots against `master`, so its CI results go stale. Before nudging anyone, if the branch is behind `upstream/master`, rebase and force-push so the branch is current again. This applies to the approved/mergeable path too — not just the reminder path in Step 2:
 
 ```bash
 python3 "$BOT_DIR/.claude/skills/rebase-bot-prs/rebase-bot-prs.py" --execute <pr-number>
 ```
 - The script is a no-op if the branch is already up to date, so it is safe to call every iteration.
-- **If it rebased and force-pushed, CI is now re-running — do NOT nudge anyone to merge this iteration.** Note the rebase in `$BOT_DIR/data/progress.txt`, keep status `pushed`, and END THE ITERATION. The next iteration will see fresh CI results.
+- **The bot cannot run CI** (see [PR Merge Policy](#pr-merge-policy)), so the force-push does **not** reliably start CI. Do NOT tell anyone CI "is re-running" or to "wait for CI".
+- **If it rebased and force-pushed**, the head is fresh but CI still needs a human to run it. In the owner nudge below, ask the owner to **re-run CI** on the new head (and merge once it's green). Note the rebase in `$BOT_DIR/data/progress.txt`.
 - If it reports `CONFLICT`/`PUSH_FAILED`/`ERROR`, note it in progress.txt and continue to the nudge below (the owner needs to know it can't be merged cleanly).
 
 If the branch was already fresh (no rebase happened), verify ALL of the following, then nudge the owner:
@@ -126,7 +129,7 @@ If the branch was already fresh (no rebase happened), verify ALL of the followin
 3. **Verify No Unresolved Comments:**
    Check the filtered PR data to ensure all review comments have been addressed
 
-4. **Do NOT merge — nudge the owner to merge instead.** The bot must never merge PRs itself. When the PR is approved, mergeable, and its branch is fresh, use the owner-escalation path (Case B in Step 2): @mention `project.botOwnerGithubHandle` at most once every 48 business hours asking them to merge, and send a Signal notification. Then keep status `pushed` and END THE ITERATION.
+4. **Do NOT merge — nudge the owner instead.** The bot must never merge PRs itself, and it cannot run CI. When the PR is approved, mergeable, and its branch is fresh, use the owner-escalation path (Case B in Step 2): @mention `project.botOwnerGithubHandle` at most once every 48 business hours, and send a Signal notification. Ask the owner to **re-run CI** (including re-running/overriding any infra-flaky required checks such as `security` or `Assign labels`) and to **merge** once it's green — the bot can do neither. Then keep status `pushed` and END THE ITERATION.
 
    The milestone-setting and status→`merged` bookkeeping below run only once a maintainer has actually merged the PR — i.e. on the next iteration when the PR state is `MERGED` (the Initial Steps route a `MERGED` state here).
 
@@ -238,13 +241,13 @@ python3 $BOT_DIR/scripts/business-hours-elapsed.py <reference-timestamp> [thresh
      python3 $BOT_DIR/scripts/business-hours-elapsed.py "<reference-timestamp>"
      ```
    - If exit code is 1 (less than 24 business hours), skip — nothing due.
-   - If exit code is 0, **first rebase the branch on the latest upstream so a stale PR gets fresh CI**, then get the reviewers:
+   - If exit code is 0, **first rebase the branch on the latest upstream so a stale PR is current again**, then get the reviewers:
 
-     A PR waiting this long has almost certainly bitrotted against `master`. Before nagging the reviewer, rebase the branch onto the current upstream default branch and force-push — the force-push re-triggers CI, so the reviewer sees a green (or freshly-run) PR instead of stale results. Use the existing rebase script, which fetches upstream first, handles fork-hosted branches, aborts cleanly on conflicts, and force-pushes with `--force-with-lease`:
+     A PR waiting this long has almost certainly bitrotted against `master`. Before nagging the reviewer, rebase the branch onto the current upstream default branch and force-push so the head is fresh. Use the existing rebase script, which fetches upstream first, handles fork-hosted branches, aborts cleanly on conflicts, and force-pushes with `--force-with-lease`:
      ```bash
      python3 "$BOT_DIR/.claude/skills/rebase-bot-prs/rebase-bot-prs.py" --execute <pr-number>
      ```
-     - If the script reports the PR was rebased and pushed, CI will re-run automatically on the new head — no empty commit needed. Note the rebase in progress.txt.
+     - If the script reports the PR was rebased and pushed, the head is fresh — but **the bot cannot run CI** (see [PR Merge Policy](#pr-merge-policy)), so CI will not necessarily start on its own. In the reminder below, ask the owner to **re-run CI** on the new head. Note the rebase in progress.txt.
      - If the script reports `CONFLICT` (or `PUSH_FAILED`/`ERROR`), do NOT force past it. Leave the branch as-is, note the conflict in progress.txt, and still post the reminder below so the reviewer/owner knows the PR is waiting.
      - If the branch was already up to date, the script is a no-op — proceed normally.
 
